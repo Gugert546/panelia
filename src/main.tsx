@@ -1,0 +1,13 @@
+
+// Denne filen sin eneste hensikt er å starte appen / nettsiden. Ingenting annet. 
+
+import { createRoot } from 'react-dom/client'
+import "react-calendar/dist/Calendar.css";
+import './index.css'
+import App from './App.tsx'
+
+
+createRoot(document.getElementById('root')!).render(
+  <App />
+)
+

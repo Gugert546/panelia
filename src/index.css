@@ -1,0 +1,188 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Styling av kalender widget /* 
+
+/* Datoer med notat */
+.calendar-widget .react-calendar__tile.has-note {
+  position: relative;
+}
+
+/* liten prikk nederst i ruta */
+.calendar-widget .react-calendar__tile.has-note::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #22c55e; /* grønn prikk */
+}
+
+/* Kun kalender-widgeten */
+.calendar-widget .calendar-surface .react-calendar {
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 10px;
+}
+
+/* Navigasjonsknapper (måned frem/tilbake) */
+.calendar-widget .react-calendar__navigation button {
+  color: #fff;
+  background: transparent;
+  border-radius: 8px;
+}
+
+.calendar-widget .react-calendar__navigation button:hover {
+  background: #222;
+}
+
+/* Ukedager (Man, Tir, ...) */
+.calendar-widget .react-calendar__month-view__weekdays {
+  color: #cfcfcf;
+}
+
+/* Dager (tiles) */
+.calendar-widget .react-calendar__tile {
+  background: transparent;
+  color: #fff;
+  border-radius: 8px;
+}
+
+.calendar-widget .react-calendar__tile:enabled:hover {
+  background: #222;
+}
+
+/* Valgt dag */
+.calendar-widget .react-calendar__tile--active {
+  background: #2563eb;
+  color: #fff;
+}
+
+/* Dagens dato */
+.calendar-widget .react-calendar__tile--now {
+  background: #111;
+}
+
+
+
+
+
+
+
+/* Google search styling*/
+.google-search-widget {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: #ede7f0;              /* lys lilla/grå */
+  border-radius: 999px;             /* pill-form */
+  padding: 10px 14px;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.google-search-widget input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+
+  font-size: 15px;
+  color: #333;
+}
+
+.google-search-widget input::placeholder {
+  color: #666;
+}
+
+.google-search-widget button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+
+  font-size: 18px;
+  opacity: 0.7;
+}
+
+.google-search-widget button:hover {
+  opacity: 1;
+}
+
+.gs-menu-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gs-menu-btn:hover {
+  opacity: 1;
+}
+
+/* Selve hamburger-ikonet (3 streker) */
+.gs-menu-icon {
+  width: 18px;
+  height: 12px;
+  position: relative;
+  display: inline-block;
+}
+
+.gs-menu-icon::before,
+.gs-menu-icon::after,
+.gs-menu-icon span {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.gs-menu-icon::before {
+  top: 0;
+}
+
+.gs-menu-icon::after {
+  bottom: 0;
+}
+
+/* midt-streken */
+.gs-menu-icon {
+  color: #333;
+}
+.gs-menu-icon::before,
+.gs-menu-icon::after {
+  background: #333;
+}
+.gs-menu-icon::after {
+  background: #333;
+}
+
+/* midt-strek via box-shadow-triks (enklere): */
+.gs-menu-icon::before {
+  box-shadow: 0 5px 0 #333;
+}
