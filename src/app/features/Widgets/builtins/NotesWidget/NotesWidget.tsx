@@ -1,4 +1,4 @@
-import type { WidgetComponentProps } from "../WidgetRegistry";
+import type { WidgetComponentProps } from "../../registry/WidgetRegistry";
 
 type NotesConfig = {
   text?: string;

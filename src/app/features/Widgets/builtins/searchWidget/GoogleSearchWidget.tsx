@@ -1,57 +1,78 @@
-import { useState, type FormEvent } from "react";
-import type { WidgetComponentProps } from "../WidgetRegistry";
-
-type Props = WidgetComponentProps & {
-  onRemove?: () => void;
-};
-
-export function GoogleSearchWidget({ onRemove }: Props) {
-  const [query, setQuery] = useState("");
-
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    const q = query.trim();
-    if (!q) return;
-
-    const url = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
-  }
-
+import iconMenu from "../../../../../assets/icon-menu.png";
+export default function SearchWidgetMock() {
   return (
-    <form onSubmit={submit} className="google-search-widget">
-      {/* Hamburger (klikkbar, gjør ingenting ennå) */}
+    <div
+      className="google-search-widget"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        width: "min(760px, 90vw)",
+        background: "rgba(255,255,255,0.35)",
+        borderRadius: 999,
+        padding: "12px 16px",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
+        border: "1px solid rgba(255,255,255,0.35)",
+        backdropFilter: "blur(12px)",
+      }}
+    >
       <button
         type="button"
-        className="gs-menu-btn"
         aria-label="Meny"
-        onClick={() => {
-          // TODO: åpne meny senere
+        style={{
+          border: "none",
+          background: "transparent",
+          cursor: "default",
+          padding: 0,
+          opacity: 0.85,
+          pointerEvents: "none",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
         }}
       >
-        <span className="gs-menu-icon" aria-hidden="true" />
+        <img
+          src={iconMenu}
+          alt=""
+          style={{
+            width: 60,
+            height: 60,
+            objectFit: "contain",
+            display: "block",
+          }}
+        />
       </button>
 
       <input
         type="text"
         placeholder="Søk på Google"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        readOnly
+        value=""
+        style={{
+          flex: 1,
+          border: "none",
+          outline: "none",
+          background: "transparent",
+          fontSize: 15,
+          color: "#111",
+          opacity: 0.85,
+        }}
       />
 
-      <button type="submit" className="gs-icon-btn" aria-label="Søk">
+      <button
+        type="button"
+        aria-label="Søk"
+        style={{
+          border: "none",
+          background: "transparent",
+          cursor: "default",
+          padding: 0,
+          opacity: 0.9,
+          pointerEvents: "none",
+        }}
+      >
         🔍
       </button>
-
-      {onRemove && (
-        <button
-          type="button"
-          className="gs-close-btn"
-          onClick={onRemove}
-          aria-label="Fjern widget"
-        >
-          ✕
-        </button>
-      )}
-    </form>
+    </div>
   );
 }

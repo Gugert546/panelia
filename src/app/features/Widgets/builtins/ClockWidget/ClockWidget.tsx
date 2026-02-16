@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react";
-import type { WidgetComponentProps } from "../WidgetRegistry";
-
-type Props = WidgetComponentProps & {
-  onRemove?: () => void;
-};
 
 function pad(n: number) {
-  return n.toString().padStart(2, "0");
+  return String(n).padStart(2, "0");
 }
 
-export function ClockWidget({ onRemove }: Props) {
+
+export default function ClockWidgetMock() {
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -17,49 +13,31 @@ export function ClockWidget({ onRemove }: Props) {
     return () => clearInterval(t);
   }, []);
 
-  const h = now.getHours();
+  const h = pad(now.getHours());
   const m = pad(now.getMinutes());
   const s = pad(now.getSeconds());
-  const hour12 = ((h + 11) % 12) + 1;
-  const ampm = h >= 12 ? "PM" : "AM";
 
   return (
     <div
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 10,
-        padding: "8px 12px",
+        justifyContent: "center",
+        width: 140,
+        height: 48,
+        padding: "0 20px",
         borderRadius: 999,
-        border: "1px solid #d1d5db",
-        background: "#f5f5f5",
-        fontSize: 14,
-        fontWeight: 500,
+        background: "rgba(255,255,255,0.35)",
+        border: "1px solid rgba(255,255,255,0.35)",
+        boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+        backdropFilter: "blur(14px)",
         color: "#111",
+        fontWeight: 700,
+        fontSize: 19,
+        fontVariantNumeric: "tabular-nums",
       }}
     >
-      <span>
-        {hour12}:{m}:{s}
-      </span>
-
-      <span style={{ fontSize: 12, opacity: 0.7 }}>{ampm}</span>
-
-      {onRemove && (
-        <button
-          onClick={onRemove}
-          aria-label="Fjern klokke"
-          style={{
-            marginLeft: 6,
-            border: "none",
-            background: "transparent",
-            cursor: "pointer",
-            fontSize: 14,
-            opacity: 0.6,
-          }}
-        >
-          ✕
-        </button>
-      )}
+      {h}:{m}:{s}
     </div>
   );
 }

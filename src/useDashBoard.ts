@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { WidgetType } from "./WidgetRegistry";
+import type { WidgetType } from "../src/app/features/Widgets/registry/WidgetRegistry";
 
 export type WidgetInstance = {
   id: string;

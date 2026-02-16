@@ -1,8 +1,8 @@
 import type { FC } from "react";
-import { ClockWidget } from "./Widgets/ClockWidget";
-import { NotesWidget } from "./Widgets/NotesWidget";
-import { CalendarWidget } from "./Widgets/CalendarWidget";
-import { GoogleSearchWidget } from "./Widgets/GoogleSearchWidget";
+import  ClockWidgetMock  from "../builtins/ClockWidget/ClockWidget";
+import { NotesWidget } from "../builtins/NotesWidget/NotesWidget";
+import { CalendarWidget } from "../builtins/CalendarWidget/CalendarWidget";
+import  SearchWidgetMock  from "../builtins/searchWidget/GoogleSearchWidget";
 
 
 
@@ -19,12 +19,12 @@ export const WIDGETS: Record<
   WidgetType,
   { title: string; Component: FC<WidgetComponentProps>; defaultW: number; defaultH: number }
 > = {
-  clock: { title: "", Component: ClockWidget, defaultW: 1, defaultH: 1 },
+  clock: { title: "", Component: ClockWidgetMock, defaultW: 1, defaultH: 1 },
   notes: { title: "Notater", Component: NotesWidget, defaultW: 3, defaultH: 1.5 },
   calendar: { title: "Kalender", Component: CalendarWidget, defaultW: 2, defaultH: 3.5 },
   google_search: {
   title: "",
-  Component: GoogleSearchWidget,
+  Component: SearchWidgetMock,
   defaultW: 2,
   defaultH: 1,
 },

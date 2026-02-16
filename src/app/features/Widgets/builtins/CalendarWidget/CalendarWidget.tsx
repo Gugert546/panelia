@@ -1,6 +1,6 @@
 import { useMemo, useState, useEffect } from "react";
 import Calendar from "react-calendar";
-import type { WidgetComponentProps } from "../WidgetRegistry";
+import type { WidgetComponentProps } from "../../registry/WidgetRegistry";
 
 type CalendarConfig = {
   selectedDate?: string; // YYYY-MM-DD

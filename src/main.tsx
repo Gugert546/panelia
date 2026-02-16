@@ -4,7 +4,7 @@
 import { createRoot } from 'react-dom/client'
 import "react-calendar/dist/Calendar.css";
 import './index.css'
-import App from './App.tsx'
+import App from '../src/app/App'
 
 
 createRoot(document.getElementById('root')!).render(
