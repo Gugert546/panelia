@@ -6,7 +6,7 @@ import { testFetchNews } from "./app/features/Widgets/builtins/NewsWidget/NewsWi
 async function runTest() {
   console.log("Testing merged NewsWidget API...");
 
-  await testFetchNews("no");
+  await testFetchNews("no"); // Input land for nyheter
 }
 
 runTest();
