@@ -5,7 +5,7 @@ const API_KEY = import.meta.env.VITE_WORLD_NEWS_API_KEY;
 export async function fetchTopNewsByCountry(country: string): Promise<NewsResponse> {
 
   const res = await fetch(
-    `https://api.worldnewsapi.com/top-news?source-country=${country}`,
+    `https://api.worldnewsapi.com/search-news?source-countries=${country}`,
     {
       headers: {
         "x-api-key": API_KEY
@@ -16,7 +16,7 @@ export async function fetchTopNewsByCountry(country: string): Promise<NewsRespon
   const data = await res.json();
 
   return {
-    articles: (data.top_news || []).map((article: any) => ({
+    articles: (data.news || []).map((article: any) => ({
       title: article.title,
       url: article.url
     }))

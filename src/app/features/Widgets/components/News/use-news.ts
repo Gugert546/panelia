@@ -8,13 +8,17 @@ export function useNews() {
   const [loading, setLoading] = useState(false);
 
   async function loadNews(country: string) {
+
+    console.log("LoadNews triggered with:", country);
     setLoading(true);
 
     const result = await fetchTopNewsByCountry(country);
+    console.log("Processed result:", result);
 
     setArticles(result.articles);
     setLoading(false);
   }
+
 
   return {
     articles,
