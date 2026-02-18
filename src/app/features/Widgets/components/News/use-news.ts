@@ -1,3 +1,4 @@
+/*
 import { useState } from "react";
 import { fetchTopNewsByCountry } from "./news-api";
 import type { NewsArticle } from "./news-types";
@@ -27,3 +28,4 @@ export function useNews() {
   };
 
 }
+*/

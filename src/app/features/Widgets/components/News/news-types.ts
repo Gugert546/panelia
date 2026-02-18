@@ -1,4 +1,4 @@
-
+/*
 export type NewsArticle = {
   title: string;
   url: string;
@@ -7,3 +7,4 @@ export type NewsArticle = {
 export type NewsResponse = {
   articles: NewsArticle[];
 };
+*/

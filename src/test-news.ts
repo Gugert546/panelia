@@ -1,19 +1,12 @@
 
 // Denne filen er KUN for å teste om World News API-kallet fungerer. 
 
-import { fetchTopNewsByCountry } from "./app/features/Widgets/components/News/news-api";
+import { testFetchNews } from "./app/features/Widgets/builtins/NewsWidget/NewsWidget";
 
-async function testNews() {
-  try {
-    console.log("sTesting news API...");
+async function runTest() {
+  console.log("Testing merged NewsWidget API...");
 
-    const result = await fetchTopNewsByCountry("no");
-
-    console.log("✅ Result:", result);
-
-  } catch (err) {
-    console.error("Error:", err);
-  }
+  await testFetchNews("no");
 }
 
-testNews();
+runTest();

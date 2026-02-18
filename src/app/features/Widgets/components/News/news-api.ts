@@ -1,3 +1,4 @@
+/*
 import type { NewsResponse } from "./news-types";
 
 const API_KEY = import.meta.env.VITE_WORLD_NEWS_API_KEY;
@@ -23,3 +24,4 @@ export async function fetchTopNewsByCountry(country: string): Promise<NewsRespon
   };
 
 }
+*/
