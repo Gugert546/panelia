@@ -1,0 +1,7 @@
+npm list react
+
+npm install react react-dom
+npm install -D @types/react @types/react-dom
+
+npm start
+npm run dev
