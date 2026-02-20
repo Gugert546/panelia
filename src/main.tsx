@@ -11,3 +11,4 @@ createRoot(document.getElementById('root')!).render(
   <App />
 )
 
+import "./test-news"; // <-- Midlertidig linje for å teste News-api call
