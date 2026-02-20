@@ -5,6 +5,8 @@ import Sidebar from "../../components/sidebar";
 import bg from "../../../assets/sol.png";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget.tsx";
 
+import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+
 
 
 export default function DashboardPage() {
@@ -46,7 +48,8 @@ export default function DashboardPage() {
         >
           <ClockWidgetMock />
           <SearchWidgetMock />
-          <NewsWidget />
+          <WeatherWidgetUI />
+         
         </div>
       </main>
     </div>
