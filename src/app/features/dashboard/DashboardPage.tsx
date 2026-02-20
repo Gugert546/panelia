@@ -4,6 +4,8 @@ import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidge
 import Sidebar from "../../components/sidebar";
 import bg from "../../../assets/sol.png";
 
+import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+
 
 
 export default function DashboardPage() {
@@ -45,6 +47,7 @@ export default function DashboardPage() {
         >
           <ClockWidgetMock />
           <SearchWidgetMock />
+          <WeatherWidgetUI />
         </div>
       </main>
     </div>
