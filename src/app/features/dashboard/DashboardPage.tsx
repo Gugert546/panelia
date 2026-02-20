@@ -3,6 +3,7 @@ import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget.tsx";
 import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import Sidebar from "../../components/sidebar";
 import bg from "../../../assets/sol.png";
+import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget.tsx";
 
 
 
@@ -45,6 +46,7 @@ export default function DashboardPage() {
         >
           <ClockWidgetMock />
           <SearchWidgetMock />
+          <NewsWidget />
         </div>
       </main>
     </div>
