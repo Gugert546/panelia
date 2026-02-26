@@ -1,21 +1,15 @@
-
-// GENERELLE IMPORTS
-
-import bg from "../../../assets/sol.png";
-import Sidebar from "../../components/sidebar";
-import Chat from "../../components/chatUI";
-import EditPanel from "../../components/editPanel";
-
-// REACT IMPORT:
-
 import { useState } from "react";
+import Sidebar from "../../components/sidebar";
+import EditPanel from "../../components/editPanel";
+import bg from "../../../assets/sol.png";
 
-// WIDGETS IMPORTS:
+// Widget imports
 
-import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget.tsx";
-import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
-import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
-import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget.tsx";
+import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
+import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
+import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
+import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+//import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidget";
 
 
 
@@ -23,14 +17,29 @@ export default function DashboardPage() {
 
   const SIDEBAR_WIDTH = 86;
 
-  const [isChatVisible, setIsChatVisible] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  // Funksjon for å toggle chat-vinduet
-  const toggleChat = () => {
-    setIsChatVisible((prev) => !prev);
+  // Liste over tilgjengelige widgets
+  const AVAILABLE_WIDGETS = [
+    { id: "clock", label: "Klokke" },
+    { id: "search", label: "Søk" },
+    { id: "news", label: "Nyheter" },
+    { id: "weather", label: "Vær" },
+    //{ id: "notes", label: "Notater" }
+  ];
+  
+  const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
+    clock: <ClockWidget />,
+    search: <SearchWidget />,
+    news: <NewsWidget />,
+    weather: <WeatherWidget />,
+    //notes: <NotesWidget />
   };
- 
+
+
+  // Hvilke widgets er aktive på siden
+  const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]); // Starter med disse 2 aktive
+
   return (
     <div
       style={{
@@ -43,14 +52,22 @@ export default function DashboardPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-
-      {/* Toggle når Rediger trykkes */}
       <Sidebar onEditClick={() => setEditOpen(prev => !prev)} />
 
-      {/* Rediger-panel */}
-      <EditPanel open={editOpen} onClose={() => setEditOpen(false)} />
+      <EditPanel
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        availableWidgets={AVAILABLE_WIDGETS}
+        activeWidgets={activeWidgets}
+        toggleWidget={(id) => {
+          setActiveWidgets(prev =>
+            prev.includes(id)
+              ? prev.filter(w => w !== id)
+              : [...prev, id]
+          );
+        }}
+      />
 
-      {/* INNHOLD */}
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
@@ -69,46 +86,13 @@ export default function DashboardPage() {
             alignItems: "center",
           }}
         >
-          <ClockWidgetMock />
-          <SearchWidgetMock />
-          <WeatherWidgetUI />
-          <NewsWidget />
-          
+          {activeWidgets.map(widgetId => (
+            <div key={widgetId}>
+              {WIDGET_COMPONENTS[widgetId]}
+            </div>
+          ))}
         </div>
       </main>
-
-      {/* Chat Toggle Button */}
-      <button
-        onClick={toggleChat}
-        style={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          padding: "10px 20px",
-          fontSize: "16px",
-          color: "#fff",
-          backgroundColor: "#007BFF",
-          border: "none",
-          borderRadius: "50px",
-          cursor: "pointer",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        {isChatVisible ? "Close Chat" : "Open Chat"}
-      </button>
-
-      {/* Chat Window */}
-      {isChatVisible && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 80, //høyde fra bunn av skjermen
-            right: 20, //lengde fra høyre kant
-          }}
-        >
-          <Chat />
-        </div>
-      )}
     </div>
   );
 }
