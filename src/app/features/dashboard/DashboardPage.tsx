@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+
 import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget.tsx";
 import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import Sidebar from "../../components/sidebar";
@@ -6,6 +6,7 @@ import bg from "../../../assets/sol.png";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget.tsx";
 import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import Chat from "../../components/chatUI";
+import { useState } from "react";
 
 export default function DashboardPage() {
   const SIDEBAR_WIDTH = 86;
@@ -53,6 +54,7 @@ export default function DashboardPage() {
           <SearchWidgetMock />
           <WeatherWidgetUI />
           <NewsWidget />
+          
         </div>
       </main>
 

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { sendMessageToAI } from './aiLogic';
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -8,12 +9,18 @@ const Chat: React.FC = () => {
     setInput(e.target.value);
   };
 
-  const handleSend = () => {
+  const handleSend = async() => {
     if (input.trim()) {
       // Add the user's message to the chat
       setMessages((prev) => [...prev, { sender: 'user', text: input }]);
+      try {
+        const aiResponse = await sendMessageToAI(input);
+        setMessages((prev) => [...prev, { sender: 'ai', text: aiResponse.output_text }]);
+      } catch (error) {
+        console.error('Error sending message to AI:', error);
+        setMessages((prev) => [...prev, { sender: 'ai', text: 'Sorry, something went wrong.' }]);
+      }
       setInput('');
-      // Logic for AI response will be handled in a separate file
     }
   };
 

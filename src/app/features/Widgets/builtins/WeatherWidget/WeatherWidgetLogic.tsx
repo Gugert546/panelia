@@ -61,7 +61,7 @@ async function reverseGeocode(lat: number, lon: number): Promise<string> {
 }
 
 async function fetchWeatherFromProxy(lat: number, lon: number) {
-  const r = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
+  const r = await fetch(`https://panelia-server-1044777021142.us-central1.run.app/api/weather?lat=${lat}&lon=${lon}`);
   if (!r.ok) throw new Error(`Værkall feilet (${r.status})`);
   return r.json();
 }
