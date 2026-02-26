@@ -1,22 +1,36 @@
 
-import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget.tsx";
-import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
-import Sidebar from "../../components/sidebar";
+// GENERELLE IMPORTS
+
 import bg from "../../../assets/sol.png";
-import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget.tsx";
-import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+import Sidebar from "../../components/sidebar";
 import Chat from "../../components/chatUI";
+import EditPanel from "../../components/editPanel";
+
+// REACT IMPORT:
+
 import { useState } from "react";
 
-export default function DashboardPage() {
-  const SIDEBAR_WIDTH = 86;
-  const [isChatVisible, setIsChatVisible] = useState(false);
+// WIDGETS IMPORTS:
 
-  // Funksjon for å toggle chat-vinduet 
+import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget.tsx";
+import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
+import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget.tsx";
+
+
+
+export default function DashboardPage() {
+
+  const SIDEBAR_WIDTH = 86;
+
+  const [isChatVisible, setIsChatVisible] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+
+  // Funksjon for å toggle chat-vinduet
   const toggleChat = () => {
     setIsChatVisible((prev) => !prev);
   };
-
+ 
   return (
     <div
       style={{
@@ -29,7 +43,12 @@ export default function DashboardPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <Sidebar />
+
+      {/* Toggle når Rediger trykkes */}
+      <Sidebar onEditClick={() => setEditOpen(prev => !prev)} />
+
+      {/* Rediger-panel */}
+      <EditPanel open={editOpen} onClose={() => setEditOpen(false)} />
 
       {/* INNHOLD */}
       <main
