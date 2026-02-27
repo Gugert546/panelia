@@ -3,14 +3,12 @@ import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import bg from "../../../assets/sol.png";
 
-import RGL from "react-grid-layout";
-import type { LayoutItem } from "react-grid-layout";
+// Grid
+import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-const GridLayout = RGL as unknown as React.FC<any>;
-
-// Widget imports
+// Widgets
 import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
 import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
@@ -37,19 +35,12 @@ export default function DashboardPage() {
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]);
 
-  // Midtstilt vertikal stack
-  const generateLayout = (widgets: string[]): LayoutItem[] => {
-    return widgets.map((id, index) => ({
-      i: id,
-      x: 10,
-      y: index * 4,
-      w: 4,
-      h: 4,
-      static: true
-    }));
+  const widgetLayouts: Record<string, { w: number; h: number; x: number }> = {
+    clock:   { w: 2, h: 1, x: 5 },
+    search:  { w: 6, h: 1, x: 3 },
+    news:    { w: 4, h: 2, x: 4 },
+    weather: { w: 3, h: 1, x: 4 },
   };
-
-  const gridWidth = window.innerWidth - SIDEBAR_WIDTH;
 
   return (
     <div
@@ -86,25 +77,28 @@ export default function DashboardPage() {
           paddingTop: 120,
         }}
       >
-        <div style={{ width: gridWidth }}>
-          <GridLayout
-            layout={generateLayout(activeWidgets)}
-            cols={24}
-            rowHeight={30}
-            width={gridWidth}
-            margin={[10, 10]}
-            isDraggable={false}
-            isResizable={false}
-            compactType={null}
-            preventCollision={true}
-          >
-            {activeWidgets.map(widgetId => (
-              <div key={widgetId}>
-                {WIDGET_COMPONENTS[widgetId]}
-              </div>
-            ))}
-          </GridLayout>
-        </div>
+        <GridLayout
+          className="layout"
+          cols={12}
+          rowHeight={80}
+          width={window.innerWidth - SIDEBAR_WIDTH}
+          isDraggable={false}
+          isResizable={false}
+          margin={[20, 8]}
+          containerPadding={[20, 20]}
+        >
+          {activeWidgets.map((widgetId, index) => (
+            <div
+              key={widgetId}
+              data-grid={{
+                ...widgetLayouts[widgetId],
+                y: index,
+              }}
+            >
+              {WIDGET_COMPONENTS[widgetId]}
+            </div>
+          ))}
+        </GridLayout>
       </main>
     </div>
   );
