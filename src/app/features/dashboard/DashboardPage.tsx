@@ -3,42 +3,53 @@ import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import bg from "../../../assets/sol.png";
 
-// Widget imports
+import RGL from "react-grid-layout";
+import type { LayoutItem } from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
 
+const GridLayout = RGL as unknown as React.FC<any>;
+
+// Widget imports
 import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
 import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
-//import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidget";
-
-
 
 export default function DashboardPage() {
 
   const SIDEBAR_WIDTH = 86;
-
   const [editOpen, setEditOpen] = useState(false);
 
-  // Liste over tilgjengelige widgets
   const AVAILABLE_WIDGETS = [
     { id: "clock", label: "Klokke" },
     { id: "search", label: "Søk" },
     { id: "news", label: "Nyheter" },
     { id: "weather", label: "Vær" },
-    //{ id: "notes", label: "Notater" }
   ];
-  
+
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
     clock: <ClockWidget />,
     search: <SearchWidget />,
     news: <NewsWidget />,
     weather: <WeatherWidget />,
-    //notes: <NotesWidget />
   };
 
+  const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]);
 
-  // Hvilke widgets er aktive på siden
-  const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]); // Starter med disse 2 aktive
+  // Midtstilt vertikal stack
+  const generateLayout = (widgets: string[]): LayoutItem[] => {
+    return widgets.map((id, index) => ({
+      i: id,
+      x: 10,
+      y: index * 4,
+      w: 4,
+      h: 4,
+      static: true
+    }));
+  };
+
+  const gridWidth = window.innerWidth - SIDEBAR_WIDTH;
 
   return (
     <div
@@ -72,25 +83,27 @@ export default function DashboardPage() {
         style={{
           marginLeft: SIDEBAR_WIDTH,
           height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          paddingTop: 220,
+          paddingTop: 120,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            alignItems: "center",
-          }}
-        >
-          {activeWidgets.map(widgetId => (
-            <div key={widgetId}>
-              {WIDGET_COMPONENTS[widgetId]}
-            </div>
-          ))}
+        <div style={{ width: gridWidth }}>
+          <GridLayout
+            layout={generateLayout(activeWidgets)}
+            cols={24}
+            rowHeight={30}
+            width={gridWidth}
+            margin={[10, 10]}
+            isDraggable={false}
+            isResizable={false}
+            compactType={null}
+            preventCollision={true}
+          >
+            {activeWidgets.map(widgetId => (
+              <div key={widgetId}>
+                {WIDGET_COMPONENTS[widgetId]}
+              </div>
+            ))}
+          </GridLayout>
         </div>
       </main>
     </div>

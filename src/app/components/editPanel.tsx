@@ -27,7 +27,7 @@ export default function EditPanel({
         left: open ? 86 : "-50%",
         width: "50%",
         height: "100%",
-        background: "rgba(255,255,255,0.95)",
+        background: "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(10px)",
         transition: "left 0.3s ease",
         zIndex: 999,
