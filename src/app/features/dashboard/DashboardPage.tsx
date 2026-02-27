@@ -7,6 +7,7 @@ import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget.tsx";
 import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import Chat from "../../components/chatUI";
 import { useState } from "react";
+import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi.tsx";
 
 export default function DashboardPage() {
   const SIDEBAR_WIDTH = 86;
@@ -54,6 +55,7 @@ export default function DashboardPage() {
           <SearchWidgetMock />
           <WeatherWidgetUI />
           <NewsWidget />
+          <BookmarkUi />
           
         </div>
       </main>
