@@ -2,6 +2,7 @@
 import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget";
 import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import Sidebar from "../../components/sidebar";
+
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import Chat from "../../components/chatUI";
@@ -41,7 +42,7 @@ export default function DashboardPage() {
   const hour = new Date().getHours();
 
   // DAG
-  if (hour >= 6 && hour < 8) return sol1; // Mellom 05:00 og 08:00 her
+  if (hour >= 6 && hour < 8) return sol1; // Mellom 06:00 og 08:00 her
   if (hour >= 8 && hour < 11) return sol2; // Mellom 08:00 og 11:00 her
   if (hour >= 11 && hour < 17) return sol3; // Mellom 11:00 og 17:00 osv...
   if (hour >= 17 && hour < 20) return sol2;

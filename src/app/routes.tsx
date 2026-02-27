@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./features/auth/useAuth";
+
 import DashboardPage from "./features/dashboard/DashboardPage";
 
 import type { ReactNode } from "react";
@@ -21,8 +22,8 @@ const ProtectedRoute = ({ children }: ProtectedProps) => {
 export default function AppRoutes() {
   return (
     <Routes>
+      {/* Public route */}
      
-
       {/* Protected route */}
       <Route
         path="/dashboard"
