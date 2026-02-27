@@ -28,7 +28,7 @@ export default function DashboardPage() {
     useEffect(() => {
       const interval = setInterval(() => {
         setTime(new Date());
-      }, 60000); // oppdater hvert minutt
+      }, 900000); // oppdater hvert 15.minutt
 
       return () => clearInterval(interval);
     }, []);
