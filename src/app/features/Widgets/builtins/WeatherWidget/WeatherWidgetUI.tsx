@@ -1,21 +1,11 @@
 import { useWeatherWidget } from "./WeatherWidgetLogic";
+import WidgetPane from "../../components/WidgetPane"; // samme som NewsWidget
 
 export default function WeatherWidgetUI() {
   const { state, actions } = useWeatherWidget();
 
   return (
-    <div
-      style={{
-        width: 320,
-        borderRadius: 16,
-        padding: 14,
-        background: "rgba(255,255,255,0.35)",
-        border: "1px solid rgba(255,255,255,0.35)",
-        backdropFilter: "blur(12px)",
-        boxShadow: "0 8px 24px rgba(0,0,0,0.16)",
-        color: "#111",
-      }}
-    >
+    <WidgetPane title="Vær">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div style={{ fontWeight: 800 }}>Vær</div>
 
@@ -46,13 +36,25 @@ export default function WeatherWidgetUI() {
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div style={{ fontSize: 12, opacity: 0.8 }}>{state.data.placeLabel}</div>
 
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1 }}>
                 {state.data.temperatureC}°
               </div>
-              <div style={{ fontSize: 14, fontWeight: 700, opacity: 0.9 }}>
-                {state.data.symbolCode ?? "—"}
-              </div>
+
+              {state.data.symbolCode ? (
+                <img
+                  src={`/yr-icons/${state.data.symbolCode}.png`}
+                  alt={state.data.symbolCode}
+                  width={40}
+                  height={40}
+                  style={{ display: "block" }}
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                />
+              ) : (
+                <span>—</span>
+              )}
             </div>
 
             <div style={{ fontSize: 14, opacity: 0.9 }}>
@@ -65,6 +67,6 @@ export default function WeatherWidgetUI() {
           </div>
         )}
       </div>
-    </div>
+    </WidgetPane>
   );
 }
