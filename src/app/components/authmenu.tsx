@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { signInWithRedirect, signOut } from "firebase/auth";
+import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../../lib/firebase/client";
 import { useAuth } from "../features/auth/useAuth";
 
@@ -8,7 +8,7 @@ export default function AuthMenu() {
   const { user } = useAuth();
 
   const handleGoogleLogin = async () => {
-  await signInWithRedirect(auth, googleProvider);
+  await signInWithPopup(auth, googleProvider);
 };
 
   const handleLogout = async () => {
