@@ -33,7 +33,7 @@ export default function AppRoutes() {
           </ProtectedRoute>
         }
 />
-      /
+      
 
       {/* Redirect unknown routes */}
       <Route path="*" element={<Navigate to="/dashboard" />} />
