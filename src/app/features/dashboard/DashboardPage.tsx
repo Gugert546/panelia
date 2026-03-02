@@ -6,7 +6,7 @@ import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import Chat from "../../components/chatUI";
-import GridLayout from "react-grid-layout";
+import GridLayout from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
@@ -51,7 +51,7 @@ export default function DashboardPage() {
   ];
 
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
-    clock: <ClockWidget  />,
+    clock: <ClockWidget size="medium" />,
     search: <SearchWidget />,
     news: <NewsWidget />,
     weather: <WeatherWidget />,
@@ -160,8 +160,8 @@ export default function DashboardPage() {
           cols={20}
           rowHeight={50}
           width={window.innerWidth - SIDEBAR_WIDTH}
-          isDraggable={false}
-          isResizable={false}
+          isDraggable={true}
+          isResizable={true}
           margin={[20, 8]}
           containerPadding={[20, 20]}
           style={{ minHeight: "100%" }}

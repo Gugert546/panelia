@@ -5,7 +5,7 @@ export default function NotesWidget() {
   const { state, actions } = useNotesWidget();
 
   return (
-    <WidgetPane title="Notes">
+    <WidgetPane >
       <textarea
         value={state.text}
         onChange={(e) => actions.setText(e.target.value)}
