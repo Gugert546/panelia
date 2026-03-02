@@ -5,6 +5,7 @@ import Sidebar from "../../components/sidebar";
 
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
 import Chat from "../../components/chatUI";
 import { useState } from "react";
 import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
@@ -107,6 +108,7 @@ export default function DashboardPage() {
           <WeatherWidgetUI />
           <NewsWidget />
           <BookmarkUi />
+          <NotesWidget />
           
         </div>
       </main>
