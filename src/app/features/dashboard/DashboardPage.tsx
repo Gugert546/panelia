@@ -24,10 +24,7 @@ import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
-import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
-import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget";
-import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 
 type WidgetSize = "small" | "medium" | "large" | "wide";
 
@@ -42,6 +39,7 @@ export default function DashboardPage() {
   
   const SIDEBAR_WIDTH = 60;
   const [editOpen, setEditOpen] = useState(false);
+  const [isChatVisible, setIsChatVisible] = useState(false);
 
   const AVAILABLE_WIDGETS = [
     { id: "clock", label: "Klokke" },
@@ -53,7 +51,7 @@ export default function DashboardPage() {
   ];
 
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
-    clock: <ClockWidget />,
+    clock: <ClockWidget  />,
     search: <SearchWidget />,
     news: <NewsWidget />,
     weather: <WeatherWidget />,
@@ -66,10 +64,10 @@ export default function DashboardPage() {
   const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
     clock: "small",
     search: "wide",
-    news: "medium",
+    news: "small",
     weather: "small",
-    Bookmark: "medium",
-    Notes: "medium",
+    Bookmark: "small",
+    Notes: "small",
   });
 
 
@@ -123,6 +121,16 @@ export default function DashboardPage() {
       }}
     >
       <Sidebar onEditClick={() => setEditOpen(prev => !prev)} />
+      <div
+      style={{
+        position: "fixed",
+        top: 20,
+        right: 20,
+        zIndex: 1000,
+      }}
+    >
+      <AuthMenu />
+    </div>
 
       <EditPanel
         open={editOpen}
@@ -177,6 +185,38 @@ export default function DashboardPage() {
           })}
         </GridLayout>
       </main>
+            {/* Chat Toggle Button */}
+            <button
+        onClick={toggleChat}
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          padding: "10px 20px",
+          fontSize: "16px",
+          color: "#fff",
+          backgroundColor: "#007BFF",
+          border: "none",
+          borderRadius: "50px",
+          cursor: "pointer",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        {isChatVisible ? "Close Chat" : "Open Chat"}
+      </button>
+
+      {/* Chat Window */}
+      {isChatVisible && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: 80, //høyde fra bunn av skjermen
+            right: 20, //lengde fra høyre kant
+          }}
+        >
+          <Chat />
+        </div>
+      )}
     </div>
   );
 }

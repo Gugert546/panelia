@@ -33,7 +33,7 @@ export default function EditPanel({
         position: "fixed",
         top: 0,
         left: open ? 86 : "-50%",
-        width: "30%",
+        width: "15%",
         height: "100%",
         background: "#f7cdb3",
         backdropFilter: "blur(10px)",
@@ -57,7 +57,7 @@ export default function EditPanel({
               key={widget.id}
               style={{
                 padding: 12,
-                width: "50%",
+                width: "90%",
                 marginBottom: 10,
                 borderRadius: 8,
                 cursor: "pointer",
