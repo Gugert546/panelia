@@ -23,7 +23,7 @@ const SIZE_MAP = {
 
 export default function DashboardPage() {
 
-  const SIDEBAR_WIDTH = 86;
+  const SIDEBAR_WIDTH = 60;
   const [editOpen, setEditOpen] = useState(false);
 
   const AVAILABLE_WIDGETS = [
@@ -82,19 +82,20 @@ export default function DashboardPage() {
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
-          height: "100%",
-          paddingTop: 220,
+          height: "100vh",
+          position: "relative"
         }}
       >
         <GridLayout
           className="layout"
-          cols={12}
-          rowHeight={90}
+          cols={20}
+          rowHeight={50}
           width={window.innerWidth - SIDEBAR_WIDTH}
           isDraggable={false}
           isResizable={false}
           margin={[20, 8]}
           containerPadding={[20, 20]}
+          style={{ minHeight: "100%" }}
         >
           {activeWidgets.map((widgetId, index) => {
 
@@ -105,7 +106,7 @@ export default function DashboardPage() {
                 key={widgetId}
                 data-grid={{
                   ...size,
-                  x: Math.floor((12 - size.w) / 2),
+                  x: Math.floor((20 - size.w) / 2),
                   y: index * size.h,
                 }}
               >
