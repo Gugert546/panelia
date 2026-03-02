@@ -3,20 +3,28 @@ type Widget = {
   label: string;
 };
 
+type WidgetSize = "small" | "medium" | "large" | "wide";
+
 type EditPanelProps = {
   open: boolean;
   onClose: () => void;
   availableWidgets: Widget[];
   activeWidgets: string[];
   toggleWidget: (id: string) => void;
+  widgetSizes: Record<string, WidgetSize>;
+  setWidgetSizes: React.Dispatch<React.SetStateAction<Record<string, WidgetSize>>>;
 };
+
+const SIZE_OPTIONS: WidgetSize[] = ["small", "medium", "large", "wide"];
 
 export default function EditPanel({
   open,
   onClose,
   availableWidgets,
   activeWidgets,
-  toggleWidget
+  toggleWidget,
+  widgetSizes,
+  setWidgetSizes
 }: EditPanelProps) {
 
   return (
@@ -47,7 +55,6 @@ export default function EditPanel({
           return (
             <div
               key={widget.id}
-              onClick={() => toggleWidget(widget.id)}
               style={{
                 padding: 12,
                 width: "50%",
@@ -58,8 +65,49 @@ export default function EditPanel({
                 border: isActive ? "2px solid #4da3ff" : "1px solid #ddd"
               }}
             >
-              {widget.label}
-              {isActive && " ✓"}
+              {/* Toggle */}
+              <div onClick={() => toggleWidget(widget.id)}>
+                {widget.label}
+                {isActive && " ✓"}
+              </div>
+
+              {/* Size controls */}
+              {isActive && (
+                <div style={{ marginTop: 8 }}>
+                  {SIZE_OPTIONS.map(size => (
+                    <button
+                      key={size}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setWidgetSizes(prev => ({
+                          ...prev,
+                          [widget.id]: size
+                        }));
+                      }}
+                      style={{
+                        marginRight: 6,
+                        marginTop: 4,
+                        padding: "2px 6px",
+                        borderRadius: 4,
+                        border: "none",
+                        fontSize: 12,
+                        background:
+                          widgetSizes[widget.id] === size
+                            ? "#4da3ff"
+                            : "#ddd",
+                        color:
+                          widgetSizes[widget.id] === size
+                            ? "white"
+                            : "#333",
+                        cursor: "pointer"
+                      }}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+              )}
+
             </div>
           );
         })}

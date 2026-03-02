@@ -3,16 +3,23 @@ import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import bg from "../../../assets/sol.png";
 
-// Grid
 import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-// Widgets
 import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
 import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+
+type WidgetSize = "small" | "medium" | "large" | "wide";
+
+const SIZE_MAP = {
+  small:  { w: 2, h: 1 },
+  medium: { w: 4, h: 1 },
+  large:  { w: 6, h: 2 },
+  wide:   { w: 8, h: 1 },
+};
 
 export default function DashboardPage() {
 
@@ -35,12 +42,12 @@ export default function DashboardPage() {
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]);
 
-  const widgetLayouts: Record<string, { w: number; h: number; x: number }> = {
-    clock:   { w: 2, h: 1, x: 5 },
-    search:  { w: 6, h: 1, x: 3 },
-    news:    { w: 4, h: 2, x: 4 },
-    weather: { w: 3, h: 1, x: 4 },
-  };
+  const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
+    clock: "small",
+    search: "wide",
+    news: "medium",
+    weather: "small",
+  });
 
   return (
     <div
@@ -61,6 +68,8 @@ export default function DashboardPage() {
         onClose={() => setEditOpen(false)}
         availableWidgets={AVAILABLE_WIDGETS}
         activeWidgets={activeWidgets}
+        widgetSizes={widgetSizes}
+        setWidgetSizes={setWidgetSizes}
         toggleWidget={(id) => {
           setActiveWidgets(prev =>
             prev.includes(id)
@@ -74,30 +83,36 @@ export default function DashboardPage() {
         style={{
           marginLeft: SIDEBAR_WIDTH,
           height: "100%",
-          paddingTop: 120,
+          paddingTop: 220,
         }}
       >
         <GridLayout
           className="layout"
           cols={12}
-          rowHeight={80}
+          rowHeight={90}
           width={window.innerWidth - SIDEBAR_WIDTH}
           isDraggable={false}
           isResizable={false}
           margin={[20, 8]}
           containerPadding={[20, 20]}
         >
-          {activeWidgets.map((widgetId, index) => (
-            <div
-              key={widgetId}
-              data-grid={{
-                ...widgetLayouts[widgetId],
-                y: index,
-              }}
-            >
-              {WIDGET_COMPONENTS[widgetId]}
-            </div>
-          ))}
+          {activeWidgets.map((widgetId, index) => {
+
+            const size = SIZE_MAP[widgetSizes[widgetId] || "medium"];
+
+            return (
+              <div
+                key={widgetId}
+                data-grid={{
+                  ...size,
+                  x: Math.floor((12 - size.w) / 2),
+                  y: index * size.h,
+                }}
+              >
+                {WIDGET_COMPONENTS[widgetId]}
+              </div>
+            );
+          })}
         </GridLayout>
       </main>
     </div>
