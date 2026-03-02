@@ -1,16 +1,33 @@
+
 import { useState } from "react";
+import { useEffect } from "react";
+import AuthMenu from "../../components/authmenu";
+
 import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
-import bg from "../../../assets/sol.png";
-
+import Chat from "../../components/chatUI";
 import GridLayout from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
+// Bakgrunnsbilder for dag/natt
+import sol1 from "../../../assets/panelia-bg/Sol 1.png";
+import sol2 from "../../../assets/panelia-bg/Sol 2.png";
+import sol3 from "../../../assets/panelia-bg/Sol 3.png";
+import natt1 from "../../../assets/panelia-bg/Natt 1.png";
+import natt2 from "../../../assets/panelia-bg/Natt 2.png";
+import natt3 from "../../../assets/panelia-bg/Natt 3.png";
+
+//widgets
 import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
 import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
+import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
+import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget";
+import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
 
 type WidgetSize = "small" | "medium" | "large" | "wide";
 
@@ -22,7 +39,7 @@ const SIZE_MAP = {
 };
 
 export default function DashboardPage() {
-
+  
   const SIDEBAR_WIDTH = 60;
   const [editOpen, setEditOpen] = useState(false);
 
@@ -31,6 +48,8 @@ export default function DashboardPage() {
     { id: "search", label: "Søk" },
     { id: "news", label: "Nyheter" },
     { id: "weather", label: "Vær" },
+    { id: "Bookmark", label: "bokmerke" },
+    { id: "Notes", label: "notater" },
   ];
 
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
@@ -38,6 +57,8 @@ export default function DashboardPage() {
     search: <SearchWidget />,
     news: <NewsWidget />,
     weather: <WeatherWidget />,
+    Bookmark: <BookmarkUi />,
+    Notes: <NotesWidget />,
   };
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]);
@@ -47,7 +68,47 @@ export default function DashboardPage() {
     search: "wide",
     news: "medium",
     weather: "small",
+    Bookmark: "medium",
+    Notes: "medium",
   });
+
+
+  // Natt - Dag oppdatering
+    const [, setTime] = useState(new Date());
+
+    useEffect(() => {
+      const interval = setInterval(() => {
+        setTime(new Date());
+      }, 900000); // oppdater hvert 15.minutt
+
+      return () => clearInterval(interval);
+    }, []);
+
+  // Funksjon for å toggle chat-vinduet 
+  const toggleChat = () => {
+    setIsChatVisible((prev) => !prev);
+  };
+
+  const getBackgroundByTime = () => {
+  const hour = new Date().getHours();
+
+  // DAG
+  if (hour >= 6 && hour < 8) return sol1; // Mellom 06:00 og 08:00 her
+  if (hour >= 8 && hour < 11) return sol2; // Mellom 08:00 og 11:00 her
+  if (hour >= 11 && hour < 17) return sol3; // Mellom 11:00 og 17:00 osv...
+  if (hour >= 17 && hour < 20) return sol2;
+
+  // KVELD
+  if (hour >= 20 && hour < 23) return natt1;
+
+  // NATT
+  if (hour >= 23 || hour < 2) return natt2;
+  if (hour >= 2 && hour < 3) return natt3;
+  if (hour >= 3 && hour < 5) return natt2;
+  if (hour >= 5 && hour < 6) return natt1;
+
+  return sol1;
+  };
 
   return (
     <div
@@ -55,7 +116,7 @@ export default function DashboardPage() {
         position: "fixed",
         inset: 0,
         overflow: "hidden",
-        backgroundImage: `url(${bg})`,
+        backgroundImage: `url(${getBackgroundByTime()})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
