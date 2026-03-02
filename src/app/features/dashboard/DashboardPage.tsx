@@ -1,29 +1,79 @@
 
-import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget";
-import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
-import Sidebar from "../../components/sidebar";
-
-import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
-import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
-import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
-import Chat from "../../components/chatUI";
 import { useState } from "react";
-import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
+import { useEffect } from "react";
 import AuthMenu from "../../components/authmenu";
+
+import Sidebar from "../../components/sidebar";
+import EditPanel from "../../components/editPanel";
+import Chat from "../../components/chatUI";
+import GridLayout from "react-grid-layout";
+import "react-grid-layout/css/styles.css";
+import "react-resizable/css/styles.css";
+
+// Bakgrunnsbilder for dag/natt
 import sol1 from "../../../assets/panelia-bg/Sol 1.png";
 import sol2 from "../../../assets/panelia-bg/Sol 2.png";
 import sol3 from "../../../assets/panelia-bg/Sol 3.png";
 import natt1 from "../../../assets/panelia-bg/Natt 1.png";
 import natt2 from "../../../assets/panelia-bg/Natt 2.png";
 import natt3 from "../../../assets/panelia-bg/Natt 3.png";
-import { useEffect } from "react";
+
+//widgets
+import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
+import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
+import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
+import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
+import WeatherWidgetUI from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
+import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
+import ClockWidgetMock from "../Widgets/builtins/ClockWidget/ClockWidget";
+import SearchWidgetMock from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
+
+type WidgetSize = "small" | "medium" | "large" | "wide";
+
+const SIZE_MAP = {
+  small:  { w: 2, h: 1 },
+  medium: { w: 4, h: 1 },
+  large:  { w: 6, h: 2 },
+  wide:   { w: 8, h: 1 },
+};
 
 export default function DashboardPage() {
-  const SIDEBAR_WIDTH = 86;
-  const [isChatVisible, setIsChatVisible] = useState(false);
+  
+  const SIDEBAR_WIDTH = 60;
+  const [editOpen, setEditOpen] = useState(false);
+
+  const AVAILABLE_WIDGETS = [
+    { id: "clock", label: "Klokke" },
+    { id: "search", label: "Søk" },
+    { id: "news", label: "Nyheter" },
+    { id: "weather", label: "Vær" },
+    { id: "Bookmark", label: "bokmerke" },
+    { id: "Notes", label: "notater" },
+  ];
+
+  const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
+    clock: <ClockWidget />,
+    search: <SearchWidget />,
+    news: <NewsWidget />,
+    weather: <WeatherWidget />,
+    Bookmark: <BookmarkUi />,
+    Notes: <NotesWidget />,
+  };
+
+  const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]);
+
+  const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
+    clock: "small",
+    search: "wide",
+    news: "medium",
+    weather: "small",
+    Bookmark: "medium",
+    Notes: "medium",
+  });
 
 
-// Natt - Dag oppdatering
+  // Natt - Dag oppdatering
     const [, setTime] = useState(new Date());
 
     useEffect(() => {
@@ -58,93 +108,75 @@ export default function DashboardPage() {
   if (hour >= 5 && hour < 6) return natt1;
 
   return sol1;
-};
+  };
 
   return (
     <div
       style={{
-          position: "fixed",
-          inset: 0,
-          overflow: "hidden",
-          backgroundImage: `url(${getBackgroundByTime()})`,
-          backgroundSize: "cover",
-          backgroundPosition: "center center",
-          backgroundRepeat: "no-repeat",
-          backgroundAttachment: "fixed",
-        }}
-    >
-      <Sidebar />
-    <div
-      style={{
         position: "fixed",
-        top: 20,
-        right: 20,
-        zIndex: 1000,
+        inset: 0,
+        overflow: "hidden",
+        backgroundImage: `url(${getBackgroundByTime()})`,
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
       }}
     >
-      <AuthMenu />
-    </div>
-      {/* INNHOLD */}
+      <Sidebar onEditClick={() => setEditOpen(prev => !prev)} />
+
+      <EditPanel
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        availableWidgets={AVAILABLE_WIDGETS}
+        activeWidgets={activeWidgets}
+        widgetSizes={widgetSizes}
+        setWidgetSizes={setWidgetSizes}
+        toggleWidget={(id) => {
+          setActiveWidgets(prev =>
+            prev.includes(id)
+              ? prev.filter(w => w !== id)
+              : [...prev, id]
+          );
+        }}
+      />
+
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
-          height: "100%",
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "flex-start",
-          paddingTop: 220,
+          height: "100vh",
+          position: "relative"
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 16,
-            alignItems: "center",
-          }}
+        <GridLayout
+          className="layout"
+          cols={20}
+          rowHeight={50}
+          width={window.innerWidth - SIDEBAR_WIDTH}
+          isDraggable={false}
+          isResizable={false}
+          margin={[20, 8]}
+          containerPadding={[20, 20]}
+          style={{ minHeight: "100%" }}
         >
-          <ClockWidgetMock />
-          <SearchWidgetMock />
-          <WeatherWidgetUI />
-          <NewsWidget />
-          <BookmarkUi />
-          <NotesWidget />
-          
-        </div>
+          {activeWidgets.map((widgetId, index) => {
+
+            const size = SIZE_MAP[widgetSizes[widgetId] || "medium"];
+
+            return (
+              <div
+                key={widgetId}
+                data-grid={{
+                  ...size,
+                  x: Math.floor((20 - size.w) / 2),
+                  y: index * size.h,
+                }}
+              >
+                {WIDGET_COMPONENTS[widgetId]}
+              </div>
+            );
+          })}
+        </GridLayout>
       </main>
-
-      {/* Chat Toggle Button */}
-      <button
-        onClick={toggleChat}
-        style={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          padding: "10px 20px",
-          fontSize: "16px",
-          color: "#fff",
-          backgroundColor: "#007BFF",
-          border: "none",
-          borderRadius: "50px",
-          cursor: "pointer",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        }}
-      >
-        {isChatVisible ? "Close Chat" : "Open Chat"}
-      </button>
-
-      {/* Chat Window */}
-      {isChatVisible && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 80, //høyde fra bunn av skjermen
-            right: 20, //lengde fra høyre kant
-          }}
-        >
-          <Chat />
-        </div>
-      )}
     </div>
   );
 }

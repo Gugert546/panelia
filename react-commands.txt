@@ -5,3 +5,6 @@ npm install -D @types/react @types/react-dom
 
 npm start
 npm run dev
+
+npm install react-grid-layout
+npm install react-resizable
