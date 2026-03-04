@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import  ClockWidget  from "../builtins/ClockWidget/ClockWidget";
 import NotesWidget  from "../builtins/NotesWidget/NotesWidgetUI";
-import { CalendarWidget } from "../builtins/CalendarWidget/CalendarWidget";
+import CalendarWidget  from "../builtins/CalendarWidget/CalendarWidget";
 import SearchWidgetUI from "../builtins/searchWidget/SearchWidgetUI";
 
 
@@ -22,13 +22,17 @@ const ClockWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
   return <ClockWidget size={size} />;
 };
 
+const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <CalendarWidget />;
+};
+
 export const WIDGETS: Record<
   WidgetType,
   { title: string; Component: FC<WidgetComponentProps>; defaultW: number; defaultH: number }
 > = {
   clock: { title: "", Component: ClockWidgetAdapter, defaultW: 1, defaultH: 1 },
   notes: { title: "Notater", Component: NotesWidget, defaultW: 3, defaultH: 1.5 },
-  calendar: { title: "Kalender", Component: CalendarWidget, defaultW: 2, defaultH: 3.5 },
+  calendar: { title: "Kalender", Component: CalendarWidgetAdapter, defaultW: 2, defaultH: 3.5 },
   google_search: {
   title: "",
   Component: SearchWidgetUI,

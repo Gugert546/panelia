@@ -95,7 +95,7 @@ export default function DashboardPage() {
   // Handle sidebar navigation
   const handleSidebarNavigation = (itemKey: string) => {
     if (itemKey === "calendar") {
-      setIsCalendarVisible(true);
+      setIsCalendarVisible((prev) => !prev);
     } else if (itemKey === "chat") {
       setIsChatVisible((prev) => !prev);
     }
