@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useEffect } from "react";
 import AuthMenu from "../../components/authmenu";
@@ -6,6 +5,7 @@ import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import Chat from "../../components/chatUI";
+import CalendarWidget from "../Widgets/builtins/CalendarWidget/CalendarWidget";
 import GridLayout from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -40,6 +40,7 @@ export default function DashboardPage() {
   const SIDEBAR_WIDTH = 60;
   const [editOpen, setEditOpen] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
+  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
 
   const AVAILABLE_WIDGETS = [
     { id: "clock", label: "Klokke" },
@@ -87,6 +88,15 @@ export default function DashboardPage() {
     setIsChatVisible((prev) => !prev);
   };
 
+  // Handle sidebar navigation
+  const handleSidebarNavigation = (itemKey: string) => {
+    if (itemKey === "calendar") {
+      setIsCalendarVisible(true);
+    } else if (itemKey === "chat") {
+      setIsChatVisible((prev) => !prev);
+    }
+  };
+
   const getBackgroundByTime = () => {
   const hour = new Date().getHours();
 
@@ -120,13 +130,14 @@ export default function DashboardPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <Sidebar onEditClick={() => setEditOpen(prev => !prev)} />
+      <Sidebar onSidebarNav={handleSidebarNavigation} onEditClick={() => setEditOpen(prev => !prev)} />
       <div
       style={{
         position: "fixed",
         top: 20,
-        right: 20,
+        right: isCalendarVisible ? 920 : 20,
         zIndex: 1000,
+        transition: "right 0.3s ease",
       }}
     >
       <AuthMenu />
@@ -151,15 +162,17 @@ export default function DashboardPage() {
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
+          marginRight: isCalendarVisible ? 900 : 0,
           height: "100vh",
-          position: "relative"
+          position: "relative",
+          transition: "margin-right 0.3s ease",
         }}
       >
         <GridLayout
           className="layout"
           cols={20}
           rowHeight={50}
-          width={window.innerWidth - SIDEBAR_WIDTH}
+          width={window.innerWidth - SIDEBAR_WIDTH - (isCalendarVisible ? 900 : 0)}
           isDraggable={true}
           isResizable={true}
           margin={[20, 8]}
@@ -191,7 +204,7 @@ export default function DashboardPage() {
         style={{
           position: "fixed",
           bottom: 20,
-          right: 20,
+          right: isCalendarVisible ? 920 : 20,
           padding: "10px 20px",
           fontSize: "16px",
           color: "#fff",
@@ -200,6 +213,7 @@ export default function DashboardPage() {
           borderRadius: "50px",
           cursor: "pointer",
           boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+          transition: "right 0.3s ease",
         }}
       >
         {isChatVisible ? "Close Chat" : "Open Chat"}
@@ -211,11 +225,17 @@ export default function DashboardPage() {
           style={{
             position: "fixed",
             bottom: 80, //høyde fra bunn av skjermen
-            right: 20, //lengde fra høyre kant
+            right: isCalendarVisible ? 920 : 20, //lengde fra høyre kant
+            transition: "right 0.3s ease",
           }}
         >
           <Chat />
         </div>
+      )}
+
+      {/* Calendar Sidebar */}
+      {isCalendarVisible && (
+        <CalendarWidget onClose={() => setIsCalendarVisible(false)} />
       )}
     </div>
   );
