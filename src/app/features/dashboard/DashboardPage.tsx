@@ -20,7 +20,7 @@ import natt3 from "../../../assets/panelia-bg/Natt 3.png";
 
 //widgets
 import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
-import SearchWidget from "../Widgets/builtins/searchWidget/GoogleSearchWidget";
+import SearchWidget from "../Widgets/builtins/searchWidget/SearchWidgetUI";
 import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
