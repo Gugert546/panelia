@@ -3,10 +3,9 @@ import React from "react";
 type WidgetPaneProps = {
   title?: string;
   children: React.ReactNode;
-  style?: React.CSSProperties; // ✅ NY
 };
 
-export default function WidgetPane({ title, children, style }: WidgetPaneProps) {
+export default function WidgetPane({ title, children }: WidgetPaneProps) {
   return (
     <div
       style={{
@@ -14,17 +13,17 @@ export default function WidgetPane({ title, children, style }: WidgetPaneProps) 
         padding: 20,
         borderRadius: 20,
 
-        // default glass look
+        // matches floating-on-background look
         background: "rgba(255,255,255,0.15)",
         backdropFilter: "blur(14px)",
+
+        // soft elevation like dashboard layering
         boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
 
         display: "flex",
         flexDirection: "column",
         gap: 12,
         alignItems: "center",
-
-        ...style, // ✅ gjør at NotesWidget kan overstyre glass-bakgrunn
       }}
     >
       {title && (
@@ -39,7 +38,25 @@ export default function WidgetPane({ title, children, style }: WidgetPaneProps) 
         </h3>
       )}
 
-      <div style={{ width: "100%" }}>{children}</div>
+      <div style={{ width: "100%" }}>
+        {children}
+      </div>
     </div>
   );
 }
+
+/*
+
+Eksempler:
+
+<WidgetPane title="Clock">
+  <ClockWidgetMock />
+</WidgetPane>
+
+
+<WidgetPane title="Search">
+  <SearchWidgetMock />
+</WidgetPane>
+
+
+*/ 

@@ -1,39 +1,39 @@
 import { useNotesWidget } from "./NotesWidgetLogic";
-import WidgetPane from "../../components/WidgetPane";
 
 export default function NotesWidget() {
   const { state, actions } = useNotesWidget();
 
   return (
-    <WidgetPane
-      title=""
+    <div
       style={{
-        background: "#e5e7eb",   // ✅ grå widget
-        backdropFilter: "none",  // ✅ fjern blur-glass
-        boxShadow: "none",       // ✅ fjern shadow om du vil
-        alignItems: "stretch",   // ✅ så innhold kan fylle bredden
+        minWidth: 280,
+        padding: 20,
+        borderRadius: 20,
+        background: "#e5e7eb",
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       <div style={{ position: "relative", width: "100%" }}>
         <button
-  type="button"
-  onClick={actions.clear}
-  style={{
-    position: "absolute",
-    top: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: "50%",
-    border: "none",
-    background: "#e5e7eb",   // 👈 endret
-    cursor: "pointer",
-    fontWeight: 700,
-    zIndex: 1,
-  }}
->
-  ×
-</button>
+          type="button"
+          onClick={actions.clear}
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            width: 28,
+            height: 28,
+            borderRadius: "50%",
+            border: "none",
+            background: "#e5e7eb",
+            cursor: "pointer",
+            fontWeight: 700,
+            zIndex: 1,
+          }}
+        >
+          ×
+        </button>
 
         <textarea
           value={state.text}
@@ -53,6 +53,6 @@ export default function NotesWidget() {
           }}
         />
       </div>
-    </WidgetPane>
+    </div>
   );
 }
