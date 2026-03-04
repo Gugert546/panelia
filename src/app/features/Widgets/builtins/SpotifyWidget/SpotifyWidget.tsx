@@ -46,8 +46,8 @@ export default function SpotifyWidget() {
 
   // Spotify connect
  const handleConnect = () => {
-  const clientId = "311e91e754f0449eb4bddba53e9414d1";
-  const redirectUri = "http://127.0.0.1:5173/callback";
+  const clientId = "311e91e754f0449eb4bddba53e9414d1"; //bruke env?
+  const redirectUri = "https://panelia.web.app/callback";
 
  const scope = "user-read-currently-playing user-read-playback-state";
 

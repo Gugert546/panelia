@@ -1,6 +1,6 @@
 export async function sendMessageToAI(userInput: string) {
   try {
-    const response = await fetch("http://localhost:3001/api/ai/chat", {
+    const response = await fetch("https://panelia-server-1044777021142.europe-west1.run.app/api/ai/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

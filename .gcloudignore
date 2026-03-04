@@ -1,0 +1,19 @@
+# This file specifies files that are *not* uploaded to Google Cloud
+# using gcloud. If a file defined in the .gcloudignore file is
+# specified in the .gitignore file, gcloud will *not* ignore it, i.e.
+# this file has precedence over .gitignore.
+
+node_modules/
+.git
+.gitignore
+README.md
+
+# JS/TS source files (build outputs instead)
+src/
+server/
+
+# Node modules
+npm-debug.log*
+
+# Local environment override file
+.env.local

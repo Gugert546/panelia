@@ -2,7 +2,8 @@ import type { FC } from "react";
 import  ClockWidget  from "../builtins/ClockWidget/ClockWidget";
 import NotesWidget  from "../builtins/NotesWidget/NotesWidgetUI";
 import { CalendarWidget } from "../builtins/CalendarWidget/CalendarWidget";
-import  SearchWidgetMock  from "../builtins/searchWidget/GoogleSearchWidget";
+import SearchWidgetUI from "../builtins/searchWidget/SearchWidgetUI";
+
 
 
 
@@ -30,7 +31,7 @@ export const WIDGETS: Record<
   calendar: { title: "Kalender", Component: CalendarWidget, defaultW: 2, defaultH: 3.5 },
   google_search: {
   title: "",
-  Component: SearchWidgetMock,
+  Component: SearchWidgetUI,
   defaultW: 2,
   defaultH: 1,
 },
