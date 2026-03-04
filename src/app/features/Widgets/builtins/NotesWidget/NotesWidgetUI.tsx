@@ -5,38 +5,53 @@ export default function NotesWidget() {
   const { state, actions } = useNotesWidget();
 
   return (
-    <WidgetPane >
-      <textarea
-        value={state.text}
-        onChange={(e) => actions.setText(e.target.value)}
-        placeholder="Skriv notater her..."
-        style={{
-          width: "100%",
-          minHeight: 120,
-          resize: "vertical",
-          padding: 10,
-          borderRadius: 10,
-          border: "1px solid rgba(0,0,0,0.1)",
-          background: "rgba(255,255,255,0.6)",
-          outline: "none",
-        }}
-      />
-
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+    <WidgetPane
+      title=""
+      style={{
+        background: "#e5e7eb",   // ✅ grå widget
+        backdropFilter: "none",  // ✅ fjern blur-glass
+        boxShadow: "none",       // ✅ fjern shadow om du vil
+        alignItems: "stretch",   // ✅ så innhold kan fylle bredden
+      }}
+    >
+      <div style={{ position: "relative", width: "100%" }}>
         <button
-          type="button"
-          onClick={actions.clear}
+  type="button"
+  onClick={actions.clear}
+  style={{
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: "50%",
+    border: "none",
+    background: "#e5e7eb",   // 👈 endret
+    cursor: "pointer",
+    fontWeight: 700,
+    zIndex: 1,
+  }}
+>
+  ×
+</button>
+
+        <textarea
+          value={state.text}
+          onChange={(e) => actions.setText(e.target.value)}
+          placeholder="Skriv notater her..."
           style={{
+            width: "100%",
+            height: 200,
+            resize: "none",
+            padding: 16,
+            borderRadius: 16,
             border: "none",
-            borderRadius: 999,
-            padding: "6px 10px",
-            background: "rgba(255,255,255,0.6)",
-            cursor: "pointer",
-            fontWeight: 700,
+            background: "transparent",
+            outline: "none",
+            fontSize: 16,
+            boxSizing: "border-box",
           }}
-        >
-          Slett
-        </button>
+        />
       </div>
     </WidgetPane>
   );
