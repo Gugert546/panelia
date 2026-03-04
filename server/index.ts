@@ -3,6 +3,7 @@ import cors from "cors";
 import { weatherRouter } from "./weatherRouter";
 import { aiRouter } from "./aiRouter";
 import dotenv from "dotenv";
+import spotifyRouter from "./spotifyToken";
 dotenv.config();
 
 const app = express();
@@ -13,7 +14,7 @@ app.use(express.json());
 // Mount på /api/weather
 app.use("/api/weather", weatherRouter);
 app.use("/api/ai", aiRouter);
-
+app.use("/api/spotify", spotifyRouter);
 // Enkel test
 app.get("/health", (_, res) => res.send("OK"));
 

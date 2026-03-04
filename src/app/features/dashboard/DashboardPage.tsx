@@ -25,6 +25,7 @@ import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
 import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
 import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
+import SpotifyWidget from "../Widgets/builtins/SpotifyWidget/SpotifyWidget";
 
 type WidgetSize = "small" | "medium" | "large" | "wide";
 
@@ -48,6 +49,7 @@ export default function DashboardPage() {
     { id: "weather", label: "Vær" },
     { id: "Bookmark", label: "bokmerke" },
     { id: "Notes", label: "notater" },
+    { id: "spotify", label: "Spotify" },
   ];
 
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
@@ -57,9 +59,10 @@ export default function DashboardPage() {
     weather: <WeatherWidget />,
     Bookmark: <BookmarkUi />,
     Notes: <NotesWidget />,
+    spotify: <SpotifyWidget />,
   };
 
-  const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search"]);
+  const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search", "spotify"]);
 
   const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
     clock: "small",
@@ -68,6 +71,7 @@ export default function DashboardPage() {
     weather: "small",
     Bookmark: "small",
     Notes: "small",
+    spotify: "medium",
   });
 
 
