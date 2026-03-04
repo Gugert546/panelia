@@ -1,6 +1,6 @@
 export async function sendMessageToAI(userInput: string) {
   try {
-    const response = await fetch("https://panelia-server-1044777021142.us-central1.run.app/api/ai/chat", {
+    const response = await fetch("http://localhost:3001/api/ai/chat", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -19,3 +19,5 @@ export async function sendMessageToAI(userInput: string) {
     throw error;
   }
 }
+
+//https://panelia-server-1044777021142.us-central1.run.app
