@@ -1,30 +1,11 @@
 import { useWeatherWidget } from "./WeatherWidgetLogic";
-import WidgetPane from "../../components/WidgetPane"; // samme som NewsWidget
+import WidgetPane from "../../components/WidgetPane";
 
 export default function WeatherWidgetUI() {
-  const { state, actions } = useWeatherWidget();
+  const { state } = useWeatherWidget();
 
   return (
     <WidgetPane title="Vær">
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontWeight: 800 }}>Vær</div>
-
-        <button
-          type="button"
-          onClick={actions.refresh}
-          style={{
-            border: "none",
-            borderRadius: 999,
-            padding: "6px 10px",
-            background: "rgba(255,255,255,0.6)",
-            cursor: "pointer",
-            fontWeight: 700,
-          }}
-        >
-          Oppdater
-        </button>
-      </div>
-
       <div style={{ marginTop: 10 }}>
         {state.status === "loading" && <div>Henter vær...</div>}
 
@@ -34,7 +15,9 @@ export default function WeatherWidgetUI() {
 
         {state.status === "success" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ fontSize: 12, opacity: 0.8 }}>{state.data.placeLabel}</div>
+            <div style={{ fontSize: 12, opacity: 0.8 }}>
+              {state.data.placeLabel}
+            </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1 }}>
@@ -62,7 +45,8 @@ export default function WeatherWidgetUI() {
             </div>
 
             <div style={{ fontSize: 12, opacity: 0.7 }}>
-              Oppdatert: {new Date(state.data.updatedAtISO).toLocaleTimeString()}
+              Oppdatert:{" "}
+              {new Date(state.data.updatedAtISO).toLocaleTimeString()}
             </div>
           </div>
         )}

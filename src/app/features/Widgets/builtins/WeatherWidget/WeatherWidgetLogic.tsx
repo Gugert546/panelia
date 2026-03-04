@@ -1,10 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 
-type WeatherState =
-  | { status: "idle" | "loading"; data?: undefined; error?: undefined }
-  | { status: "success"; data: WeatherView; error?: undefined }
-  | { status: "error"; data?: undefined; error: string };
-
 export type WeatherView = {
   placeLabel: string; // f.eks. "Oslo, Norge"
   temperatureC: number;
@@ -12,6 +7,11 @@ export type WeatherView = {
   symbolCode?: string;
   updatedAtISO: string;
 };
+
+type WeatherState =
+  | { status: "idle" | "loading"; data?: undefined; error?: undefined; refreshing?: boolean }
+  | { status: "success"; data: WeatherView; error?: undefined; refreshing?: boolean }
+  | { status: "error"; data?: undefined; error: string; refreshing?: boolean };
 
 function round1(n: number) {
   return Math.round(n * 10) / 10;
@@ -31,13 +31,10 @@ async function getPosition(): Promise<GeolocationPosition> {
 }
 
 async function reverseGeocode(lat: number, lon: number): Promise<string> {
-  // OBS: Nominatim kan rate-limit’e. Stabil løsning er å flytte dette til server-proxy senere.
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
 
   const r = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-    },
+    headers: { Accept: "application/json" },
   });
 
   if (!r.ok) return "Din posisjon";
@@ -51,7 +48,6 @@ async function reverseGeocode(lat: number, lon: number): Promise<string> {
   if (city && country) return `${city}, ${country}`;
   if (city) return city;
 
-  // fallback
   const display = j?.display_name;
   if (typeof display === "string" && display.length > 0) {
     return display.split(",").slice(0, 2).join(", ").trim();
@@ -61,7 +57,9 @@ async function reverseGeocode(lat: number, lon: number): Promise<string> {
 }
 
 async function fetchWeatherFromProxy(lat: number, lon: number) {
-  const r = await fetch(`https://panelia-server-1044777021142.us-central1.run.app/api/weather?lat=${lat}&lon=${lon}`);
+  const r = await fetch(
+    `https://panelia-server-1044777021142.us-central1.run.app/api/weather?lat=${lat}&lon=${lon}`
+  );
   if (!r.ok) throw new Error(`Værkall feilet (${r.status})`);
   return r.json();
 }
@@ -70,7 +68,13 @@ export function useWeatherWidget() {
   const [state, setState] = useState<WeatherState>({ status: "idle" });
 
   const load = useCallback(async () => {
-    setState({ status: "loading" });
+    // ✅ Ikke "loading" hvis vi allerede har data — bare marker refreshing
+    setState((prev) => {
+      if (prev.status === "success") {
+        return { ...prev, refreshing: true };
+      }
+      return { status: "loading" };
+    });
 
     try {
       // 1) Posisjon
@@ -78,15 +82,12 @@ export function useWeatherWidget() {
       const lat = pos.coords.latitude;
       const lon = pos.coords.longitude;
 
-      // 2) Stednavn (reverse geocode)
+      // 2) Stednavn
       const placeLabel = await reverseGeocode(lat, lon);
 
-      // 3) Vær (via din proxy)
+      // 3) Vær
       const json = await fetchWeatherFromProxy(lat, lon);
 
-      // Hvis proxyen din allerede returnerer “flat” respons:
-      // { time, temperature, windSpeed, windFrom, humidity, symbol }
-      // så plukk direkte ut:
       const temperature = json?.temperature;
       const wind = json?.windSpeed;
       const symbol = json?.symbol;
@@ -103,20 +104,33 @@ export function useWeatherWidget() {
         updatedAtISO: new Date().toISOString(),
       };
 
-      setState({ status: "success", data: view });
+      setState({ status: "success", data: view, refreshing: false });
     } catch (e: any) {
-      setState({ status: "error", error: e?.message ?? "Ukjent feil" });
+      // ✅ Hvis vi allerede har data, behold den og bare stopp refreshing
+      setState((prev) => {
+        if (prev.status === "success") {
+          return { ...prev, refreshing: false };
+        }
+        return { status: "error", error: e?.message ?? "Ukjent feil", refreshing: false };
+      });
     }
   }, []);
 
   useEffect(() => {
     void load();
+
+    // ✅ Auto-refresh hvert minutt
+    const id = setInterval(() => {
+      void load();
+    }, 15 * 60 * 1000);
+
+    return () => clearInterval(id);
   }, [load]);
 
   return {
     state,
     actions: {
-      refresh: load, // 👈 oppdater uten reload
+      refresh: load,
     },
   };
 }
