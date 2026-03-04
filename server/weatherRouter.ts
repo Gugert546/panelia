@@ -32,7 +32,7 @@ weatherRouter.get("/", async (req, res) => {
     return res.status(r.status).json({ error: "MET request failed" });
   }
 
-  const data = await r.json();
+  const data: any = await r.json();
 
   const ts = data?.properties?.timeseries?.[0];
   const details = ts?.data?.instant?.details;

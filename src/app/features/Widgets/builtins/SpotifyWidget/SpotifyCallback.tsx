@@ -13,23 +13,38 @@ export default function SpotifyCallback() {
       return;
     }
 
-    fetch(`/api/spotify/token?code=${code}`)
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Spotify token response:", data);
+    const exchangeCode = async () => {
+      try {
+        const res = await fetch(`/api/spotify/token?code=${encodeURIComponent(code)}`);
+        const raw = await res.text();
 
-        if (data.access_token) {
+        let data: any = null;
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          throw new Error(`Non-JSON response (${res.status}): ${raw.slice(0, 120)}`);
+        }
+
+        if (!res.ok) {
+          throw new Error(data?.error || `Spotify token exchange failed (${res.status})`);
+        }
+
+        if (data?.access_token) {
           localStorage.setItem("spotify_token", data.access_token);
-          localStorage.setItem("spotify_refresh", data.refresh_token);
+          if (data.refresh_token) {
+            localStorage.setItem("spotify_refresh", data.refresh_token);
+          }
         }
 
         navigate("/dashboard");
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error("Spotify error:", err);
         navigate("/dashboard");
-      });
-  }, []);
+      }
+    };
+
+    void exchangeCode();
+  }, [navigate]);
 
   return <div>Connecting Spotify...</div>;
 }

@@ -1,18 +1,13 @@
 import express from "express";
 import dotenv from "dotenv";
-dotenv.config();
-
 import { OpenAI } from "openai";
 import { tools } from "./tools/registry";
 import { runTool } from "./tools/dispatch";
 
+dotenv.config();
+
 export const aiRouter = express.Router();
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-// System-regler som styrer når AI skal bruke tools
 const SYSTEM_PROMPT = `
 Du er Panelia-assistenten.
 - Når brukeren ber om å opprette/endre/slette app-data (f.eks. bokmerker), skal du bruke tilgjengelige tools.
@@ -22,13 +17,21 @@ Du er Panelia-assistenten.
 - Svar kort og praktisk på norsk.
 `.trim();
 
+function getOpenAIClient(): OpenAI | null {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return null;
+  }
+  return new OpenAI({ apiKey });
+}
+
 function toOpenAITools() {
   return tools.map((t) => ({
     type: "function" as const,
     function: {
       name: t.name,
       description: t.description,
-      parameters: t.parameters as any, 
+      parameters: t.parameters as any,
     },
   }));
 }
@@ -40,7 +43,11 @@ aiRouter.post("/chat", async (req, res) => {
     return res.status(400).json({ error: "Missing userInput" });
   }
 
-  // Midlertidig: hardkodet uid frem til Firebase auth middleware er på plass
+  const openai = getOpenAIClient();
+  if (!openai) {
+    return res.status(503).json({ error: "OPENAI_API_KEY is not configured on the server" });
+  }
+
   const uid = "local-dev";
   const requestId =
     (req.headers["x-request-id"] as string | undefined) ??
@@ -54,7 +61,6 @@ aiRouter.post("/chat", async (req, res) => {
   const toolSpecs = toOpenAITools();
 
   try {
-    // 1) Første modell-svar (kan bli vanlig tekst eller tool_calls)
     const first = await openai.chat.completions.create({
       model: "gpt-4.1",
       messages,
@@ -68,7 +74,6 @@ aiRouter.post("/chat", async (req, res) => {
 
     messages.push(firstMsg);
 
-    // 2) Hvis modellen ba om tool-calls: kjør dem
     const toolCalls = (firstMsg as any).tool_calls as
       | Array<{
           id: string;
@@ -83,17 +88,13 @@ aiRouter.post("/chat", async (req, res) => {
 
         let args: any = {};
         try {
-          args = call.function.arguments
-            ? JSON.parse(call.function.arguments)
-            : {};
+          args = call.function.arguments ? JSON.parse(call.function.arguments) : {};
         } catch {
-          // Hvis modellen sender invalid JSON-args
           args = {};
         }
 
         const result = await runTool(name, args, { uid, requestId });
 
-        // Tool-resultat må legges inn som role:"tool" og knyttes til tool_call_id
         messages.push({
           role: "tool",
           tool_call_id: call.id,
@@ -101,7 +102,6 @@ aiRouter.post("/chat", async (req, res) => {
         });
       }
 
-      // 3) Spør modellen igjen for å få "menneskelig" slutt-svar
       const second = await openai.chat.completions.create({
         model: "gpt-4.1",
         messages,
@@ -112,12 +112,9 @@ aiRouter.post("/chat", async (req, res) => {
       return res.json({ output: secondMsg?.content ?? "" });
     }
 
-    // 4) Ingen tool-call → returner teksten direkte
     return res.json({ output: firstMsg.content ?? "" });
   } catch (error) {
     console.error("AI route error:", error);
-    return res
-      .status(500)
-      .json({ error: "Failed to communicate with OpenAI API" });
+    return res.status(500).json({ error: "Failed to communicate with OpenAI API" });
   }
 });

@@ -30,8 +30,8 @@ RUN npm ci --omit=dev
 # Copy compiled server from builder
 COPY --from=builder /app/dist ./dist
 
-# Copy environment file (or use Cloud Run secrets)
-COPY .env .env
+# Ensure server bundle is treated as CommonJS despite root package type=module
+RUN mkdir -p dist/server && printf '{"type":"commonjs"}' > dist/server/package.json
 
 # Expose port (Cloud Run uses PORT env var, default 8080)
 EXPOSE 8080
@@ -47,4 +47,4 @@ ENV NODE_ENV=production
 ENV PORT=8080
 
 # Start server
-CMD ["node", "server/index.js"]
+CMD ["node", "dist/server/index.js"]
