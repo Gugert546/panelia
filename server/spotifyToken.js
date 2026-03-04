@@ -30,7 +30,7 @@ router.get("/token", async (req, res) => {
         body: new URLSearchParams({
           grant_type: "authorization_code",
           code,
-          redirect_uri: "http://127.0.0.1:5173/callback",
+          redirect_uri: "https://panelia.web.app/callback",
         }),
       }
     );
