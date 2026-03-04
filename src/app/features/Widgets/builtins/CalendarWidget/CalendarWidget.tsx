@@ -1,115 +1,167 @@
-import { useMemo, useState, useEffect } from "react";
-import Calendar from "react-calendar";
-import type { WidgetComponentProps } from "../../registry/WidgetRegistry";
+import React, { useMemo } from "react";
 
-type CalendarConfig = {
-  selectedDate?: string; // YYYY-MM-DD
-  notesByDate?: Record<string, string>; // { "2026-02-06": "..." }
+type CalendarWidgetProps = {
+  onClose?: () => void;
 };
 
-function toISODate(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
-
-export function CalendarWidget({ config, onConfigChange }: WidgetComponentProps) {
-  const cfg = (config ?? {}) as CalendarConfig;
-
-  const selected = cfg.selectedDate ? new Date(cfg.selectedDate) : new Date();
-  const selectedISO = toISODate(selected);
-
-  const notesByDate = cfg.notesByDate ?? {};
-  const existingNote = notesByDate[selectedISO] ?? "";
-
-  // Lokal tekst i input (så du kan skrive uten at hvert tastetrykk spammer config hvis du vil)
-  const [draft, setDraft] = useState(existingNote);
-
-  // Når du bytter dato, oppdater draft til notatet for den datoen
-  useEffect(() => {
-    setDraft(existingNote);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedISO]);
-
-  function setSelectedDate(d: Date) {
-    onConfigChange({ selectedDate: toISODate(d) });
-  }
-
-  function saveNote() {
-    const t = draft.trim();
-
-    // Tom tekst = slett notat
-    if (!t) {
-      if (!notesByDate[selectedISO]) return;
-      const { [selectedISO]: _, ...rest } = notesByDate;
-      onConfigChange({ notesByDate: rest });
-      return;
+export default function CalendarWidget({ onClose }: CalendarWidgetProps) {
+  // Get next 7 days starting from tomorrow
+  const weekDays = useMemo(() => {
+    const days = [];
+    const today = new Date();
+    for (let i = 1; i <= 7; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      days.push(date);
     }
+    return days;
+  }, []);
 
-    onConfigChange({
-      notesByDate: {
-        ...notesByDate,
-        [selectedISO]: t,
-      },
-    });
-  }
+  // Generate time slots (6 AM to 11 PM)
+  const timeSlots = useMemo(() => {
+    const slots = [];
+    for (let hour = 6; hour < 23; hour++) {
+      slots.push(`${hour.toString().padStart(2, "0")}:00`);
+    }
+    return slots;
+  }, []);
 
-  function deleteNote() {
-    if (!notesByDate[selectedISO]) return;
-    const { [selectedISO]: _, ...rest } = notesByDate;
-    onConfigChange({ notesByDate: rest });
-    setDraft("");
-  }
-
-  // Highlight datoer med notat
-  const tileClassName = useMemo(() => {
-    return ({ date, view }: { date: Date; view: string }) => {
-      if (view !== "month") return "";
-      const iso = toISODate(date);
-      const hasNote = (notesByDate[iso] ?? "").trim().length > 0;
-      return hasNote ? "has-note" : "";
+  const formatDate = (date: Date) => {
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    return {
+      day: days[date.getDay()],
+      date: date.getDate(),
     };
-  }, [notesByDate]);
-
-  // (Valgfritt) Autosave mens du skriver (kommentér inn om du vil)
-  // useEffect(() => {
-  //   const t = setTimeout(() => saveNote(), 400);
-  //   return () => clearTimeout(t);
-  // }, [draft]);
-
-  const hasSavedNote = (notesByDate[selectedISO] ?? "").trim().length > 0;
+  };
 
   return (
-    <div className="calendar-widget" style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div className="calendar-surface">
-        <Calendar
-          value={selected}
-          onChange={(v) => setSelectedDate(v as Date)}
-          tileClassName={tileClassName}
-        />
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        height: "100vh",
+        width: "900px",
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        backdropFilter: "blur(14px)",
+        boxShadow: "-8px 0 24px rgba(0, 0, 0, 0.15)",
+        zIndex: 1500,
+        display: "flex",
+        flexDirection: "column",
+        padding: "20px",
+        overflowY: "auto",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <h2 style={{ margin: 0, fontSize: "24px", fontWeight: "600" }}>
+          Next Week Schedule
+        </h2>
+        <button
+          onClick={onClose}
+          style={{
+            background: "none",
+            border: "none",
+            fontSize: "24px",
+            cursor: "pointer",
+            padding: "0",
+            color: "rgba(0, 0, 0, 0.6)",
+          }}
+        >
+          ✕
+        </button>
       </div>
 
-      <div style={{ fontWeight: 600 }}>Notat for {selectedISO}</div>
+      {/* Calendar Grid */}
+      <div style={{ overflowX: "auto", flex: 1 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: `80px repeat(7, 1fr)`,
+            gap: "1px",
+            backgroundColor: "#e5e7eb",
+            padding: "1px",
+            borderRadius: "8px",
+            overflow: "hidden",
+          }}
+        >
+          {/* Time header */}
+          <div
+            style={{
+              backgroundColor: "#f9fafb",
+              padding: "12px 8px",
+              fontWeight: "600",
+              fontSize: "12px",
+              textAlign: "center",
+              borderRight: "2px solid #d1d5db",
+            }}
+          >
+            Time
+          </div>
 
-      <textarea
-        value={draft}
-        onChange={(e) => setDraft(e.target.value)}
-        placeholder="Skriv notat for denne datoen…"
-        style={{ width: "100%", minHeight: 110, padding: 8, resize: "vertical" }}
-      />
+          {/* Day headers */}
+          {weekDays.map((date, idx) => {
+            const { day, date: dateNum } = formatDate(date);
+            return (
+              <div
+                key={idx}
+                style={{
+                  backgroundColor: "#f9fafb",
+                  padding: "12px 8px",
+                  fontWeight: "600",
+                  fontSize: "12px",
+                  textAlign: "center",
+                  borderBottom: "2px solid #d1d5db",
+                }}
+              >
+                <div>{day}</div>
+                <div style={{ fontSize: "14px", marginTop: "4px" }}>{dateNum}</div>
+              </div>
+            );
+          })}
 
-      <div style={{ display: "flex", gap: 8 }}>
-        <button type="button" onClick={saveNote}>
-          {hasSavedNote ? "Oppdater notat" : "Lagre notat"}
-        </button>
+          {/* Time slots and cells */}
+          {timeSlots.map((time, timeIdx) => (
+            <React.Fragment key={timeIdx}>
+              {/* Time label */}
+              <div
+                style={{
+                  backgroundColor: "#f9fafb",
+                  padding: "12px 8px",
+                  fontSize: "12px",
+                  fontWeight: "600",
+                  textAlign: "center",
+                  borderRight: "2px solid #d1d5db",
+                }}
+              >
+                {time}
+              </div>
 
-        <button type="button" onClick={deleteNote} disabled={!hasSavedNote}>
-          Slett
-        </button>
-
-        <div style={{ marginLeft: "auto", opacity: 0.7, fontSize: 12 }}>
-          {hasSavedNote ? "Har lagret notat" : "Ingen lagret notat"}
+              {/* Cells for each day */}
+              {weekDays.map((_, dayIdx) => (
+                <div
+                  key={`${timeIdx}-${dayIdx}`}
+                  style={{
+                    backgroundColor: "#ffffff",
+                    border: "1px solid #e5e7eb",
+                    minHeight: "50px",
+                    padding: "8px",
+                    cursor: "pointer",
+                    transition: "background-color 0.2s",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = "#f0f9ff";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = "#ffffff";
+                  }}
+                  onClick={() => {
+                    console.log(`Clicked: ${weekDays[dayIdx].toDateString()} at ${time}`);
+                    // Future: Add event creation
+                  }}
+                />
+              ))}
+            </React.Fragment>
+          ))}
         </div>
       </div>
     </div>

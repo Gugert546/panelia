@@ -2,6 +2,7 @@ import { useState } from "react";
 
 type SidebarProps = {
   onEditClick?: () => void;
+  onSidebarNav?: (itemKey: string) => void;
 };
 
 const SIDEBAR_WIDTH = 86;
@@ -19,7 +20,7 @@ const items: NavItem[] = [
   { key: "chat", label: "Chat", icon: "💬" },
 ];
 
-export default function Sidebar({ onEditClick }: SidebarProps) {
+export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
   const [active, setActive] = useState("calendar");
 
   return (
@@ -48,9 +49,11 @@ export default function Sidebar({ onEditClick }: SidebarProps) {
           onClick={() => {
             setActive(item.key);
 
-            // Kun rediger åpner sidepanelet
+            // Handle specific item actions
             if (item.key === "edit" && onEditClick) {
               onEditClick();
+            } else if (onSidebarNav) {
+              onSidebarNav(item.key);
             }
           }}
           style={{
