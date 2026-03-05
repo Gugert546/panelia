@@ -31,7 +31,7 @@ type WidgetSize = "small" | "medium" | "large" | "wide";
 
 const SIZE_MAP = {
   small:  { w: 6,  h: 3 },
-  medium: { w: 12, h: 4 },
+  medium: { w: 12, h: 6 },
   large:  { w: 18, h: 8 },
   wide:   { w: 24, h: 4 },
 };
@@ -182,6 +182,7 @@ export default function DashboardPage() {
           compactType={null}
           preventCollision={false}
           margin={[10, 10]}
+          maxRows={22}
           containerPadding={[20, 20]}
           style={{ height: "100%" }}
         >
@@ -206,8 +207,8 @@ export default function DashboardPage() {
       </main>
             {/* Chat Toggle Button */}
             <button
-        onClick={toggleChat}
-        style={{
+          onClick={toggleChat}
+          style={{
           position: "fixed",
           bottom: 20,
           right: isCalendarVisible ? 920 : 20,
