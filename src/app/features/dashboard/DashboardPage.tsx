@@ -30,10 +30,10 @@ import SpotifyWidget from "../Widgets/builtins/SpotifyWidget/SpotifyWidget";
 type WidgetSize = "small" | "medium" | "large" | "wide";
 
 const SIZE_MAP = {
-  small:  { w: 2, h: 1 },
-  medium: { w: 4, h: 1 },
-  large:  { w: 6, h: 2 },
-  wide:   { w: 8, h: 1 },
+  small:  { w: 6,  h: 3 },
+  medium: { w: 12, h: 4 },
+  large:  { w: 18, h: 8 },
+  wide:   { w: 24, h: 4 },
 };
 
 export default function DashboardPage() {
@@ -54,24 +54,24 @@ export default function DashboardPage() {
   ];
 
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
-    clock: <ClockWidget size="medium" />,
-    search: <SearchWidget />,
-    news: <NewsWidget />,
-    weather: <WeatherWidget />,
-    Bookmark: <BookmarkUi />,
-    Notes: <NotesWidget />,
+    clock: <ClockWidget size="large" />,
+    search: <SearchWidget size="large"/>,
+    news: <NewsWidget size="large"/>,
+    weather: <WeatherWidget size="large"/>,
+    Bookmark: <BookmarkUi size="large"/>,
+    Notes: <NotesWidget size="large"/>,
     spotify: <SpotifyWidget />,
   };
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search", "spotify"]);
 
   const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
-    clock: "small",
+    clock: "medium",
     search: "wide",
-    news: "small",
-    weather: "small",
-    Bookmark: "small",
-    Notes: "small",
+    news: "medium",
+    weather: "medium",
+    Bookmark: "medium",
+    Notes: "medium",
     spotify: "medium",
   });
 
@@ -174,14 +174,16 @@ export default function DashboardPage() {
       >
         <GridLayout
           className="layout"
-          cols={20}
-          rowHeight={50}
+          cols={60}
+          rowHeight={20}
           width={window.innerWidth - SIDEBAR_WIDTH - (isCalendarVisible ? 900 : 0)}
           isDraggable={true}
           isResizable={true}
-          margin={[20, 8]}
+          compactType={null}
+          preventCollision={false}
+          margin={[10, 10]}
           containerPadding={[20, 20]}
-          style={{ minHeight: "100%" }}
+          style={{ height: "100%" }}
         >
           {activeWidgets.map((widgetId, index) => {
 
