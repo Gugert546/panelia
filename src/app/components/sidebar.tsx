@@ -14,7 +14,7 @@ type NavItem = {
 };
 
 const items: NavItem[] = [
-  { key: "edit", label: "Rediger", icon: "✏️" },
+  { key: "edit", label: "Rediger", icon: "⚙️" },
   { key: "calendar", label: "Calendar", icon: "📅" },
   //{ key: "music", label: "Music", icon: "🎵" },
   { key: "chat", label: "Chat", icon: "💬" },
@@ -23,7 +23,7 @@ const items: NavItem[] = [
 export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
   const [active, setActive] = useState("calendar");
 
-  return (
+    return (
     <aside
       style={{
         position: "fixed",
@@ -38,9 +38,6 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
         gap: 14,
         padding: 12,
         zIndex: 1000,
-        background: "linear-gradient(180deg, #f3b28a 0%, #d19b83 100%)",
-        borderRight: "1px solid rgba(0,0,0,0.06)",
-        boxShadow: "8px 0 22px rgba(0,0,0,0.12)"
       }}
     >
       {items.map((item) => (
@@ -49,7 +46,6 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
           onClick={() => {
             setActive(item.key);
 
-            // Handle specific item actions
             if (item.key === "edit" && onEditClick) {
               onEditClick();
             } else if (onSidebarNav) {
@@ -57,15 +53,25 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
             }
           }}
           style={{
-            background: active === item.key ? "rgba(255,255,255,0.3)" : "transparent",
-            border: "none",
-            padding: 8,
-            borderRadius: 8,
-            cursor: "pointer"
+            width: 56,
+            height: 56,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 28,
+            background: active === item.key 
+              ? "rgba(255,255,255,0.3)" 
+              : "rgba(255,255,255,0.15)",
+            backdropFilter: "blur(14px)",
+            border: active === item.key 
+              ? "1px solid rgba(255,255,255,0.4)" 
+              : "1px solid rgba(255,255,255,0.2)",
+            borderRadius: 16,
+            cursor: "pointer",
+            transition: "all 0.2s ease",
           }}
         >
-          <div>{item.icon}</div>
-          <small>{item.label}</small>
+          {item.icon}
         </button>
       ))}
     </aside>

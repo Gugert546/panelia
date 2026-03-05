@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { sendMessageToAI } from './aiLogic';
+import WidgetPane from '../features/Widgets/components/WidgetPane';
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<{ sender: string; text: string }[]>([]);
@@ -11,7 +12,6 @@ const Chat: React.FC = () => {
 
   const handleSend = async() => {
     if (input.trim()) {
-      // Add the user's message to the chat
       setMessages((prev) => [...prev, { sender: 'user', text: input }]);
       try {
         const aiResponse = await sendMessageToAI(input);
@@ -25,7 +25,7 @@ const Chat: React.FC = () => {
   };
 
   return (
-    <div style={styles.chatContainer}>
+    <WidgetPane title="Chat">
       <div style={styles.chatWindow}>
         {messages.map((message, index) => (
           <div
@@ -33,7 +33,8 @@ const Chat: React.FC = () => {
             style={{
               ...styles.message,
               alignSelf: message.sender === 'user' ? 'flex-end' : 'flex-start',
-              backgroundColor: message.sender === 'user' ? '#DCF8C6' : '#E5E5EA',
+              backgroundColor: message.sender === 'user' ? 'rgba(255, 255, 255, 0.93)' : 'rgba(229, 229, 234, 0.6)',
+              backdropFilter: 'blur(8px)',
             }}
           >
             {message.text}
@@ -45,66 +46,62 @@ const Chat: React.FC = () => {
           type="text"
           value={input}
           onChange={handleInputChange}
-          placeholder="Type your message..."
+          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          placeholder="Type a message..."
           style={styles.input}
         />
         <button onClick={handleSend} style={styles.sendButton}>
           Send
         </button>
       </div>
-    </div>
+    </WidgetPane>
   );
 };
 
 const styles = {
-  chatContainer: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    width: '400px',
-    height: '600px',
-    border: '1px solid #ccc',
-    borderRadius: '8px',
-    overflow: 'hidden',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-  },
   chatWindow: {
+    width: '100%',
     flex: 1,
     display: 'flex',
     flexDirection: 'column' as const,
-    padding: '10px',
+    padding: '12px',
+    gap: '8px',
     overflowY: 'auto' as const,
-    backgroundColor: '#f9f9f9',
+    minHeight: '300px',
   },
   message: {
-    maxWidth: '70%',
-    padding: '8px 12px',
-    margin: '5px 0',
+    maxWidth: '85%',
+    padding: '10px 14px',
     borderRadius: '16px',
     fontSize: '14px',
     lineHeight: '1.4',
   },
   inputContainer: {
     display: 'flex',
-    padding: '10px',
-    borderTop: '1px solid #ccc',
-    backgroundColor: '#fff',
+    gap: '8px',
+    width: '100%',
   },
   input: {
     flex: 1,
-    padding: '8px',
+    padding: '10px 14px',
     fontSize: '14px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    marginRight: '10px',
+    border: 'none',
+    borderRadius: '12px',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backdropFilter: 'blur(8px)',
+    color: 'inherit',
+    outline: 'none',
   },
   sendButton: {
-    padding: '8px 16px',
+    padding: '10px 20px',
     fontSize: '14px',
     color: '#fff',
-    backgroundColor: '#007BFF',
+    backgroundColor: 'rgba(0, 123, 255, 0.8)',
     border: 'none',
-    borderRadius: '4px',
+    borderRadius: '12px',
     cursor: 'pointer',
+    backdropFilter: 'blur(8px)',
+    transition: 'background-color 0.2s',
   },
 };
 
