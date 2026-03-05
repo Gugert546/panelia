@@ -32,10 +32,10 @@ type WidgetSize = "small" | "medium" | "large" | "wide";
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
 const SIZE_MAP = {
-  small:  { w: 6,  h: 3 },
-  medium: { w: 12, h: 6 },
-  large:  { w: 18, h: 8 },
-  wide:   { w: 24, h: 4 },
+  small:  { w: 4,  h: 2 },
+  medium: { w: 9,  h: 5 },
+  large:  { w: 13, h: 6 },
+  wide:   { w: 18, h: 3 },
 };
 
 export default function DashboardPage() {
@@ -61,25 +61,25 @@ export default function DashboardPage() {
   ];
 
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
-    clock: <ClockWidget size="large" />,
-    search: <SearchWidget size="large"/>,
+    clock: <ClockWidget size="small" />,
+    search: <SearchWidget size="medium"/>,
     news: <NewsWidget size="large"/>,
     weather: <WeatherWidget size="large"/>,
-    Bookmark: <BookmarkUi size="large"/>,
-    Notes: <NotesWidget size="large"/>,
-    spotify: <SpotifyWidget size="large"/>,
+    Bookmark: <BookmarkUi size="small"/>,
+    Notes: <NotesWidget size="small"/>,
+    spotify: <SpotifyWidget size="small"/>,
   };
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search", "spotify"]);
 
   const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
-    clock: "medium",
-    search: "wide",
+    clock: "small",
+    search: "small",
     news: "medium",
-    weather: "medium",
+    weather: "small",
     Bookmark: "medium",
-    Notes: "medium",
-    spotify: "medium",
+    Notes: "small",
+    spotify: "small",
   });
 
 

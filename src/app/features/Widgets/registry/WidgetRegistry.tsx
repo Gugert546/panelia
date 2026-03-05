@@ -22,8 +22,18 @@ const ClockWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
   return <ClockWidget size={size} />;
 };
 
+const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
+  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
+  return <NotesWidget size={size} />;
+};
+
 const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
   return <CalendarWidget />;
+};
+
+const SearchWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
+  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
+  return <SearchWidgetUI size={size} />;
 };
 
 export const WIDGETS: Record<
@@ -31,16 +41,12 @@ export const WIDGETS: Record<
   { title: string; Component: FC<WidgetComponentProps>; defaultW: number; defaultH: number }
 > = {
   clock: { title: "", Component: ClockWidgetAdapter, defaultW: 1, defaultH: 1 },
-  notes: { title: "Notater", Component: NotesWidget, defaultW: 3, defaultH: 1.5 },
+  notes: { title: "Notater", Component: NotesWidgetAdapter, defaultW: 3, defaultH: 1.5 },
   calendar: { title: "Kalender", Component: CalendarWidgetAdapter, defaultW: 2, defaultH: 3.5 },
   google_search: {
   title: "",
-  Component: SearchWidgetUI,
+  Component: SearchWidgetAdapter,
   defaultW: 2,
   defaultH: 1,
 },
-
-
-
-
 };
