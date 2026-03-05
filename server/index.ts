@@ -4,6 +4,7 @@ import { weatherRouter } from "./weatherRouter";
 import { aiRouter } from "./aiRouter";
 import dotenv from "dotenv";
 import spotifyRouter from "./spotifyToken";
+import googleCalendarRouter from "./googleCalendarOAuth";
 dotenv.config();
 
 const app = express();
@@ -15,6 +16,7 @@ app.use(express.json());
 app.use("/api/weather", weatherRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/spotify", spotifyRouter);
+app.use("/api/google-calendar", googleCalendarRouter);
 // Enkel test
 app.get("/health", (_, res) => res.send("OK"));
 
