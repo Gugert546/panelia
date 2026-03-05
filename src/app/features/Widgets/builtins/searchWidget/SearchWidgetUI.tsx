@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useSearchWidget } from "./SearchWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
@@ -11,14 +12,20 @@ type Props = {
 
 export default function SearchWidgetUI({ size }: Props) {
   const { state, actions } = useSearchWidget();
+
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
       if (!state.menuOpen) return;
+
       const el = menuRef.current;
-      if (el && !el.contains(e.target as Node)) actions.closeMenu();
+      if (el && !el.contains(e.target as Node)) {
+        actions.closeMenu();
+      }
     }
+
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
   }, [state.menuOpen, actions]);
@@ -32,6 +39,8 @@ export default function SearchWidgetUI({ size }: Props) {
     size === "small" ? 12 :
     size === "medium" ? 14 :
     16;
+
+  const rect = buttonRef.current?.getBoundingClientRect();
 
   return (
     <WidgetContainer size={size}>
@@ -49,8 +58,9 @@ export default function SearchWidgetUI({ size }: Props) {
         >
 
           {/* Engine selector */}
-          <div ref={menuRef} style={{ position: "relative" }}>
+          <div style={{ position: "relative" }}>
             <button
+              ref={buttonRef}
               type="button"
               onClick={actions.toggleMenu}
               aria-label="Velg søkemotor"
@@ -61,7 +71,7 @@ export default function SearchWidgetUI({ size }: Props) {
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center",
+                justifyContent: "center"
               }}
             >
               <img
@@ -70,62 +80,10 @@ export default function SearchWidgetUI({ size }: Props) {
                 style={{
                   width: iconSize,
                   height: iconSize,
-                  objectFit: "contain",
+                  objectFit: "contain"
                 }}
               />
             </button>
-
-            {state.menuOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 30,
-                  left: 0,
-                  minWidth: 160,
-                  background: "rgba(255,255,255,0.95)",
-                  borderRadius: 10,
-                  boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
-                  padding: 6,
-                  zIndex: 50,
-                }}
-              >
-                {Object.entries(state.engines).map(([key, cfg]) => {
-                  const selected = key === state.engine;
-                  return (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={() => actions.chooseEngine(key as any)}
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                        textAlign: "left",
-                        border: "none",
-                        background: selected ? "rgba(0,0,0,0.06)" : "transparent",
-                        padding: "8px 8px",
-                        borderRadius: 8,
-                        cursor: "pointer",
-                        fontWeight: selected ? 700 : 600,
-                        fontSize
-                      }}
-                    >
-                      <img
-                        src={cfg.icon}
-                        alt={cfg.label}
-                        style={{
-                          width: 16,
-                          height: 16,
-                          objectFit: "contain",
-                        }}
-                      />
-                      <span>{cfg.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           {/* Search input */}
@@ -141,11 +99,70 @@ export default function SearchWidgetUI({ size }: Props) {
               outline: "none",
               background: "transparent",
               fontSize,
-              color: "#111",
+              color: "#111"
             }}
           />
 
         </div>
+
+        {/* PORTAL DROPDOWN */}
+        {state.menuOpen && rect &&
+          createPortal(
+            <div
+              ref={menuRef}
+              style={{
+                position: "fixed",
+                top: rect.bottom + 6,
+                left: rect.left,
+                minWidth: 160,
+                background: "rgba(255,255,255,0.98)",
+                borderRadius: 10,
+                boxShadow: "0 10px 30px rgba(0,0,0,0.12)",
+                padding: 6,
+                zIndex: 999999
+              }}
+            >
+              {Object.entries(state.engines).map(([key, cfg]) => {
+                const selected = key === state.engine;
+
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => actions.chooseEngine(key as any)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      textAlign: "left",
+                      border: "none",
+                      background: selected
+                        ? "rgba(0,0,0,0.06)"
+                        : "transparent",
+                      padding: "8px 8px",
+                      borderRadius: 8,
+                      cursor: "pointer",
+                      fontWeight: selected ? 700 : 600,
+                      fontSize
+                    }}
+                  >
+                    <img
+                      src={cfg.icon}
+                      alt={cfg.label}
+                      style={{
+                        width: 16,
+                        height: 16,
+                        objectFit: "contain"
+                      }}
+                    />
+                    <span>{cfg.label}</span>
+                  </button>
+                );
+              })}
+            </div>,
+            document.body
+          )}
 
       </WidgetPane>
     </WidgetContainer>

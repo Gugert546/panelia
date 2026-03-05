@@ -60,7 +60,7 @@ export default function DashboardPage() {
     weather: <WeatherWidget size="large"/>,
     Bookmark: <BookmarkUi size="large"/>,
     Notes: <NotesWidget size="large"/>,
-    spotify: <SpotifyWidget />,
+    spotify: <SpotifyWidget size="large"/>,
   };
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search", "spotify"]);
