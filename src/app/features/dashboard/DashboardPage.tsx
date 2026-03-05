@@ -32,10 +32,10 @@ type WidgetSize = "small" | "medium" | "large" | "wide";
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
 const SIZE_MAP = {
-  small:  { w: 2, h: 1 },
-  medium: { w: 4, h: 1 },
-  large:  { w: 6, h: 2 },
-  wide:   { w: 8, h: 1 },
+  small:  { w: 6,  h: 3 },
+  medium: { w: 12, h: 6 },
+  large:  { w: 18, h: 8 },
+  wide:   { w: 24, h: 4 },
 };
 
 export default function DashboardPage() {
@@ -61,24 +61,24 @@ export default function DashboardPage() {
   ];
 
   const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
-    clock: <ClockWidget size="medium" />,
-    search: <SearchWidget />,
-    news: <NewsWidget />,
-    weather: <WeatherWidget />,
-    Bookmark: <BookmarkUi />,
-    Notes: <NotesWidget />,
-    spotify: <SpotifyWidget />,
+    clock: <ClockWidget size="large" />,
+    search: <SearchWidget size="large"/>,
+    news: <NewsWidget size="large"/>,
+    weather: <WeatherWidget size="large"/>,
+    Bookmark: <BookmarkUi size="large"/>,
+    Notes: <NotesWidget size="large"/>,
+    spotify: <SpotifyWidget size="large"/>,
   };
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search", "spotify"]);
 
   const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
-    clock: "small",
+    clock: "medium",
     search: "wide",
-    news: "small",
-    weather: "small",
-    Bookmark: "small",
-    Notes: "small",
+    news: "medium",
+    weather: "medium",
+    Bookmark: "medium",
+    Notes: "medium",
     spotify: "medium",
   });
 
@@ -327,9 +327,12 @@ export default function DashboardPage() {
           width={window.innerWidth - SIDEBAR_WIDTH}
           isDraggable={true}
           isResizable={true}
-          margin={[20, 8]}
+          compactType={null}
+          preventCollision={false}
+          margin={[10, 10]}
+          maxRows={22}
           containerPadding={[20, 20]}
-          style={{ minHeight: "100%" }}
+          style={{ height: "100%" }}
         >
           {activeWidgets.map((widgetId, index) => {
 
@@ -352,8 +355,8 @@ export default function DashboardPage() {
       </main>
             {/* Chat Toggle Button */}
             <button
-        onClick={toggleChat}
-        style={{
+          onClick={toggleChat}
+          style={{
           position: "fixed",
           bottom: 20,
           right: 20,
