@@ -3,19 +3,40 @@ import dotenv from "dotenv";
 import { OpenAI } from "openai";
 import { tools } from "./tools/registry";
 import { runTool } from "./tools/dispatch";
+import { adminAuth } from "./firebaseAdmin";
 
 dotenv.config();
 
 export const aiRouter = express.Router();
 
-const SYSTEM_PROMPT = `
+function buildSystemPrompt() {
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const localeDate = now.toLocaleDateString("nb-NO", { timeZone: "Europe/Oslo" });
+
+  return `
 Du er Panelia-assistenten.
-- Når brukeren ber om å opprette/endre/slette app-data (f.eks. bokmerker), skal du bruke tilgjengelige tools.
-- Hvis nødvendig info mangler (f.eks. url), spør brukeren om det.
+Nåtid: ${nowIso} (lokal dato i Europe/Oslo: ${localeDate}).
+
+- Når brukeren ber om å opprette/endre/slette app-data (f.eks. bokmerker og kalenderhendelser), skal du bruke tilgjengelige tools.
 - Ikke påstå at en handling er utført før du har fått tool-resultat som bekrefter det.
 - Hvis en handling er destruktiv (sletting), be om eksplisitt bekreftelse først.
 - Svar kort og praktisk på norsk.
+
+Intent-mapping for kalender:
+- "lag/opprett ny avtale", "legg til møte", "book" => createCalendarEvent
+- "endre/flytt/oppdater avtale" => updateCalendarEvent
+- "slett/fjern avtal(e)" => deleteCalendarEvent (kun etter bekreftelse)
+- "vis/list kommende avtaler" => listCalendarEvents
+
+Regler for å gjette manglende data ved opprettelse:
+- Hvis tittel mangler, bruk "Møte".
+- Hvis sluttid mangler, bruk varighet 1 time.
+- Tolke relative datoer/tider (f.eks. "i morgen kl 11") ut fra Europe/Oslo.
+- Spør bare oppfølgingsspørsmål når starttid faktisk ikke kan utledes.
+- Etter hver tool-kjøring: oppsummer kort hva som ble gjort, inkludert antakelser.
 `.trim();
+}
 
 function getOpenAIClient(): OpenAI | null {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -36,6 +57,32 @@ function toOpenAITools() {
   }));
 }
 
+function getBearerToken(req: express.Request) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+
+  const [scheme, token] = authHeader.split(" ");
+  if (scheme !== "Bearer" || !token) return null;
+
+  return token;
+}
+
+async function requireUid(req: express.Request, res: express.Response) {
+  const token = getBearerToken(req);
+  if (!token) {
+    res.status(401).json({ error: "missing bearer token" });
+    return null;
+  }
+
+  try {
+    const decoded = await adminAuth.verifyIdToken(token);
+    return decoded.uid;
+  } catch {
+    res.status(401).json({ error: "invalid bearer token" });
+    return null;
+  }
+}
+
 aiRouter.post("/chat", async (req, res) => {
   const { userInput } = req.body;
 
@@ -48,13 +95,15 @@ aiRouter.post("/chat", async (req, res) => {
     return res.status(503).json({ error: "OPENAI_API_KEY is not configured on the server" });
   }
 
-  const uid = "local-dev";
+  const uid = await requireUid(req, res);
+  if (!uid) return;
+
   const requestId =
     (req.headers["x-request-id"] as string | undefined) ??
     `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
   const messages: any[] = [
-    { role: "system", content: SYSTEM_PROMPT },
+    { role: "system", content: buildSystemPrompt() },
     { role: "user", content: userInput },
   ];
 

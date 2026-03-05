@@ -5,7 +5,7 @@ import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import Chat from "../../components/chatUI";
-import CalendarWidget from "../Widgets/builtins/CalendarWidget/CalendarWidget";
+import CalendarWidget, { type CalendarWidgetSizeMode } from "../Widgets/builtins/CalendarWidget/CalendarWidget";
 import GridLayout from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -26,8 +26,10 @@ import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
 import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
 import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
 import SpotifyWidget from "../Widgets/builtins/SpotifyWidget/SpotifyWidget";
+import { auth } from "../../../lib/firebase/client";
 
 type WidgetSize = "small" | "medium" | "large" | "wide";
+type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
 const SIZE_MAP = {
   small:  { w: 6,  h: 3 },
@@ -42,6 +44,11 @@ export default function DashboardPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [calendarConnectionStatus, setCalendarConnectionStatus] = useState<CalendarConnectionStatus>("loading");
+  const [calendarConnectionBusy, setCalendarConnectionBusy] = useState(false);
+  const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
+  const [calendarSizeMode, setCalendarSizeMode] = useState<CalendarWidgetSizeMode>("xlarge");
+
 
   const AVAILABLE_WIDGETS = [
     { id: "clock", label: "Klokke" },
@@ -86,6 +93,146 @@ export default function DashboardPage() {
 
       return () => clearInterval(interval);
     }, []);
+
+  useEffect(() => {
+    if (!isCalendarVisible) return;
+
+    let cancelled = false;
+
+    const fetchCalendarStatus = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        if (!cancelled) setCalendarConnectionStatus("disconnected");
+        return;
+      }
+
+      if (!cancelled) setCalendarConnectionStatus("loading");
+
+      try {
+        const idToken = await user.getIdToken();
+        const response = await fetch("/api/google-calendar/status", {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (!cancelled) setCalendarConnectionStatus("disconnected");
+          return;
+        }
+
+        const payload = (await response.json()) as { connected?: boolean };
+        if (!cancelled) setCalendarConnectionStatus(payload.connected ? "connected" : "disconnected");
+      } catch {
+        if (!cancelled) setCalendarConnectionStatus("disconnected");
+      }
+    };
+
+    void fetchCalendarStatus();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isCalendarVisible]);
+
+
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const oauthResult = url.searchParams.get("calendar_oauth");
+
+    if (!oauthResult) return;
+
+    let cancelled = false;
+
+    const refreshStatusAfterOAuth = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        if (!cancelled) setCalendarConnectionStatus("disconnected");
+        return;
+      }
+
+      if (!cancelled) setCalendarConnectionStatus("loading");
+
+      try {
+        const idToken = await user.getIdToken();
+        const response = await fetch("/api/google-calendar/status", {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        });
+
+        if (!response.ok) {
+          if (!cancelled) setCalendarConnectionStatus("disconnected");
+          return;
+        }
+
+        const payload = (await response.json()) as { connected?: boolean };
+        if (!cancelled) setCalendarConnectionStatus(payload.connected ? "connected" : "disconnected");
+      } catch {
+        if (!cancelled) setCalendarConnectionStatus("disconnected");
+      }
+    };
+
+    void refreshStatusAfterOAuth();
+
+    url.searchParams.delete("calendar_oauth");
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    window.history.replaceState({}, "", nextUrl);
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const pullFromGoogleCalendar = async (showAlertOnError = false) => {
+    if (calendarConnectionStatus !== "connected") return false;
+
+    const user = auth.currentUser;
+    if (!user) return false;
+
+    setCalendarRefreshBusy(true);
+    try {
+      const idToken = await user.getIdToken();
+      const response = await fetch("/api/google-calendar/sync/pull", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ maxResults: 500 }),
+      });
+
+      if (!response.ok) {
+        if (showAlertOnError) {
+          window.alert("Failed to refresh events from Google Calendar.");
+        }
+        return false;
+      }
+
+      return true;
+    } catch {
+      if (showAlertOnError) {
+        window.alert("Failed to refresh events from Google Calendar.");
+      }
+      return false;
+    } finally {
+      setCalendarRefreshBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isCalendarVisible) return;
+    if (calendarConnectionStatus !== "connected") return;
+    if (calendarRefreshBusy) return;
+
+    void pullFromGoogleCalendar(false);
+
+    const interval = setInterval(() => {
+      void pullFromGoogleCalendar(false);
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isCalendarVisible, calendarConnectionStatus]);
 
   // Funksjon for å toggle chat-vinduet 
   const toggleChat = () => {
@@ -139,7 +286,7 @@ export default function DashboardPage() {
       style={{
         position: "fixed",
         top: 20,
-        right: isCalendarVisible ? 920 : 20,
+        right: 20,
         zIndex: 1000,
         transition: "right 0.3s ease",
       }}
@@ -166,17 +313,18 @@ export default function DashboardPage() {
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
-          marginRight: isCalendarVisible ? 900 : 0,
+          marginRight: 0,
+          width: window.innerWidth - SIDEBAR_WIDTH,
           height: "100vh",
           position: "relative",
-          transition: "margin-right 0.3s ease",
+          transition: "none",
         }}
       >
         <GridLayout
           className="layout"
-          cols={60}
-          rowHeight={20}
-          width={window.innerWidth - SIDEBAR_WIDTH - (isCalendarVisible ? 900 : 0)}
+          cols={20}
+          rowHeight={50}
+          width={window.innerWidth - SIDEBAR_WIDTH}
           isDraggable={true}
           isResizable={true}
           compactType={null}
@@ -211,7 +359,7 @@ export default function DashboardPage() {
           style={{
           position: "fixed",
           bottom: 20,
-          right: isCalendarVisible ? 920 : 20,
+          right: 20,
           padding: "10px 20px",
           fontSize: "16px",
           color: "#fff",
@@ -232,7 +380,7 @@ export default function DashboardPage() {
           style={{
             position: "fixed",
             bottom: 80, //høyde fra bunn av skjermen
-            right: isCalendarVisible ? 920 : 20, //lengde fra høyre kant
+            right: 20, //lengde fra høyre kant
             transition: "right 0.3s ease",
           }}
         >
@@ -242,7 +390,98 @@ export default function DashboardPage() {
 
       {/* Calendar Sidebar */}
       {isCalendarVisible && (
-        <CalendarWidget onClose={() => setIsCalendarVisible(false)} />
+        <CalendarWidget
+          onClose={() => setIsCalendarVisible(false)}
+          leftOffset={SIDEBAR_WIDTH + 20}
+          calendarConnectionStatus={calendarConnectionStatus}
+          calendarConnectionBusy={calendarConnectionBusy}
+          calendarRefreshBusy={calendarRefreshBusy}
+          sizeMode={calendarSizeMode}
+          onSizeModeChange={setCalendarSizeMode}
+          onConnectCalendar={async () => {
+            const user = auth.currentUser;
+            if (!user) {
+              window.alert("Please sign in before connecting Google Calendar.");
+              return;
+            }
+
+            setCalendarConnectionBusy(true);
+            try {
+              const idToken = await user.getIdToken();
+              const returnTo = window.location.href;
+
+              const response = await fetch("/api/google-calendar/connect-url", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${idToken}`,
+                },
+                body: JSON.stringify({ returnTo }),
+              });
+
+              if (!response.ok) {
+                window.alert("Failed to start Google Calendar OAuth.");
+                setCalendarConnectionBusy(false);
+                return;
+              }
+
+              const payload = (await response.json()) as { url?: string };
+              if (!payload.url) {
+                window.alert("OAuth URL missing from server response.");
+                setCalendarConnectionBusy(false);
+                return;
+              }
+
+              window.location.href = payload.url;
+            } catch {
+              window.alert("Failed to start Google Calendar OAuth.");
+              setCalendarConnectionBusy(false);
+            }
+          }}
+          onDisconnectCalendar={async () => {
+            const user = auth.currentUser;
+            if (!user) {
+              setCalendarConnectionStatus("disconnected");
+              return;
+            }
+
+            setCalendarConnectionBusy(true);
+            try {
+              const idToken = await user.getIdToken();
+              const response = await fetch("/api/google-calendar/disconnect", {
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${idToken}`,
+                },
+              });
+
+              if (!response.ok) {
+                window.alert("Failed to disconnect Google Calendar.");
+                return;
+              }
+
+              setCalendarConnectionStatus("disconnected");
+            } catch {
+              window.alert("Failed to disconnect Google Calendar.");
+            } finally {
+              setCalendarConnectionBusy(false);
+            }
+          }}
+          onRefreshCalendar={async () => {
+            if (calendarConnectionStatus !== "connected") {
+              window.alert("Connect Google Calendar before refreshing.");
+              return;
+            }
+
+            const user = auth.currentUser;
+            if (!user) {
+              window.alert("Please sign in before refreshing Google Calendar.");
+              return;
+            }
+
+            await pullFromGoogleCalendar(true);
+          }}
+        />
       )}
     </div>
   );
