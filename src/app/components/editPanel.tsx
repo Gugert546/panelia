@@ -40,14 +40,25 @@ export default function EditPanel({
         transition: "left 0.3s ease",
         zIndex: 999,
         padding: 24,
-        boxShadow: "4px 0 12px rgba(0,0,0,0.1)"
+        boxShadow: "4px 0 12px rgba(0,0,0,0.1)",
+
+        display: "flex",
+        flexDirection: "column"
       }}
     >
       <button onClick={onClose}>Lukk</button>
 
       <h2>Velg Widgets</h2>
 
-      <div style={{ marginTop: 20 }}>
+      {/* Scrollable widget list */}
+      <div
+        style={{
+          marginTop: 20,
+          overflowY: "auto",
+          flex: 1,
+          paddingRight: 6
+        }}
+      >
         {availableWidgets.map(widget => {
 
           const isActive = activeWidgets.includes(widget.id);
