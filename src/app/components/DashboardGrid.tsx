@@ -31,7 +31,7 @@ export default function DashboardGrid({
       containerPadding={[20, 20]}
       style={{ height: "100%" }}
     >
-      {activeWidgets.map((widgetId, index) => {
+      {activeWidgets.map((widgetId) => {
 
         const size = SIZE_MAP[widgetSizes[widgetId] || "medium"];
 
