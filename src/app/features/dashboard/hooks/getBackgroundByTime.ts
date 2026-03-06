@@ -1,11 +1,11 @@
 
-import sol1 from "../../assets/panelia-bg/Sol 1.png";
-import sol2 from "../../assets/panelia-bg/Sol 2.png";
-import sol3 from "../../assets/panelia-bg/Sol 3.png";
+import sol1 from "../../../../assets/panelia-bg/Sol 1.png";
+import sol2 from "../../../../assets/panelia-bg/Sol 2.png";
+import sol3 from "../../../../assets/panelia-bg/Sol 3.png";
 
-import natt1 from "../../assets/panelia-bg/Natt 1.png";
-import natt2 from "../../assets/panelia-bg/Natt 2.png";
-import natt3 from "../../assets/panelia-bg/Natt 3.png";
+import natt1 from "../../../../assets/panelia-bg/Natt 1.png";
+import natt2 from "../../../../assets/panelia-bg/Natt 2.png";
+import natt3 from "../../../../assets/panelia-bg/Natt 3.png";
 
 
 export function getBackgroundByTime(date: Date = new Date()) {
