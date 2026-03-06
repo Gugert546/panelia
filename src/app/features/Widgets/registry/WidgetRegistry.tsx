@@ -1,30 +1,40 @@
 import type { FC } from "react";
-import  ClockWidget  from "../builtins/ClockWidget/ClockWidget";
-import NotesWidget  from "../builtins/NotesWidget/NotesWidgetUI";
-import CalendarWidget  from "../builtins/CalendarWidget/CalendarWidget";
+
+import ClockWidget from "../builtins/ClockWidget/ClockWidget";
+import NotesWidget from "../builtins/NotesWidget/NotesWidgetUI";
+import CalendarWidget from "../builtins/CalendarWidget/CalendarWidget";
 import SearchWidgetUI from "../builtins/searchWidget/SearchWidgetUI";
+import WeatherWidget from "../builtins/WeatherWidget/WeatherWidgetUI";
+import NewsWidget from "../builtins/NewsWidget/NewsWidget";
+import SpotifyWidget from "../builtins/SpotifyWidget/SpotifyWidget";
+import BookmarkUi from "../builtins/BookmarkWidget/BookmarkUi";
 
+export type WidgetType =
+  | "clock"
+  | "notes"
+  | "calendar"
+  | "google_search"
+  | "weather"
+  | "news"
+  | "spotify"
+  | "bookmark";
 
-
-
-export type WidgetType = "clock" | "notes" | "calendar" | "google_search";
-
-
+export type WidgetSize = "small" | "medium" | "large" | "wide";
 
 export type WidgetComponentProps = {
   config: Record<string, unknown>;
   onConfigChange: (patch: Record<string, unknown>) => void;
 };
 
-// Adapter: gjør ClockWidget kompatibel med WidgetComponentProps
+const getSize = (config: Record<string, unknown>) =>
+  (config.size as WidgetSize) ?? "small";
+
 const ClockWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
-  return <ClockWidget size={size} />;
+  return <ClockWidget size={getSize(config)} />;
 };
 
 const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
-  return <NotesWidget size={size} />;
+  return <NotesWidget size={getSize(config)} />;
 };
 
 const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
@@ -32,21 +42,78 @@ const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
 };
 
 const SearchWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
-  return <SearchWidgetUI size={size} />;
+  return <SearchWidgetUI size={getSize(config)} />;
+};
+
+const WeatherWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
+  return <WeatherWidget size={getSize(config)} />;
+};
+
+const NewsWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
+  return <NewsWidget size={getSize(config)} />;
+};
+
+const SpotifyWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
+  return <SpotifyWidget size={getSize(config)} />;
+};
+
+const BookmarkWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
+  return <BookmarkUi size={getSize(config)} />;
 };
 
 export const WIDGETS: Record<
   WidgetType,
-  { title: string; Component: FC<WidgetComponentProps>; defaultW: number; defaultH: number }
+  {
+    title: string;
+    Component: FC<WidgetComponentProps>;
+    defaultSize: WidgetSize;
+  }
 > = {
-  clock: { title: "", Component: ClockWidgetAdapter, defaultW: 1, defaultH: 1 },
-  notes: { title: "Notater", Component: NotesWidgetAdapter, defaultW: 3, defaultH: 1.5 },
-  calendar: { title: "Kalender", Component: CalendarWidgetAdapter, defaultW: 2, defaultH: 3.5 },
+  clock: {
+    title: "Klokke",
+    Component: ClockWidgetAdapter,
+    defaultSize: "small",
+  },
+
+  notes: {
+    title: "Notater",
+    Component: NotesWidgetAdapter,
+    defaultSize: "small",
+  },
+
+  calendar: {
+    title: "Kalender",
+    Component: CalendarWidgetAdapter,
+    defaultSize: "large",
+  },
+
   google_search: {
-  title: "",
-  Component: SearchWidgetAdapter,
-  defaultW: 2,
-  defaultH: 1,
-},
+    title: "Søk",
+    Component: SearchWidgetAdapter,
+    defaultSize: "medium",
+  },
+
+  weather: {
+    title: "Vær",
+    Component: WeatherWidgetAdapter,
+    defaultSize: "large",
+  },
+
+  news: {
+    title: "Nyheter",
+    Component: NewsWidgetAdapter,
+    defaultSize: "large",
+  },
+
+  spotify: {
+    title: "Spotify",
+    Component: SpotifyWidgetAdapter,
+    defaultSize: "small",
+  },
+
+  bookmark: {
+    title: "Bokmerker",
+    Component: BookmarkWidgetAdapter,
+    defaultSize: "small",
+  },
 };

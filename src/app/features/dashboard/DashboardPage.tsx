@@ -10,13 +10,8 @@ import GridLayout from "react-grid-layout/legacy";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-// Bakgrunnsbilder for dag/natt
-import sol1 from "../../../assets/panelia-bg/Sol 1.png";
-import sol2 from "../../../assets/panelia-bg/Sol 2.png";
-import sol3 from "../../../assets/panelia-bg/Sol 3.png";
-import natt1 from "../../../assets/panelia-bg/Natt 1.png";
-import natt2 from "../../../assets/panelia-bg/Natt 2.png";
-import natt3 from "../../../assets/panelia-bg/Natt 3.png";
+// Bakgrunnsbilder
+import { getBackgroundByTime } from "../../components/getBackgroundByTime";
 
 //widgets
 import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
@@ -248,26 +243,6 @@ export default function DashboardPage() {
     }
   };
 
-  const getBackgroundByTime = () => {
-  const hour = new Date().getHours();
-
-  // DAG
-  if (hour >= 6 && hour < 8) return sol1; // Mellom 06:00 og 08:00 her
-  if (hour >= 8 && hour < 11) return sol2; // Mellom 08:00 og 11:00 her
-  if (hour >= 11 && hour < 17) return sol3; // Mellom 11:00 og 17:00 osv...
-  if (hour >= 17 && hour < 20) return sol2;
-
-  // KVELD
-  if (hour >= 20 && hour < 23) return natt1;
-
-  // NATT
-  if (hour >= 23 || hour < 2) return natt2;
-  if (hour >= 2 && hour < 3) return natt3;
-  if (hour >= 3 && hour < 5) return natt2;
-  if (hour >= 5 && hour < 6) return natt1;
-
-  return sol1;
-  };
 
   return (
     <div
