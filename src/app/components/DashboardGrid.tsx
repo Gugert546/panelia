@@ -41,7 +41,7 @@ export default function DashboardGrid({
             data-grid={{
               ...size,
               x: Math.floor((20 - size.w) / 2),
-              y: index * size.h
+              y: Infinity
             }}
           >
             {widgetComponents[widgetId]}
