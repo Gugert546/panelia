@@ -21,11 +21,13 @@ import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
 import { auth } from "../../../lib/firebase/client";
 
 
+
 // widget hook
 import {
   useWidgets,
   AVAILABLE_WIDGETS,
 } from "./hooks/useWidgets";
+
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
@@ -49,12 +51,14 @@ export default function DashboardPage() {
   const [calendarSizeMode, setCalendarSizeMode] =
     useState<CalendarWidgetSizeMode>("xlarge");
 
+
   // widget system
   const {
     activeWidgets,
     toggleWidget,
   } = useWidgets();
 
+  
   // Natt / Dag refresh
   const [, setTime] = useState(new Date());
 

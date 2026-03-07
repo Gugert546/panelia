@@ -25,11 +25,11 @@ export type WidgetComponentProps = {
 };
 
 const ClockWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <ClockWidget size="small" />;
+  return <ClockWidget />
 };
 
 const NotesWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <NotesWidget size="small" />;
+  return <NotesWidget />;
 };
 
 const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
@@ -37,30 +37,30 @@ const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
 };
 
 const SearchWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <SearchWidgetUI size="medium" />;
+  return <SearchWidgetUI />;
 };
 
 const WeatherWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <WeatherWidget size="large" />;
+  return <WeatherWidget />;
 };
 
 const NewsWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <NewsWidget size="large" />;
+  return <NewsWidget />;
 };
 
 const SpotifyWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <SpotifyWidget size="small" />;
+  return <SpotifyWidget />;
 };
 
 const BookmarkWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <BookmarkUi size="small" />;
+  return <BookmarkUi />;
 };
 
 export const WIDGETS = {
   clock: {
     title: "Klokke",
     Component: ClockWidgetAdapter,
-    defaultGrid: { w: 4, h: 2 },
+    defaultGrid: { w: 3, h: 2 },
   },
 
   notes: {
@@ -90,7 +90,7 @@ export const WIDGETS = {
   news: {
     title: "Nyheter",
     Component: NewsWidgetAdapter,
-    defaultGrid: { w: 10, h: 6 },
+    defaultGrid: { w: 6, h: 4 },
   },
 
   spotify: {

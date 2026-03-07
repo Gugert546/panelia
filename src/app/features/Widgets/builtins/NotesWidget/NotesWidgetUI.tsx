@@ -2,22 +2,12 @@ import { useNotesWidget } from "./NotesWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
+export default function NotesWidget() {
 
-type Props = {
-  size: WidgetSize;
-};
-
-export default function NotesWidget({ size }: Props) {
   const { state, actions } = useNotesWidget();
 
-  const fontSize =
-    size === "small" ? 12 :
-    size === "medium" ? 14 :
-    16;
-
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane>
 
         <div
@@ -63,7 +53,7 @@ export default function NotesWidget({ size }: Props) {
               border: "none",
               background: "transparent",
               outline: "none",
-              fontSize,
+              fontSize: 14,
               boxSizing: "border-box"
             }}
           />

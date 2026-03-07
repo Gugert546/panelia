@@ -24,11 +24,14 @@ export default function DashboardGrid({
       margin={[10, 10]}
       maxRows={22}
       containerPadding={[20, 20]}
+      autoSize={false}
       style={{ height: "100%" }}
     >
-      {activeWidgets.map((widgetId) => {
+      {activeWidgets.map((widgetId, index) => {
 
         const widget = WIDGETS[widgetId as keyof typeof WIDGETS];
+
+        if (!widget) return null;
 
         const Component = widget.Component;
 
@@ -37,8 +40,8 @@ export default function DashboardGrid({
             key={widgetId}
             data-grid={{
               ...widget.defaultGrid,
-              x: 0,
-              y: Infinity
+              x: (index * 4) % 20,
+              y: Math.floor(index / 5) * widget.defaultGrid.h
             }}
           >
             <Component config={{}} onConfigChange={() => {}} />

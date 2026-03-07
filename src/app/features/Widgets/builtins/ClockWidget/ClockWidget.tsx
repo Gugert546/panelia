@@ -2,17 +2,12 @@ import { useEffect, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
-
-type Props = {
-  size: WidgetSize;
-};
-
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
 
-export default function ClockWidget({ size }: Props) {
+export default function ClockWidget() {
+
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -24,14 +19,8 @@ export default function ClockWidget({ size }: Props) {
   const m = pad(now.getMinutes());
   const s = pad(now.getSeconds());
 
-  const fontSize =
-    size === "small" ? 18 :
-    size === "medium" ? 28 :
-    size === "large" ? 42 :
-    28;
-
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane title="">
         <div
           style={{
@@ -41,8 +30,8 @@ export default function ClockWidget({ size }: Props) {
             alignItems: "center",
             justifyContent: "center",
             fontWeight: 700,
-            fontSize,
-            fontVariantNumeric: "tabular-nums",
+            fontSize: 28,
+            fontVariantNumeric: "tabular-nums"
           }}
         >
           {h}:{m}:{s}

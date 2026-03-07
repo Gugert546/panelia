@@ -2,27 +2,23 @@ import { useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
-
-type Props = {
-  size: WidgetSize;
-};
-
 type NewsArticle = {
   title: string;
   url: string;
 };
 
-export default function NewsWidget({ size }: Props) {
+export default function NewsWidget() {
 
   const [country, setCountry] = useState("");
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function fetchNewsByCountry(country: string) {
+
     setLoading(true);
 
     try {
+
       const res = await fetch(
         `https://api.worldnewsapi.com/search-news?source-countries=${country}`,
         {
@@ -42,7 +38,9 @@ export default function NewsWidget({ size }: Props) {
       setArticles(mapped);
 
     } catch (err) {
+
       console.error("News fetch failed:", err);
+
     }
 
     setLoading(false);
@@ -53,18 +51,8 @@ export default function NewsWidget({ size }: Props) {
     fetchNewsByCountry(country);
   }
 
-  const inputSize =
-    size === "small" ? 12 :
-    size === "medium" ? 14 :
-    16;
-
-  const maxArticles =
-    size === "small" ? 2 :
-    size === "medium" ? 4 :
-    6;
-
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane title="World News">
 
         <div
@@ -82,7 +70,7 @@ export default function NewsWidget({ size }: Props) {
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             style={{
-              fontSize: inputSize,
+              fontSize: 14,
               padding: 4
             }}
           />
@@ -90,7 +78,7 @@ export default function NewsWidget({ size }: Props) {
           <button
             onClick={handleSubmit}
             style={{
-              fontSize: inputSize,
+              fontSize: 14,
               padding: 4
             }}
           >
@@ -108,13 +96,13 @@ export default function NewsWidget({ size }: Props) {
               flex: 1
             }}
           >
-            {articles.slice(0, maxArticles).map((article, i) => (
+            {articles.slice(0, 6).map((article, i) => (
               <a
                 key={i}
                 href={article.url}
                 target="_blank"
                 style={{
-                  fontSize: inputSize,
+                  fontSize: 14,
                   textDecoration: "none"
                 }}
               >

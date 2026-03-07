@@ -2,26 +2,24 @@ import { useEffect, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
+export default function SpotifyWidget() {
 
-type Props = {
-  size: WidgetSize;
-};
-
-export default function SpotifyWidget({ size }: Props) {
   const [track, setTrack] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
     const storedToken = localStorage.getItem("spotify_token");
     if (!storedToken) return;
+
     setToken(storedToken);
   }, []);
 
   useEffect(() => {
+
     if (!token) return;
 
     const fetchTrack = async () => {
+
       const res = await fetch(
         "https://api.spotify.com/v1/me/player/currently-playing",
         {
@@ -38,12 +36,15 @@ export default function SpotifyWidget({ size }: Props) {
 
       const data = await res.json();
       setTrack(data);
+
     };
 
     fetchTrack();
+
   }, [token]);
 
   const handleConnect = () => {
+
     const clientId = "311e91e754f0449eb4bddba53e9414d1";
     const redirectUri = "https://panelia.web.app/callback";
     const scope = "user-read-currently-playing user-read-playback-state";
@@ -54,21 +55,11 @@ export default function SpotifyWidget({ size }: Props) {
       `&response_type=code` +
       `&redirect_uri=${encodeURIComponent(redirectUri)}` +
       `&scope=${encodeURIComponent(scope)}`;
+
   };
 
-  const coverSize =
-    size === "small" ? 36 :
-    size === "medium" ? 48 :
-    size === "large" ? 64 :
-    48;
-
-  const fontSize =
-    size === "small" ? 12 :
-    size === "medium" ? 14 :
-    16;
-
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane>
 
         <div
@@ -77,7 +68,7 @@ export default function SpotifyWidget({ size }: Props) {
             alignItems: "center",
             gap: 10,
             width: "100%",
-            height: "100%"
+            height: "100%",
           }}
         >
 
@@ -86,7 +77,8 @@ export default function SpotifyWidget({ size }: Props) {
               onClick={handleConnect}
               style={{
                 padding: "6px 10px",
-                fontSize
+                fontSize: 14,
+                cursor: "pointer"
               }}
             >
               Connect Spotify
@@ -94,7 +86,7 @@ export default function SpotifyWidget({ size }: Props) {
           )}
 
           {token && (!track || !track.item) && (
-            <div style={{ fontSize }}>
+            <div style={{ fontSize: 14 }}>
               Nothing playing
             </div>
           )}
@@ -103,8 +95,8 @@ export default function SpotifyWidget({ size }: Props) {
             <>
               <img
                 src={track.item.album.images[0].url}
-                width={coverSize}
-                height={coverSize}
+                width={48}
+                height={48}
                 style={{ borderRadius: 6 }}
               />
 
@@ -113,18 +105,16 @@ export default function SpotifyWidget({ size }: Props) {
                   display: "flex",
                   flexDirection: "column",
                   gap: 2,
-                  fontSize
+                  fontSize: 14
                 }}
               >
                 <div style={{ fontWeight: 600 }}>
                   {track.item.name}
                 </div>
 
-                {size !== "small" && (
-                  <div style={{ opacity: 0.7 }}>
-                    {track.item.artists.map((a: any) => a.name).join(", ")}
-                  </div>
-                )}
+                <div style={{ opacity: 0.7 }}>
+                  {track.item.artists.map((a: any) => a.name).join(", ")}
+                </div>
               </div>
             </>
           )}

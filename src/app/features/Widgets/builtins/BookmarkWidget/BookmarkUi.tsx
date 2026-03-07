@@ -2,27 +2,12 @@ import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useBookmark } from "./BookmarkLogic";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
+export default function BookmarkUi() {
 
-type Props = {
-  size: WidgetSize;
-};
-
-export default function BookmarkUi({ size }: Props) {
   const { categories, handleAddBookmark, handleAddCategory } = useBookmark();
 
-  const fontSize =
-    size === "small" ? 12 :
-    size === "medium" ? 14 :
-    16;
-
-  const maxCategories =
-    size === "small" ? 1 :
-    size === "medium" ? 2 :
-    4;
-
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane title="Bookmarks">
 
         <div
@@ -43,7 +28,7 @@ export default function BookmarkUi({ size }: Props) {
               color: "#FFF",
               border: "none",
               cursor: "pointer",
-              fontSize
+              fontSize: 14
             }}
           >
             Add Category
@@ -58,12 +43,14 @@ export default function BookmarkUi({ size }: Props) {
               gap: 10
             }}
           >
-            {categories.slice(0, maxCategories).map((category) => (
+
+            {categories.map((category) => (
               <div key={category.name}>
+
                 <h4
                   style={{
                     margin: "6px 0",
-                    fontSize
+                    fontSize: 14
                   }}
                 >
                   {category.name}
@@ -73,7 +60,7 @@ export default function BookmarkUi({ size }: Props) {
                   style={{
                     margin: 0,
                     paddingLeft: 16,
-                    fontSize
+                    fontSize: 14
                   }}
                 >
                   {category.bookmarks.slice(0, 5).map((bookmark, index) => (
@@ -92,19 +79,19 @@ export default function BookmarkUi({ size }: Props) {
                   ))}
                 </ul>
 
-                {size !== "small" && (
-                  <button
-                    onClick={() => handleAddBookmark(category.name)}
-                    style={{
-                      marginTop: 6,
-                      fontSize
-                    }}
-                  >
-                    Add Bookmark
-                  </button>
-                )}
+                <button
+                  onClick={() => handleAddBookmark(category.name)}
+                  style={{
+                    marginTop: 6,
+                    fontSize: 14
+                  }}
+                >
+                  Add Bookmark
+                </button>
+
               </div>
             ))}
+
           </div>
 
         </div>
