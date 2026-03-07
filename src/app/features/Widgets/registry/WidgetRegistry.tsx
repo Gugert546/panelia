@@ -84,13 +84,13 @@ export const WIDGETS = {
   weather: {
     title: "Vær",
     Component: WeatherWidgetAdapter,
-    defaultGrid: { w: 6, h: 4 },
+    defaultGrid: { w: 3, h: 3 },
   },
 
   news: {
     title: "Nyheter",
     Component: NewsWidgetAdapter,
-    defaultGrid: { w: 6, h: 4 },
+    defaultGrid: { w: 6, h: 6 },
   },
 
   spotify: {
@@ -102,6 +102,6 @@ export const WIDGETS = {
   bookmark: {
     title: "Bokmerker",
     Component: BookmarkWidgetAdapter,
-    defaultGrid: { w: 4, h: 3 },
+    defaultGrid: { w: 4, h: 4 },
   },
 };
