@@ -14,19 +14,12 @@ import DashboardGrid from "../../components/DashboardGrid";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
+
 // bakgrunn
 import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
 
-// widgets
-import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
-import SearchWidget from "../Widgets/builtins/searchWidget/SearchWidgetUI";
-import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
-import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
-import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
-import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
-import SpotifyWidget from "../Widgets/builtins/SpotifyWidget/SpotifyWidget";
-
 import { auth } from "../../../lib/firebase/client";
+
 
 // widget hook
 import {
@@ -59,21 +52,8 @@ export default function DashboardPage() {
   // widget system
   const {
     activeWidgets,
-    widgetSizes,
-    setWidgetSizes,
     toggleWidget,
   } = useWidgets();
-
-  // widget components
-  const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
-    clock: <ClockWidget size="small" />,
-    search: <SearchWidget size="medium" />,
-    news: <NewsWidget size="large" />,
-    weather: <WeatherWidget size="large" />,
-    Bookmark: <BookmarkUi size="small" />,
-    Notes: <NotesWidget size="small" />,
-    spotify: <SpotifyWidget size="small" />,
-  };
 
   // Natt / Dag refresh
   const [, setTime] = useState(new Date());
@@ -88,6 +68,7 @@ export default function DashboardPage() {
 
   // Kalender status
   useEffect(() => {
+
     if (!isCalendarVisible) return;
 
     let cancelled = false;
@@ -222,7 +203,7 @@ export default function DashboardPage() {
     setIsChatVisible((prev) => !prev);
   };
 
-  // sidebar nav
+  // sidebar navigation
   const handleSidebarNavigation = (itemKey: string) => {
 
     if (itemKey === "calendar") {
@@ -269,8 +250,6 @@ export default function DashboardPage() {
         onClose={() => setEditOpen(false)}
         availableWidgets={AVAILABLE_WIDGETS}
         activeWidgets={activeWidgets}
-        widgetSizes={widgetSizes}
-        setWidgetSizes={setWidgetSizes}
         toggleWidget={toggleWidget}
       />
 
@@ -285,8 +264,6 @@ export default function DashboardPage() {
 
         <DashboardGrid
           activeWidgets={activeWidgets}
-          widgetSizes={widgetSizes}
-          widgetComponents={WIDGET_COMPONENTS}
           sidebarWidth={SIDEBAR_WIDTH}
         />
 
@@ -329,6 +306,7 @@ export default function DashboardPage() {
           onRefreshCalendar={() => pullFromGoogleCalendar(true)}
         />
       )}
+
     </div>
   );
 }

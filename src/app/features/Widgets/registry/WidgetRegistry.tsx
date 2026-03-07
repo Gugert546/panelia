@@ -19,101 +19,89 @@ export type WidgetType =
   | "spotify"
   | "bookmark";
 
-export type WidgetSize = "small" | "medium" | "large" | "wide";
-
 export type WidgetComponentProps = {
   config: Record<string, unknown>;
   onConfigChange: (patch: Record<string, unknown>) => void;
 };
 
-const getSize = (config: Record<string, unknown>) =>
-  (config.size as WidgetSize) ?? "small";
-
-const ClockWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  return <ClockWidget size={getSize(config)} />;
+const ClockWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <ClockWidget size="small" />;
 };
 
-const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  return <NotesWidget size={getSize(config)} />;
+const NotesWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <NotesWidget size="small" />;
 };
 
 const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
   return <CalendarWidget />;
 };
 
-const SearchWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  return <SearchWidgetUI size={getSize(config)} />;
+const SearchWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <SearchWidgetUI size="medium" />;
 };
 
-const WeatherWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  return <WeatherWidget size={getSize(config)} />;
+const WeatherWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <WeatherWidget size="large" />;
 };
 
-const NewsWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  return <NewsWidget size={getSize(config)} />;
+const NewsWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <NewsWidget size="large" />;
 };
 
-const SpotifyWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  return <SpotifyWidget size={getSize(config)} />;
+const SpotifyWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <SpotifyWidget size="small" />;
 };
 
-const BookmarkWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  return <BookmarkUi size={getSize(config)} />;
+const BookmarkWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <BookmarkUi size="small" />;
 };
 
-export const WIDGETS: Record<
-  WidgetType,
-  {
-    title: string;
-    Component: FC<WidgetComponentProps>;
-    defaultSize: WidgetSize;
-  }
-> = {
+export const WIDGETS = {
   clock: {
     title: "Klokke",
     Component: ClockWidgetAdapter,
-    defaultSize: "small",
+    defaultGrid: { w: 4, h: 2 },
   },
 
   notes: {
     title: "Notater",
     Component: NotesWidgetAdapter,
-    defaultSize: "small",
+    defaultGrid: { w: 4, h: 4 },
   },
 
   calendar: {
     title: "Kalender",
     Component: CalendarWidgetAdapter,
-    defaultSize: "large",
+    defaultGrid: { w: 8, h: 6 },
   },
 
   google_search: {
     title: "Søk",
     Component: SearchWidgetAdapter,
-    defaultSize: "medium",
+    defaultGrid: { w: 8, h: 2 },
   },
 
   weather: {
     title: "Vær",
     Component: WeatherWidgetAdapter,
-    defaultSize: "large",
+    defaultGrid: { w: 6, h: 4 },
   },
 
   news: {
     title: "Nyheter",
     Component: NewsWidgetAdapter,
-    defaultSize: "large",
+    defaultGrid: { w: 10, h: 6 },
   },
 
   spotify: {
     title: "Spotify",
     Component: SpotifyWidgetAdapter,
-    defaultSize: "small",
+    defaultGrid: { w: 4, h: 3 },
   },
 
   bookmark: {
     title: "Bokmerker",
     Component: BookmarkWidgetAdapter,
-    defaultSize: "small",
+    defaultGrid: { w: 4, h: 3 },
   },
 };

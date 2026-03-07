@@ -1,18 +1,13 @@
 import GridLayout from "react-grid-layout/legacy";
-import { SIZE_MAP, type WidgetSize } from "../features/dashboard/hooks/useWidgets";
-
+import { WIDGETS } from "../features/Widgets/registry/WidgetRegistry";
 
 type Props = {
   activeWidgets: string[];
-  widgetSizes: Record<string, WidgetSize>;
-  widgetComponents: Record<string, React.ReactNode>;
   sidebarWidth: number;
 };
 
 export default function DashboardGrid({
   activeWidgets,
-  widgetSizes,
-  widgetComponents,
   sidebarWidth
 }: Props) {
 
@@ -33,18 +28,20 @@ export default function DashboardGrid({
     >
       {activeWidgets.map((widgetId) => {
 
-        const size = SIZE_MAP[widgetSizes[widgetId] || "medium"];
+        const widget = WIDGETS[widgetId as keyof typeof WIDGETS];
+
+        const Component = widget.Component;
 
         return (
           <div
             key={widgetId}
             data-grid={{
-              ...size,
-              x: Math.floor((20 - size.w) / 2),
+              ...widget.defaultGrid,
+              x: 0,
               y: Infinity
             }}
           >
-            {widgetComponents[widgetId]}
+            <Component config={{}} onConfigChange={() => {}} />
           </div>
         );
       })}

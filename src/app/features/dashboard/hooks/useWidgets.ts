@@ -1,42 +1,21 @@
-
 import { useState } from "react";
-
-export type WidgetSize = "small" | "medium" | "large" | "wide";
-
-export const SIZE_MAP = {
-  small: { w: 4, h: 2 },
-  medium: { w: 9, h: 5 },
-  large: { w: 13, h: 6 },
-  wide: { w: 18, h: 3 },
-};
 
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke" },
-  { id: "search", label: "Søk" },
+  { id: "google_search", label: "Søk" },
   { id: "news", label: "Nyheter" },
   { id: "weather", label: "Vær" },
-  { id: "Bookmark", label: "Bokmerke" },
-  { id: "Notes", label: "Notater" },
+  { id: "bookmark", label: "Bokmerke" },
+  { id: "notes", label: "Notater" },
   { id: "spotify", label: "Spotify" },
 ];
-
 export function useWidgets() {
 
-  const [activeWidgets, setActiveWidgets] = useState<string[]>([
+  const [activeWidgets, setActiveWidgets] = useState([
     "clock",
-    "search",
+    "google_search",
     "spotify"
   ]);
-
-  const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
-    clock: "small",
-    search: "small",
-    news: "medium",
-    weather: "small",
-    Bookmark: "medium",
-    Notes: "small",
-    spotify: "small",
-  });
 
   const toggleWidget = (id: string) => {
     setActiveWidgets(prev =>
@@ -48,8 +27,6 @@ export function useWidgets() {
 
   return {
     activeWidgets,
-    widgetSizes,
-    setWidgetSizes,
     toggleWidget
   };
 }
