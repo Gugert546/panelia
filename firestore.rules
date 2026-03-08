@@ -16,6 +16,14 @@ service cloud.firestore {
         allow read, write: if isOwner(userId);
       }
 
+      match /bookmarkCategories/{categoryId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /bookmarks/{bookmarkId} {
+        allow read, write: if isOwner(userId);
+      }
+
       match /{document=**} {
         allow read, write: if isOwner(userId);
       }
