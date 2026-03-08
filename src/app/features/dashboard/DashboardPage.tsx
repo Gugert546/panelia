@@ -420,7 +420,14 @@ export default function DashboardPage() {
               });
 
               if (!response.ok) {
-                window.alert("Failed to start Google Calendar OAuth.");
+                let details = "";
+                try {
+                  const errorPayload = (await response.json()) as { error?: string };
+                  if (errorPayload?.error) details = ` (${errorPayload.error})`;
+                } catch {
+                  // ignore parse failures
+                }
+                window.alert(`Failed to start Google Calendar OAuth.${details}`);
                 setCalendarConnectionBusy(false);
                 return;
               }
