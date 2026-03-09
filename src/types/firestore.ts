@@ -34,3 +34,9 @@ export type BookmarkCategory = {
   createdAt: number;  // server epoch ms
   updatedAt: number;  // server epoch ms
 };
+
+export type WidgetLayout = {
+  activeWidgets: string[];
+  layouts: Record<string, { x: number; y: number; w: number; h: number }>;
+  updatedAt: number;  // server epoch ms
+};
