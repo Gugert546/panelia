@@ -16,3 +16,21 @@ export type CalendarEvent = {
   deletedAt?: number;     // soft delete for sync safety
   syncStatus: CalendarSyncStatus;
 };
+
+export type Bookmark = {
+  id: string;
+  userId: string;
+  categoryId: string;
+  title: string;
+  url: string;
+  createdAt: number;  // server epoch ms
+  updatedAt: number;  // server epoch ms
+};
+
+export type BookmarkCategory = {
+  id: string;
+  userId: string;
+  name: string;
+  createdAt: number;  // server epoch ms
+  updatedAt: number;  // server epoch ms
+};

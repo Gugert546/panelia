@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "./client";
 import type { CalendarEvent } from "../../types/firestore";
+import type { Bookmark, BookmarkCategory } from "../../types/firestore";
 
 const eventsRef = (uid: string) => collection(db, "users", uid, "calendarEvents");
 
@@ -137,4 +138,74 @@ export async function getEventById(uid: string, eventId: string) {
 
 export function resolveLww(current: CalendarEvent, incoming: CalendarEvent): CalendarEvent {
   return incoming.updatedAt >= current.updatedAt ? incoming : current;
+}
+
+
+const categoriesRef = (uid: string) => 
+  collection(db, "users", uid, "bookmarkCategories");
+
+const bookmarksRef = (uid: string) => 
+  collection(db, "users", uid, "bookmarks");
+
+
+export function subscribeToCategories(
+  uid: string, 
+  onData: (categories: BookmarkCategory[]) => void
+) {
+  return onSnapshot(categoriesRef(uid), (snap) => {
+    const categories = snap.docs.map((d) => d.data() as BookmarkCategory);
+    onData(categories);
+  });
+}
+
+
+export function subscribeToBookmarks(
+  uid: string, 
+  onData: (bookmarks: Bookmark[]) => void
+) {
+  return onSnapshot(bookmarksRef(uid), (snap) => {
+    const bookmarks = snap.docs.map((d) => d.data() as Bookmark);
+    onData(bookmarks);
+  });
+}
+
+
+export async function createCategory(uid: string, category: BookmarkCategory) {
+  await setDoc(doc(categoriesRef(uid), category.id), {
+    ...category,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+
+export async function createBookmark(uid: string, bookmark: Bookmark) {
+  await setDoc(doc(bookmarksRef(uid), bookmark.id), {
+    ...bookmark,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+
+export async function updateBookmark(
+  uid: string,
+  bookmarkId: string,
+  patch: Partial<Bookmark>
+) {
+  const ref = doc(bookmarksRef(uid), bookmarkId);
+  await updateDoc(ref, {
+    ...patch,
+    updatedAt: serverTimestamp(),
+  });
+}
+
+
+export async function deleteBookmark(uid: string, bookmarkId: string) {
+  await deleteDoc(doc(bookmarksRef(uid), bookmarkId));
+}
+
+
+export async function deleteCategory(uid: string, categoryId: string) {
+  await deleteDoc(doc(categoriesRef(uid), categoryId));
 }

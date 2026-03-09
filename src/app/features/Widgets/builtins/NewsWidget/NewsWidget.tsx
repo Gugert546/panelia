@@ -7,36 +7,34 @@ type NewsArticle = {
   url: string;
 };
 
-export default function NewsWidget() {
+type NewsResponse = {
+  country: string;
+  updatedAt: string;
+  articles: NewsArticle[];
+};
 
+export default function NewsWidget({ size }: Props) {
   const [country, setCountry] = useState("");
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function fetchNewsByCountry(country: string) {
+    const code = country.trim().toLowerCase();
+    if (!code) return;
 
     setLoading(true);
 
     try {
+      const res = await fetch(`/api/news?country=${encodeURIComponent(code)}`);
 
-      const res = await fetch(
-        `https://api.worldnewsapi.com/search-news?source-countries=${country}`,
-        {
-          headers: {
-            "x-api-key": import.meta.env.VITE_WORLD_NEWS_API_KEY
-          }
-        }
-      );
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`News request failed ${res.status}: ${txt}`);
+      }
 
-      const data = await res.json();
+      const data = (await res.json()) as NewsResponse;
 
-      const mapped = (data.news || []).map((article: any) => ({
-        title: article.title,
-        url: article.url
-      }));
-
-      setArticles(mapped);
-
+      setArticles(data.articles ?? []);
     } catch (err) {
 
       console.error("News fetch failed:", err);
@@ -54,7 +52,6 @@ export default function NewsWidget() {
   return (
     <WidgetContainer>
       <WidgetPane title="World News">
-
         <div
           style={{
             display: "flex",
@@ -63,7 +60,6 @@ export default function NewsWidget() {
             gap: 8
           }}
         >
-
           <input
             type="text"
             placeholder="Country code (no, us...)"
@@ -101,6 +97,7 @@ export default function NewsWidget() {
                 key={i}
                 href={article.url}
                 target="_blank"
+                rel="noreferrer"
                 style={{
                   fontSize: 14,
                   textDecoration: "none"
@@ -110,9 +107,7 @@ export default function NewsWidget() {
               </a>
             ))}
           </div>
-
         </div>
-
       </WidgetPane>
     </WidgetContainer>
   );

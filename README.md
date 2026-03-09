@@ -10,8 +10,8 @@
 ``` npm run server``` kjører serveren lokalt
 
 # Backend deployment
-```docker build -t <navn>``` // lokal test `docker run -p 8080:8080 your-backend-name` <br>
-```docker tag your-backend-name gcr.io/panelia/your-backend-name``` //tagger docker-imaget <br>
-```docker push gcr.io/your-project-id/your-backend-name```  //pusher image til google repository <br>
-```gcloud run deploy your-backend-name --image gcr.io/panelia/your-backend-name --platform managed --region us-central1  --allow-unauthenticated``` // deploy på google cloud run <br>
+```docker build -t panelia-server:latest .``` // lokal test `docker run -p 8080:8080 your-backend-name` <br>
+```docker tag panelia-server gcr.io/panelia/panelia-server``` //tagger docker-imaget <br>
+```docker push gcr.io/panelia/panelia-server```  //pusher image til google repository <br>
+```gcloud run deploy panelia-server --image gcr.io/panelia/panelia-server --platform managed --region europe-west1  --allow-unauthenticated``` // deploy på google cloud run <br>
 
