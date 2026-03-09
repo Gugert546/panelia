@@ -1,9 +1,9 @@
 import express from "express";
 import dotenv from "dotenv";
 import { OpenAI } from "openai";
-import { tools } from "./tools/registry";
-import { runTool } from "./tools/dispatch";
-import { adminAuth } from "./firebaseAdmin";
+import { tools } from "./tools/registry.ts";
+import { runTool } from "./tools/dispatch.ts";
+import { adminAuth } from "./firebaseAdmin.ts";
 
 dotenv.config();
 
