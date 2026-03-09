@@ -5,13 +5,10 @@ import { useBookmark } from "./BookmarkLogic";
 import BookmarkForm from "./BookmarkForm";
 import CategoryForm from "./CategoryForm";
 
+
+
+
 export default function BookmarkUi() {
-
-type Props = {
-  size: WidgetSize;
-};
-
-export default function BookmarkUi({ size }: Props) {
   const {
     categories,
     loading,
@@ -25,11 +22,11 @@ export default function BookmarkUi({ size }: Props) {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedCategoryForBookmark, setSelectedCategoryForBookmark] = useState<string | null>(null);
 
-  const fontSize = size === "small" ? 12 : size === "medium" ? 14 : 16;
+  const fontSize = 14 
 
   if (loading) {
     return (
-      <WidgetContainer size={size}>
+      <WidgetContainer >
         <WidgetPane title="Bookmarks">
           <div style={{ padding: 16, textAlign: "center" }}>Loading bookmarks...</div>
         </WidgetPane>

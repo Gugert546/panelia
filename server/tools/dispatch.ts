@@ -1,6 +1,6 @@
 // server/tools/dispatch.ts
-import { toolMap } from "./registry.ts";
-import type { ToolContext } from "./types.ts";
+import { toolMap } from "./registry";
+import type { ToolContext } from "./types";
 
 export async function runTool(name: string, args: unknown, ctx: ToolContext) {
   const tool = toolMap.get(name);

@@ -13,7 +13,7 @@ type NewsResponse = {
   articles: NewsArticle[];
 };
 
-export default function NewsWidget({ size }: Props) {
+export default function NewsWidget() {
   const [country, setCountry] = useState("");
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);

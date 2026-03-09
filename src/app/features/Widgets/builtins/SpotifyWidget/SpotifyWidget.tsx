@@ -2,11 +2,7 @@ import { useEffect, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-export default function SpotifyWidget() {
 
-type Props = {
-  size: WidgetSize;
-};
 
 type SpotifyTokenResponse = {
   access_token?: string;
@@ -70,7 +66,7 @@ async function ensureSpotifyAccessToken(currentToken: string) {
   return refreshSpotifyAccessToken();
 }
 
-export default function SpotifyWidget({ size }: Props) {
+export default function SpotifyWidget() {
   const [track, setTrack] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
 
@@ -147,9 +143,8 @@ export default function SpotifyWidget({ size }: Props) {
       `&scope=${encodeURIComponent(scope)}`;
   };
 
-  const coverSize = size === "small" ? 36 : size === "medium" ? 48 : size === "large" ? 64 : 48;
 
-  const fontSize = size === "small" ? 12 : size === "medium" ? 14 : 16;
+  const fontSize = 16;
 
   return (
     <WidgetContainer>
@@ -196,7 +191,7 @@ export default function SpotifyWidget({ size }: Props) {
               >
                 <div style={{ fontWeight: 600 }}>{track.item.name}</div>
 
-                {size !== "small" && (
+                {(
                   <div style={{ opacity: 0.7 }}>{track.item.artists.map((a: any) => a.name).join(", ")}</div>
                 )}
               </div>
@@ -207,3 +202,4 @@ export default function SpotifyWidget({ size }: Props) {
     </WidgetContainer>
   );
 }
+

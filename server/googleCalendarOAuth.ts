@@ -1,7 +1,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import { createHmac } from "crypto";
-import { adminAuth, adminDb } from "./firebaseAdmin.ts";
+import { adminAuth, adminDb } from "./firebaseAdmin";
 
 type IntegrationDoc = {
   connected?: boolean;

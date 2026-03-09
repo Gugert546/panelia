@@ -1,11 +1,11 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { weatherRouter } from "./weatherRouter.ts";
-import { newsRouter } from "./newsRouter.ts";
-import { aiRouter } from "./aiRouter.ts";
-import spotifyRouter from "./spotifyToken.ts";
-import googleCalendarRouter from "./googleCalendarOAuth.ts";
+import { weatherRouter } from "./weatherRouter";
+import { newsRouter } from "./newsRouter";
+import { aiRouter } from "./aiRouter";
+import spotifyRouter from "./spotifyToken";
+import googleCalendarRouter from "./googleCalendarOAuth";
 
 dotenv.config();
 

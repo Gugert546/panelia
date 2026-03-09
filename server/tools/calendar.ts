@@ -1,6 +1,6 @@
 import { randomUUID } from "crypto";
-import type { ToolDef } from "./types.ts";
-import { adminDb } from "../firebaseAdmin.ts";
+import type { ToolDef } from "./types";
+import { adminDb } from "../firebaseAdmin";
 
 type CalendarSyncStatus = "synced" | "pending" | "failed";
 
