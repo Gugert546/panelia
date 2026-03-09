@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 import { weatherRouter } from "./weatherRouter";
 import { newsRouter } from "./newsRouter";
 import { aiRouter } from "./aiRouter";
-import spotifyRouter from "./spotifyToken";
+import spotifyRouter  from "./spotifyToken";
 import googleCalendarRouter from "./googleCalendarOAuth";
 
 dotenv.config();

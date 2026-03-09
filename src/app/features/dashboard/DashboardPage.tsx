@@ -38,31 +38,6 @@ export default function DashboardPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
-  const [calendarConnectionStatus, setCalendarConnectionStatus] = useState<CalendarConnectionStatus>("loading");
-  const [calendarConnectionBusy, setCalendarConnectionBusy] = useState(false);
-  const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
-  const [calendarSizeMode, setCalendarSizeMode] = useState<CalendarWidgetSizeMode>("xlarge");
-
-
-  const AVAILABLE_WIDGETS = [
-    { id: "clock", label: "Klokke" },
-    { id: "search", label: "Søk" },
-    { id: "news", label: "Nyheter" },
-    { id: "weather", label: "Vær" },
-    { id: "Bookmark", label: "bokmerke" },
-    { id: "Notes", label: "notater" },
-    { id: "spotify", label: "Spotify" },
-  ];
-
-  const WIDGET_COMPONENTS: Record<string, React.ReactNode> = {
-    clock: <ClockWidget size="small" />,
-    search: <SearchWidget size="medium"/>,
-    news: <NewsWidget size="large"/>,
-    weather: <WeatherWidget size="large"/>,
-    Bookmark: <BookmarkUi size="small"/>,
-    Notes: <NotesWidget size="small"/>,
-    spotify: <SpotifyWidget />,
-  };
 
   const [calendarConnectionStatus, setCalendarConnectionStatus] =
     useState<CalendarConnectionStatus>("loading");

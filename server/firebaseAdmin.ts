@@ -20,7 +20,26 @@ function normalizePrivateKey(raw: string) {
       ? trimmed.slice(1, -1)
       : trimmed;
 
-  return withoutQuotes.replace(/\\n/g, "\n");
+  const normalizedLineBreaks = withoutQuotes.replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
+  const normalizedMarkers = normalizedLineBreaks
+    .replace(/-+\s*BEGIN PRIVATE KEY-+/i, "-----BEGIN PRIVATE KEY-----")
+    .replace(/-+\s*END PRIVATE KEY-+/i, "-----END PRIVATE KEY-----");
+
+  const lines = normalizedMarkers
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const beginIndex = lines.findIndex((line) => line === "-----BEGIN PRIVATE KEY-----");
+  const endIndex = lines.findIndex((line) => line === "-----END PRIVATE KEY-----");
+
+  if (beginIndex !== -1 && endIndex > beginIndex) {
+    const base64Body = lines.slice(beginIndex + 1, endIndex).join("");
+    const wrappedBody = base64Body.match(/.{1,64}/g)?.join("\n") ?? base64Body;
+    return `-----BEGIN PRIVATE KEY-----\n${wrappedBody}\n-----END PRIVATE KEY-----\n`;
+  }
+
+  return normalizedMarkers;
 }
 
 function getCredential() {
@@ -41,11 +60,17 @@ function getCredential() {
   if (projectId && clientEmail && privateKeyRaw) {
     const privateKey = normalizePrivateKey(privateKeyRaw);
 
-    return admin.credential.cert({
-      projectId,
-      clientEmail,
-      privateKey,
-    });
+    try {
+      return admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      });
+    } catch (err) {
+      throw new Error(
+        `Invalid FIREBASE_PRIVATE_KEY format. Ensure the value contains a full PEM key with BEGIN/END PRIVATE KEY markers. ${String(err)}`,
+      );
+    }
   }
 
   return admin.credential.applicationDefault();
