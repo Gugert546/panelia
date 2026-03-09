@@ -16,8 +16,8 @@ export default function SpotifyCallback() {
     }
 
     fetch(`/api/spotify/token?code=${code}`)
-      .then((res) => res.json())
-      .then((data) => {
+      .then(res => res.json())
+      .then(data => {
 
         console.log("Spotify token response:", data);
 
@@ -28,23 +28,12 @@ export default function SpotifyCallback() {
             data.access_token
           );
 
-        }
-
-        if (data.refresh_token) {
-
           localStorage.setItem(
             "spotify_refresh",
             data.refresh_token
           );
 
         }
-
-        navigate("/dashboard");
-
-      })
-      .catch((err) => {
-
-        console.error("Spotify login failed:", err);
 
         navigate("/dashboard");
 
