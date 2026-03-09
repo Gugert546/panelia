@@ -1,10 +1,10 @@
-import { makeBookmarkTool } from "./bookmarks";
+import { makeBookmarkTool } from "./bookmarks.ts";
 import {
   createCalendarEventTool,
   updateCalendarEventTool,
   deleteCalendarEventTool,
   listCalendarEventsTool,
-} from "./calendar";
+} from "./calendar.ts";
 
 export const tools = [
   makeBookmarkTool,
