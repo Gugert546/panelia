@@ -1,205 +1,362 @@
 import { useEffect, useState } from "react";
-import WidgetContainer from "../../components/WidgetContainer";
-import WidgetPane from "../../components/WidgetPane";
-
-
-
-type SpotifyTokenResponse = {
-  access_token?: string;
-  refresh_token?: string;
-  expires_in?: number;
-  error?: string;
-};
-
-const SPOTIFY_CURRENTLY_PLAYING_URL =
-  "https://api.spotify.com/v1/me/player/currently-playing";
-
-function storeSpotifyTokenData(data: SpotifyTokenResponse) {
-  if (data.access_token) {
-    localStorage.setItem("spotify_token", data.access_token);
-  }
-
-  if (typeof data.expires_in === "number") {
-    const expiresAt = Date.now() + data.expires_in * 1000;
-    localStorage.setItem("spotify_expires_at", String(expiresAt));
-  }
-
-  if (data.refresh_token) {
-    localStorage.setItem("spotify_refresh", data.refresh_token);
-  }
-}
-
-async function refreshSpotifyAccessToken() {
-  const refreshToken = localStorage.getItem("spotify_refresh");
-
-  if (!refreshToken) {
-    throw new Error("Missing Spotify refresh token");
-  }
-
-  const response = await fetch("/api/spotify/refresh", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-
-  const payload = (await response.json()) as SpotifyTokenResponse;
-
-  if (!response.ok || !payload.access_token) {
-    throw new Error(payload?.error || `Spotify refresh failed (${response.status})`);
-  }
-
-  storeSpotifyTokenData(payload);
-  return payload.access_token;
-}
-
-async function ensureSpotifyAccessToken(currentToken: string) {
-  const expiresAtRaw = localStorage.getItem("spotify_expires_at");
-  const expiresAt = expiresAtRaw ? Number(expiresAtRaw) : Number.NaN;
-  const msUntilExpiry = expiresAt - Date.now();
-
-  if (Number.isFinite(msUntilExpiry) && msUntilExpiry > 60_000) {
-    return currentToken;
-  }
-
-  return refreshSpotifyAccessToken();
-}
 
 export default function SpotifyWidget() {
-  const [track, setTrack] = useState<any>(null);
+
   const [token, setToken] = useState<string | null>(null);
+  const [player, setPlayer] = useState<any>(null);
+  const [devices, setDevices] = useState<any[]>([]);
+  const [volume, setVolume] = useState(50);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("spotify_token");
-    if (!storedToken) {
-      return;
-    }
 
-    setToken(storedToken);
-  }, []);
+    const refresh = localStorage.getItem("spotify_refresh");
 
-  useEffect(() => {
-    if (!token) {
-      return;
-    }
+    if (!refresh) return;
 
-    const fetchTrack = async () => {
-      try {
-        let activeToken = await ensureSpotifyAccessToken(token);
+    const refreshToken = async () => {
 
-        if (activeToken !== token) {
-          setToken(activeToken);
-        }
+      const res = await fetch(
+        `/api/spotify/refresh?refresh_token=${refresh}`
+      );
 
-        let res = await fetch(SPOTIFY_CURRENTLY_PLAYING_URL, {
-          headers: {
-            Authorization: `Bearer ${activeToken}`,
-          },
-        });
+      const data = await res.json();
 
-        if (res.status === 401) {
-          activeToken = await refreshSpotifyAccessToken();
-          setToken(activeToken);
+      if (data.access_token) {
 
-          res = await fetch(SPOTIFY_CURRENTLY_PLAYING_URL, {
-            headers: {
-              Authorization: `Bearer ${activeToken}`,
-            },
-          });
-        }
+        localStorage.setItem(
+          "spotify_token",
+          data.access_token
+        );
 
-        if (res.status === 204) {
-          setTrack(null);
-          return;
-        }
+        setToken(data.access_token);
 
-        if (!res.ok) {
-          throw new Error(`Spotify request failed (${res.status})`);
-        }
-
-        const data = await res.json();
-        setTrack(data);
-      } catch (error) {
-        console.error("Spotify currently-playing failed:", error);
-        setTrack(null);
       }
+
     };
 
-    void fetchTrack();
-  }, [token]);
+    refreshToken();
 
-  const handleConnect = () => {
+    const interval = setInterval(refreshToken, 50 * 60 * 1000);
 
-    const clientId = "311e91e754f0449eb4bddba53e9414d1";
-    const redirectUri = "https://panelia.web.app/callback";
-    const scope = "user-read-currently-playing user-read-playback-state";
+    return () => clearInterval(interval);
 
-    window.location.href =
-      "https://accounts.spotify.com/authorize" +
-      `?client_id=${clientId}` +
-      `&response_type=code` +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&scope=${encodeURIComponent(scope)}`;
+  }, []);
+
+  const fetchPlayer = async () => {
+
+    if (!token) return;
+
+    const res = await fetch(
+      "https://api.spotify.com/v1/me/player",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    if (res.status === 204) return;
+
+    const data = await res.json();
+
+    if (!data || !data.item) return;
+
+    setPlayer(data);
+
+    if (data.device?.volume_percent !== undefined) {
+      setVolume(data.device.volume_percent);
+    }
+
   };
 
+  const fetchDevices = async () => {
 
-  const fontSize = 16;
+    if (!token) return;
+
+    const res = await fetch(
+      "https://api.spotify.com/v1/me/player/devices",
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    const data = await res.json();
+
+    setDevices(data.devices);
+
+  };
+
+  useEffect(() => {
+
+    if (!token) return;
+
+    fetchPlayer();
+    fetchDevices();
+
+    const interval = setInterval(() => {
+
+      fetchPlayer();
+      fetchDevices();
+
+    }, 4000);
+
+    return () => clearInterval(interval);
+
+  }, [token]);
+
+  const getDevice = () => {
+
+    if (!devices.length) return null;
+
+    return devices.find((d) => d.is_active) || devices[0];
+
+  };
+
+  const playPause = async () => {
+
+    if (!token) return;
+
+    const device = getDevice();
+
+    if (!device) {
+      alert("Open Spotify on a device first");
+      return;
+    }
+
+    const endpoint = player?.is_playing ? "pause" : "play";
+
+    await fetch(
+      `https://api.spotify.com/v1/me/player/${endpoint}?device_id=${device.id}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    setTimeout(fetchPlayer, 500);
+
+  };
+
+  const nextTrack = async () => {
+
+    const device = getDevice();
+
+    if (!device) return;
+
+    await fetch(
+      `https://api.spotify.com/v1/me/player/next?device_id=${device.id}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    setTimeout(fetchPlayer, 500);
+
+  };
+
+  const prevTrack = async () => {
+
+    const device = getDevice();
+
+    if (!device) return;
+
+    await fetch(
+      `https://api.spotify.com/v1/me/player/previous?device_id=${device.id}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+    setTimeout(fetchPlayer, 500);
+
+  };
+
+  const changeVolume = async (v: number) => {
+
+    setVolume(v);
+
+    const device = getDevice();
+
+    if (!device) return;
+
+    await fetch(
+      `https://api.spotify.com/v1/me/player/volume?volume_percent=${v}&device_id=${device.id}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+  };
+
+  const seek = async (pos: number) => {
+
+    const device = getDevice();
+
+    if (!device) return;
+
+    await fetch(
+      `https://api.spotify.com/v1/me/player/seek?position_ms=${pos}&device_id=${device.id}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+
+  };
+
+  const changeDevice = async (id: string) => {
+
+    await fetch(
+      "https://api.spotify.com/v1/me/player",
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          device_ids: [id]
+        })
+      }
+    );
+
+    setTimeout(fetchPlayer, 500);
+
+  };
+
+  if (!token) {
+
+    const clientId = "311e91e754f0449eb4bddba53e9414d1";
+
+    const redirectUri =
+      window.location.hostname === "127.0.0.1"
+        ? "http://127.0.0.1:5173/callback"
+        : "https://panelia.web.app/callback";
+
+    const scope =
+      "user-read-playback-state user-read-currently-playing user-modify-playback-state";
+
+    return (
+      <button
+        onClick={() => {
+
+          window.location.href =
+            "https://accounts.spotify.com/authorize" +
+            `?client_id=${clientId}` +
+            `&response_type=code` +
+            `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+            `&scope=${encodeURIComponent(scope)}`;
+
+        }}
+        style={{
+          padding: 12,
+          background: "#1DB954",
+          color: "white",
+          border: "none",
+          borderRadius: 8,
+          cursor: "pointer"
+        }}
+      >
+        Connect Spotify
+      </button>
+    );
+
+  }
+
+  if (!player) {
+    return <div>Start playing Spotify on a device</div>;
+  }
+
+  const track = player.item;
+  const progress = player.progress_ms;
+  const duration = track.duration_ms;
 
   return (
-    <WidgetContainer>
-      <WidgetPane>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            width: "100%",
-            height: "100%",
-          }}
+
+    <div style={{
+      padding: 16,
+      width: 300,
+      background: "#181818",
+      color: "white",
+      borderRadius: 12
+    }}>
+
+      <img
+        src={track.album.images[0].url}
+        width="100%"
+        style={{ borderRadius: 8 }}
+      />
+
+      <div style={{ marginTop: 10, fontWeight: 600 }}>
+        {track.name}
+      </div>
+
+      <div style={{ fontSize: 13, opacity: 0.7 }}>
+        {track.artists.map((a:any)=>a.name).join(", ")}
+      </div>
+
+      <input
+        type="range"
+        min={0}
+        max={duration}
+        value={progress}
+        onChange={(e)=>seek(Number(e.target.value))}
+        style={{
+          width:"100%",
+          marginTop:10,
+          accentColor:"#1DB954"
+        }}
+      />
+
+      <div style={{marginTop:10}}>
+        <button onClick={prevTrack}>⏮</button>
+        <button onClick={playPause}>
+          {player.is_playing ? "⏸" : "▶"}
+        </button>
+        <button onClick={nextTrack}>⏭</button>
+      </div>
+
+      <div style={{marginTop:10}}>
+        🔊
+        <input
+          type="range"
+          min={0}
+          max={100}
+          value={volume}
+          onChange={(e)=>changeVolume(Number(e.target.value))}
+        />
+      </div>
+
+      <div style={{marginTop:10}}>
+        🎧
+        <select
+          onChange={(e)=>changeDevice(e.target.value)}
         >
-          {!token && (
-            <button
-              onClick={handleConnect}
-              style={{
-                padding: "6px 10px",
-                fontSize,
-              }}
-            >
-              Connect Spotify
-            </button>
-          )}
+          {devices.map((d)=>(
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+      </div>
 
-          {token && (!track || !track.item) && <div style={{ fontSize }}>Nothing playing</div>}
+    </div>
 
-          {token && track && track.item && (
-            <>
-              <img
-                src={track.item.album.images[0].url}
-                width={48}
-                height={48}
-                style={{ borderRadius: 6 }}
-              />
-
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 2,
-                  fontSize,
-                }}
-              >
-                <div style={{ fontWeight: 600 }}>{track.item.name}</div>
-
-                {(
-                  <div style={{ opacity: 0.7 }}>{track.item.artists.map((a: any) => a.name).join(", ")}</div>
-                )}
-              </div>
-            </>
-          )}
-        </div>
-      </WidgetPane>
-    </WidgetContainer>
   );
-}
 
+}
