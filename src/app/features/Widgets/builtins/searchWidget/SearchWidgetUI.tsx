@@ -4,46 +4,37 @@ import { useSearchWidget } from "./SearchWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
+export default function SearchWidgetUI() {
 
-type Props = {
-  size: WidgetSize;
-};
-
-export default function SearchWidgetUI({ size }: Props) {
   const { state, actions } = useSearchWidget();
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+
     function onDocClick(e: MouseEvent) {
+
       if (!state.menuOpen) return;
 
       const el = menuRef.current;
+
       if (el && !el.contains(e.target as Node)) {
         actions.closeMenu();
       }
+
     }
 
     document.addEventListener("mousedown", onDocClick);
+
     return () => document.removeEventListener("mousedown", onDocClick);
+
   }, [state.menuOpen, actions]);
-
-  const iconSize =
-    size === "small" ? 20 :
-    size === "medium" ? 24 :
-    28;
-
-  const fontSize =
-    size === "small" ? 12 :
-    size === "medium" ? 14 :
-    16;
 
   const rect = buttonRef.current?.getBoundingClientRect();
 
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane>
 
         <div
@@ -59,6 +50,7 @@ export default function SearchWidgetUI({ size }: Props) {
 
           {/* Engine selector */}
           <div style={{ position: "relative" }}>
+
             <button
               ref={buttonRef}
               type="button"
@@ -74,19 +66,23 @@ export default function SearchWidgetUI({ size }: Props) {
                 justifyContent: "center"
               }}
             >
+
               <img
                 src={state.engineInfo.icon}
                 alt={state.engineInfo.label}
                 style={{
-                  width: iconSize,
-                  height: iconSize,
+                  width: 24,
+                  height: 24,
                   objectFit: "contain"
                 }}
               />
+
             </button>
+
           </div>
 
           {/* Search input */}
+
           <input
             type="text"
             placeholder={`Søk med ${state.engineInfo.label}`}
@@ -98,7 +94,7 @@ export default function SearchWidgetUI({ size }: Props) {
               border: "none",
               outline: "none",
               background: "transparent",
-              fontSize,
+              fontSize: 14,
               color: "#111"
             }}
           />
@@ -106,8 +102,10 @@ export default function SearchWidgetUI({ size }: Props) {
         </div>
 
         {/* PORTAL DROPDOWN */}
+
         {state.menuOpen && rect &&
           createPortal(
+
             <div
               ref={menuRef}
               style={{
@@ -122,7 +120,9 @@ export default function SearchWidgetUI({ size }: Props) {
                 zIndex: 999999
               }}
             >
+
               {Object.entries(state.engines).map(([key, cfg]) => {
+
                 const selected = key === state.engine;
 
                 return (
@@ -144,9 +144,10 @@ export default function SearchWidgetUI({ size }: Props) {
                       borderRadius: 8,
                       cursor: "pointer",
                       fontWeight: selected ? 700 : 600,
-                      fontSize
+                      fontSize: 14
                     }}
                   >
+
                     <img
                       src={cfg.icon}
                       alt={cfg.label}
@@ -156,11 +157,16 @@ export default function SearchWidgetUI({ size }: Props) {
                         objectFit: "contain"
                       }}
                     />
+
                     <span>{cfg.label}</span>
+
                   </button>
                 );
+
               })}
+
             </div>,
+
             document.body
           )}
 

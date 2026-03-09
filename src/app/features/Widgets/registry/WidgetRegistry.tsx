@@ -1,52 +1,107 @@
 import type { FC } from "react";
-import  ClockWidget  from "../builtins/ClockWidget/ClockWidget";
-import NotesWidget  from "../builtins/NotesWidget/NotesWidgetUI";
-import CalendarWidget  from "../builtins/CalendarWidget/CalendarWidget";
+
+import ClockWidget from "../builtins/ClockWidget/ClockWidget";
+import NotesWidget from "../builtins/NotesWidget/NotesWidgetUI";
+import CalendarWidget from "../builtins/CalendarWidget/CalendarWidget";
 import SearchWidgetUI from "../builtins/searchWidget/SearchWidgetUI";
+import WeatherWidget from "../builtins/WeatherWidget/WeatherWidgetUI";
+import NewsWidget from "../builtins/NewsWidget/NewsWidget";
+import SpotifyWidget from "../builtins/SpotifyWidget/SpotifyWidget";
+import BookmarkUi from "../builtins/BookmarkWidget/BookmarkUi";
 
-
-
-
-export type WidgetType = "clock" | "notes" | "calendar" | "google_search";
-
-
+export type WidgetType =
+  | "clock"
+  | "notes"
+  | "calendar"
+  | "google_search"
+  | "weather"
+  | "news"
+  | "spotify"
+  | "bookmark";
 
 export type WidgetComponentProps = {
   config: Record<string, unknown>;
   onConfigChange: (patch: Record<string, unknown>) => void;
 };
 
-// Adapter: gjør ClockWidget kompatibel med WidgetComponentProps
-const ClockWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
-  return <ClockWidget size={size} />;
+const ClockWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <ClockWidget />
 };
 
-const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
-  return <NotesWidget size={size} />;
+const NotesWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <NotesWidget />;
 };
 
 const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {
   return <CalendarWidget />;
 };
 
-const SearchWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => {
-  const size = (config.size as "small" | "medium" | "large" | "wide") ?? "small";
-  return <SearchWidgetUI size={size} />;
+const SearchWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <SearchWidgetUI />;
 };
 
-export const WIDGETS: Record<
-  WidgetType,
-  { title: string; Component: FC<WidgetComponentProps>; defaultW: number; defaultH: number }
-> = {
-  clock: { title: "", Component: ClockWidgetAdapter, defaultW: 1, defaultH: 1 },
-  notes: { title: "Notater", Component: NotesWidgetAdapter, defaultW: 3, defaultH: 1.5 },
-  calendar: { title: "Kalender", Component: CalendarWidgetAdapter, defaultW: 2, defaultH: 3.5 },
+const WeatherWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <WeatherWidget />;
+};
+
+const NewsWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <NewsWidget />;
+};
+
+const SpotifyWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <SpotifyWidget />;
+};
+
+const BookmarkWidgetAdapter: FC<WidgetComponentProps> = () => {
+  return <BookmarkUi />;
+};
+
+export const WIDGETS = {
+  clock: {
+    title: "Klokke",
+    Component: ClockWidgetAdapter,
+    defaultGrid: { w: 3, h: 2 },
+  },
+
+  notes: {
+    title: "Notater",
+    Component: NotesWidgetAdapter,
+    defaultGrid: { w: 4, h: 4 },
+  },
+
+  calendar: {
+    title: "Kalender",
+    Component: CalendarWidgetAdapter,
+    defaultGrid: { w: 8, h: 6 },
+  },
+
   google_search: {
-  title: "",
-  Component: SearchWidgetAdapter,
-  defaultW: 2,
-  defaultH: 1,
-},
+    title: "Søk",
+    Component: SearchWidgetAdapter,
+    defaultGrid: { w: 8, h: 2 },
+  },
+
+  weather: {
+    title: "Vær",
+    Component: WeatherWidgetAdapter,
+    defaultGrid: { w: 3, h: 3 },
+  },
+
+  news: {
+    title: "Nyheter",
+    Component: NewsWidgetAdapter,
+    defaultGrid: { w: 6, h: 6 },
+  },
+
+  spotify: {
+    title: "Spotify",
+    Component: SpotifyWidgetAdapter,
+    defaultGrid: { w: 4, h: 3 },
+  },
+
+  bookmark: {
+    title: "Bokmerker",
+    Component: BookmarkWidgetAdapter,
+    defaultGrid: { w: 4, h: 4 },
+  },
 };

@@ -5,7 +5,7 @@ import { useBookmark } from "./BookmarkLogic";
 import BookmarkForm from "./BookmarkForm";
 import CategoryForm from "./CategoryForm";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
+export default function BookmarkUi() {
 
 type Props = {
   size: WidgetSize;
@@ -38,7 +38,7 @@ export default function BookmarkUi({ size }: Props) {
   }
 
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane title="Bookmarks">
         <div
           style={{
