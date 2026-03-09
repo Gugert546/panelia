@@ -1,52 +1,161 @@
-import { useState } from "react";
-
-export type Bookmark = {
-  title: string;
-  url: string;
-};
-
-export type Category = {
-  name: string;
-  bookmarks: Bookmark[];
-};
+import { useState, useEffect } from "react";
+import { useAuth } from "../../../auth/useAuth";
+import {
+  subscribeToCategories,
+  subscribeToBookmarks,
+  createCategory,
+  createBookmark,
+  deleteBookmark,
+  deleteCategory,
+} from "../../../../../lib/firebase/firestore";
+import type { Bookmark, BookmarkCategory } from "../../../../../types/firestore";
 
 export function useBookmark() {
-  const [categories, setCategories] = useState<Category[]>([
-    {
-      name: "Favorites",
-      bookmarks: [
-        { title: "Google", url: "https://www.google.com" },
-        { title: "GitHub", url: "https://github.com" },
-      ],
-    },
-  ]);
+  const { user } = useAuth();
+  
+  const [categories, setCategories] = useState<BookmarkCategory[]>([]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleAddBookmark = (categoryName: string) => {
-    const newBookmark: Bookmark = {
-      title: prompt("Enter bookmark title:") || "Untitled",
-      url: prompt("Enter bookmark URL:") || "#",
+  // Subscribe to real-time updates when user changes
+  useEffect(() => {
+    console.log("Current user:", user); // Add this line
+    console.log("User UID:", user?.uid); // Add this line
+    
+    if (!user?.uid) {
+      setCategories([]);
+      setBookmarks([]);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    // Subscribe to both categories and bookmarks
+    const unsubscribeCategories = subscribeToCategories(user.uid, (data) => {
+      setCategories(data);
+      setLoading(false);
+    });
+
+    const unsubscribeBookmarks = subscribeToBookmarks(user.uid, (data) => {
+      setBookmarks(data);
+    });
+
+    return () => {
+      unsubscribeCategories();
+      unsubscribeBookmarks();
     };
+  }, [user?.uid]);
 
-    setCategories((prevCategories) =>
-      prevCategories.map((category) =>
-        category.name === categoryName
-          ? {
-              ...category,
-              bookmarks: [...category.bookmarks, newBookmark],
-            }
-          : category
-      )
-    );
-  };
-  const handleAddCategory = () => {
-    const newCategoryName = prompt("Enter category name:");
-    if (newCategoryName) {
-      setCategories((prevCategories) => [
-        ...prevCategories,
-        { name: newCategoryName, bookmarks: [] },
-      ]);
+  // Add a new category
+  const handleAddCategory = async (categoryName: string) => {
+    if (!user?.uid) {
+      setError("User not authenticated");
+      return;
+    }
+
+    try {
+      const newCategory: BookmarkCategory = {
+        id: `category_${Date.now()}`,
+        userId: user.uid,
+        name: categoryName,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await createCategory(user.uid, newCategory);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to add category";
+      setError(message);
+      console.error("Error adding category:", err);
     }
   };
 
-  return { categories, handleAddBookmark, handleAddCategory };
+  // Add a new bookmark to a category
+  const handleAddBookmark = async (
+    categoryId: string,
+    title: string,
+    url: string
+  ) => {
+    if (!user?.uid) {
+      setError("User not authenticated");
+      return;
+    }
+
+    try {
+      const newBookmark: Bookmark = {
+        id: `bookmark_${Date.now()}`,
+        userId: user.uid,
+        categoryId,
+        title,
+        url,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      };
+
+      await createBookmark(user.uid, newBookmark);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to add bookmark";
+      setError(message);
+      console.error("Error adding bookmark:", err);
+    }
+  };
+
+  // Delete a bookmark
+  const handleDeleteBookmark = async (bookmarkId: string) => {
+    if (!user?.uid) {
+      setError("User not authenticated");
+      return;
+    }
+
+    try {
+      await deleteBookmark(user.uid, bookmarkId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete bookmark";
+      setError(message);
+      console.error("Error deleting bookmark:", err);
+    }
+  };
+
+  // Delete a category
+  const handleDeleteCategory = async (categoryId: string) => {
+    if (!user?.uid) {
+      setError("User not authenticated");
+      return;
+    }
+
+    try {
+      // Delete all bookmarks in this category
+      const categoryBookmarks = bookmarks.filter(b => b.categoryId === categoryId);
+      await Promise.all(
+        categoryBookmarks.map(b => deleteBookmark(user.uid, b.id))
+      );
+      
+      // Then delete the category
+      await deleteCategory(user.uid, categoryId);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to delete category";
+      setError(message);
+      console.error("Error deleting category:", err);
+    }
+  };
+
+  // Get bookmarks for a specific category
+  const getBookmarksByCategory = (categoryId: string): Bookmark[] => {
+    return bookmarks.filter(b => b.categoryId === categoryId);
+  };
+
+  return {
+    categories,
+    bookmarks,
+    loading,
+    error,
+    handleAddCategory,
+    handleAddBookmark,
+    handleDeleteBookmark,
+    handleDeleteCategory,
+    getBookmarksByCategory,
+  };
 }

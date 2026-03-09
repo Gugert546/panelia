@@ -1,46 +1,40 @@
-import { useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import AuthMenu from "../../components/authmenu";
 
 import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import Chat from "../../components/chatUI";
-import CalendarWidget, { type CalendarWidgetSizeMode } from "../Widgets/builtins/CalendarWidget/CalendarWidget";
-import GridLayout from "react-grid-layout/legacy";
+
+import CalendarWidget, {
+  type CalendarWidgetSizeMode,
+} from "../Widgets/builtins/CalendarWidget/CalendarWidget";
+
+import DashboardGrid from "../../components/DashboardGrid";
+
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-// Bakgrunnsbilder for dag/natt
-import sol1 from "../../../assets/panelia-bg/Sol 1.png";
-import sol2 from "../../../assets/panelia-bg/Sol 2.png";
-import sol3 from "../../../assets/panelia-bg/Sol 3.png";
-import natt1 from "../../../assets/panelia-bg/Natt 1.png";
-import natt2 from "../../../assets/panelia-bg/Natt 2.png";
-import natt3 from "../../../assets/panelia-bg/Natt 3.png";
 
-//widgets
-import ClockWidget from "../Widgets/builtins/ClockWidget/ClockWidget";
-import SearchWidget from "../Widgets/builtins/searchWidget/SearchWidgetUI";
-import NewsWidget from "../Widgets/builtins/NewsWidget/NewsWidget";
-import WeatherWidget from "../Widgets/builtins/WeatherWidget/WeatherWidgetUI";
-import NotesWidget from "../Widgets/builtins/NotesWidget/NotesWidgetUI";
-import BookmarkUi from "../Widgets/builtins/BookmarkWidget/BookmarkUi";
-import SpotifyWidget from "../Widgets/builtins/SpotifyWidget/SpotifyWidget";
+// bakgrunn
+import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
+
 import { auth } from "../../../lib/firebase/client";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
+
+
+// widget hook
+import {
+  useWidgets,
+  AVAILABLE_WIDGETS,
+} from "./hooks/useWidgets";
+
+
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
-const SIZE_MAP = {
-  small:  { w: 4,  h: 2 },
-  medium: { w: 9,  h: 5 },
-  large:  { w: 13, h: 6 },
-  wide:   { w: 18, h: 3 },
-};
-
 export default function DashboardPage() {
-  
+
   const SIDEBAR_WIDTH = 60;
+
   const [editOpen, setEditOpen] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
@@ -70,37 +64,48 @@ export default function DashboardPage() {
     spotify: <SpotifyWidget />,
   };
 
-  const [activeWidgets, setActiveWidgets] = useState<string[]>(["clock", "search", "spotify"]);
+  const [calendarConnectionStatus, setCalendarConnectionStatus] =
+    useState<CalendarConnectionStatus>("loading");
 
-  const [widgetSizes, setWidgetSizes] = useState<Record<string, WidgetSize>>({
-    clock: "small",
-    search: "small",
-    news: "medium",
-    weather: "small",
-    Bookmark: "medium",
-    Notes: "small",
-    spotify: "small",
-  });
+  const [calendarConnectionBusy, setCalendarConnectionBusy] =
+    useState(false);
+
+  const [calendarRefreshBusy, setCalendarRefreshBusy] =
+    useState(false);
+
+  const [calendarSizeMode, setCalendarSizeMode] =
+    useState<CalendarWidgetSizeMode>("xlarge");
 
 
-  // Natt - Dag oppdatering
-    const [, setTime] = useState(new Date());
+  // widget system
+  const {
+    activeWidgets,
+    toggleWidget,
+  } = useWidgets();
 
-    useEffect(() => {
-      const interval = setInterval(() => {
-        setTime(new Date());
-      }, 900000); // oppdater hvert 15.minutt
-
-      return () => clearInterval(interval);
-    }, []);
+  
+  // Natt / Dag refresh
+  const [, setTime] = useState(new Date());
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date());
+    }, 900000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Kalender status
+  useEffect(() => {
+
     if (!isCalendarVisible) return;
 
     let cancelled = false;
 
     const fetchCalendarStatus = async () => {
+
       const user = auth.currentUser;
+
       if (!user) {
         if (!cancelled) setCalendarConnectionStatus("disconnected");
         return;
@@ -109,7 +114,9 @@ export default function DashboardPage() {
       if (!cancelled) setCalendarConnectionStatus("loading");
 
       try {
+
         const idToken = await user.getIdToken();
+
         const response = await fetch("/api/google-calendar/status", {
           headers: {
             Authorization: `Bearer ${idToken}`,
@@ -121,10 +128,18 @@ export default function DashboardPage() {
           return;
         }
 
-        const payload = (await response.json()) as { connected?: boolean };
-        if (!cancelled) setCalendarConnectionStatus(payload.connected ? "connected" : "disconnected");
+        const payload = await response.json();
+
+        if (!cancelled) {
+          setCalendarConnectionStatus(
+            payload.connected ? "connected" : "disconnected"
+          );
+        }
+
       } catch {
+
         if (!cancelled) setCalendarConnectionStatus("disconnected");
+
       }
     };
 
@@ -133,66 +148,42 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
+
   }, [isCalendarVisible]);
 
-
+  // OAuth refresh
   useEffect(() => {
+
     const url = new URL(window.location.href);
     const oauthResult = url.searchParams.get("calendar_oauth");
 
     if (!oauthResult) return;
 
-    let cancelled = false;
-
-    const refreshStatusAfterOAuth = async () => {
-      const user = auth.currentUser;
-      if (!user) {
-        if (!cancelled) setCalendarConnectionStatus("disconnected");
-        return;
-      }
-
-      if (!cancelled) setCalendarConnectionStatus("loading");
-
-      try {
-        const idToken = await user.getIdToken();
-        const response = await fetch("/api/google-calendar/status", {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
-
-        if (!response.ok) {
-          if (!cancelled) setCalendarConnectionStatus("disconnected");
-          return;
-        }
-
-        const payload = (await response.json()) as { connected?: boolean };
-        if (!cancelled) setCalendarConnectionStatus(payload.connected ? "connected" : "disconnected");
-      } catch {
-        if (!cancelled) setCalendarConnectionStatus("disconnected");
-      }
-    };
-
-    void refreshStatusAfterOAuth();
-
     url.searchParams.delete("calendar_oauth");
-    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
-    window.history.replaceState({}, "", nextUrl);
 
-    return () => {
-      cancelled = true;
-    };
+    window.history.replaceState(
+      {},
+      "",
+      `${url.pathname}${url.search}${url.hash}`
+    );
+
   }, []);
 
-  const pullFromGoogleCalendar = async (showAlertOnError = false) => {
-    if (calendarConnectionStatus !== "connected") return false;
+  // Pull Google events
+  const pullFromGoogleCalendar = async (showAlert = false) => {
+
+    if (calendarConnectionStatus !== "connected") return;
 
     const user = auth.currentUser;
-    if (!user) return false;
+
+    if (!user) return;
 
     setCalendarRefreshBusy(true);
+
     try {
+
       const idToken = await user.getIdToken();
+
       const response = await fetch("/api/google-calendar/sync/pull", {
         method: "POST",
         headers: {
@@ -202,25 +193,26 @@ export default function DashboardPage() {
         body: JSON.stringify({ maxResults: 500 }),
       });
 
-      if (!response.ok) {
-        if (showAlertOnError) {
-          window.alert("Failed to refresh events from Google Calendar.");
-        }
-        return false;
-      }
-
-      return true;
-    } catch {
-      if (showAlertOnError) {
+      if (!response.ok && showAlert) {
         window.alert("Failed to refresh events from Google Calendar.");
       }
-      return false;
+
+    } catch {
+
+      if (showAlert) {
+        window.alert("Failed to refresh events from Google Calendar.");
+      }
+
     } finally {
+
       setCalendarRefreshBusy(false);
+
     }
   };
 
+  // Poll calendar
   useEffect(() => {
+
     if (!isCalendarVisible) return;
     if (calendarConnectionStatus !== "connected") return;
     if (calendarRefreshBusy) return;
@@ -232,41 +224,25 @@ export default function DashboardPage() {
     }, 30000);
 
     return () => clearInterval(interval);
+
   }, [isCalendarVisible, calendarConnectionStatus]);
 
-  // Funksjon for å toggle chat-vinduet 
+  // chat toggle
   const toggleChat = () => {
     setIsChatVisible((prev) => !prev);
   };
 
-  // Handle sidebar navigation
+  // sidebar navigation
   const handleSidebarNavigation = (itemKey: string) => {
+
     if (itemKey === "calendar") {
       setIsCalendarVisible((prev) => !prev);
-    } else if (itemKey === "chat") {
+    }
+
+    if (itemKey === "chat") {
       setIsChatVisible((prev) => !prev);
     }
-  };
 
-  const getBackgroundByTime = () => {
-  const hour = new Date().getHours();
-
-  // DAG
-  if (hour >= 6 && hour < 8) return sol1; // Mellom 06:00 og 08:00 her
-  if (hour >= 8 && hour < 11) return sol2; // Mellom 08:00 og 11:00 her
-  if (hour >= 11 && hour < 17) return sol3; // Mellom 11:00 og 17:00 osv...
-  if (hour >= 17 && hour < 20) return sol2;
-
-  // KVELD
-  if (hour >= 20 && hour < 23) return natt1;
-
-  // NATT
-  if (hour >= 23 || hour < 2) return natt2;
-  if (hour >= 2 && hour < 3) return natt3;
-  if (hour >= 3 && hour < 5) return natt2;
-  if (hour >= 5 && hour < 6) return natt1;
-
-  return sol1;
   };
 
   return (
@@ -281,114 +257,72 @@ export default function DashboardPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-      <Sidebar onSidebarNav={handleSidebarNavigation} onEditClick={() => setEditOpen(prev => !prev)} />
+
+      <Sidebar
+        onSidebarNav={handleSidebarNavigation}
+        onEditClick={() => setEditOpen((prev) => !prev)}
+      />
+
       <div
-      style={{
-        position: "fixed",
-        top: 20,
-        right: 20,
-        zIndex: 1000,
-        transition: "right 0.3s ease",
-      }}
-    >
-      <AuthMenu />
-    </div>
+        style={{
+          position: "fixed",
+          top: 20,
+          right: 20,
+          zIndex: 1000,
+        }}
+      >
+        <AuthMenu />
+      </div>
 
       <EditPanel
         open={editOpen}
         onClose={() => setEditOpen(false)}
         availableWidgets={AVAILABLE_WIDGETS}
         activeWidgets={activeWidgets}
-        widgetSizes={widgetSizes}
-        setWidgetSizes={setWidgetSizes}
-        toggleWidget={(id) => {
-          setActiveWidgets(prev =>
-            prev.includes(id)
-              ? prev.filter(w => w !== id)
-              : [...prev, id]
-          );
-        }}
+        toggleWidget={toggleWidget}
       />
 
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
-          marginRight: 0,
           width: window.innerWidth - SIDEBAR_WIDTH,
           height: "100vh",
           position: "relative",
-          transition: "none",
         }}
       >
-        <GridLayout
-          className="layout"
-          cols={20}
-          rowHeight={50}
-          width={window.innerWidth - SIDEBAR_WIDTH}
-          isDraggable={true}
-          isResizable={true}
-          compactType={null}
-          preventCollision={false}
-          margin={[10, 10]}
-          maxRows={22}
-          containerPadding={[20, 20]}
-          style={{ height: "100%" }}
-        >
-          {activeWidgets.map((widgetId, index) => {
 
-            const size = SIZE_MAP[widgetSizes[widgetId] || "medium"];
+        <DashboardGrid
+          activeWidgets={activeWidgets}
+          sidebarWidth={SIDEBAR_WIDTH}
+        />
 
-            return (
-              <div
-                key={widgetId}
-                data-grid={{
-                  ...size,
-                  x: Math.floor((20 - size.w) / 2),
-                  y: index * size.h,
-                }}
-              >
-                {WIDGET_COMPONENTS[widgetId]}
-              </div>
-            );
-          })}
-        </GridLayout>
       </main>
-            {/* Chat Toggle Button */}
-            <button
-          onClick={toggleChat}
-          style={{
+
+      <button
+        onClick={toggleChat}
+        style={{
           position: "fixed",
           bottom: 20,
           right: 20,
           padding: "10px 20px",
-          fontSize: "16px",
-          color: "#fff",
-          backgroundColor: "#007BFF",
-          border: "none",
           borderRadius: "50px",
-          cursor: "pointer",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-          transition: "right 0.3s ease",
         }}
       >
         {isChatVisible ? "Close Chat" : "Open Chat"}
       </button>
 
-      {/* Chat Window */}
       {isChatVisible && (
         <div
           style={{
             position: "fixed",
-            bottom: 80, //høyde fra bunn av skjermen
-            right: 20, //lengde fra høyre kant
-            transition: "right 0.3s ease",
+            bottom: 80,
+            right: 20,
           }}
         >
           <Chat />
         </div>
       )}
 
-      {/* Calendar Sidebar */}
       {isCalendarVisible && (
         <CalendarWidget
           onClose={() => setIsCalendarVisible(false)}
@@ -420,7 +354,14 @@ export default function DashboardPage() {
               });
 
               if (!response.ok) {
-                window.alert("Failed to start Google Calendar OAuth.");
+                let details = "";
+                try {
+                  const errorPayload = (await response.json()) as { error?: string };
+                  if (errorPayload?.error) details = ` (${errorPayload.error})`;
+                } catch {
+                  // ignore parse failures
+                }
+                window.alert(`Failed to start Google Calendar OAuth.${details}`);
                 setCalendarConnectionBusy(false);
                 return;
               }
@@ -483,6 +424,7 @@ export default function DashboardPage() {
           }}
         />
       )}
+
     </div>
   );
 }

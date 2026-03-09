@@ -58,7 +58,5 @@ if (!admin.apps.length) {
   });
 }
 
-const firestoreDatabaseId = env("FIRESTORE_DATABASE_ID") || "default";
-
 export const adminAuth = admin.auth();
-export const adminDb = getFirestore(admin.app(), firestoreDatabaseId);
+export const adminDb = getFirestore(admin.app());

@@ -2,47 +2,43 @@ import { useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-type WidgetSize = "small" | "medium" | "large" | "wide";
-
-type Props = {
-  size: WidgetSize;
-};
-
 type NewsArticle = {
   title: string;
   url: string;
 };
 
-export default function NewsWidget({ size }: Props) {
+type NewsResponse = {
+  country: string;
+  updatedAt: string;
+  articles: NewsArticle[];
+};
 
+export default function NewsWidget() {
   const [country, setCountry] = useState("");
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
 
   async function fetchNewsByCountry(country: string) {
+    const code = country.trim().toLowerCase();
+    if (!code) return;
+
     setLoading(true);
 
     try {
-      const res = await fetch(
-        `https://api.worldnewsapi.com/search-news?source-countries=${country}`,
-        {
-          headers: {
-            "x-api-key": import.meta.env.VITE_WORLD_NEWS_API_KEY
-          }
-        }
-      );
+      const res = await fetch(`/api/news?country=${encodeURIComponent(code)}`);
 
-      const data = await res.json();
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`News request failed ${res.status}: ${txt}`);
+      }
 
-      const mapped = (data.news || []).map((article: any) => ({
-        title: article.title,
-        url: article.url
-      }));
+      const data = (await res.json()) as NewsResponse;
 
-      setArticles(mapped);
-
+      setArticles(data.articles ?? []);
     } catch (err) {
+
       console.error("News fetch failed:", err);
+
     }
 
     setLoading(false);
@@ -53,20 +49,9 @@ export default function NewsWidget({ size }: Props) {
     fetchNewsByCountry(country);
   }
 
-  const inputSize =
-    size === "small" ? 12 :
-    size === "medium" ? 14 :
-    16;
-
-  const maxArticles =
-    size === "small" ? 2 :
-    size === "medium" ? 4 :
-    6;
-
   return (
-    <WidgetContainer size={size}>
+    <WidgetContainer>
       <WidgetPane title="World News">
-
         <div
           style={{
             display: "flex",
@@ -75,14 +60,13 @@ export default function NewsWidget({ size }: Props) {
             gap: 8
           }}
         >
-
           <input
             type="text"
             placeholder="Country code (no, us...)"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             style={{
-              fontSize: inputSize,
+              fontSize: 14,
               padding: 4
             }}
           />
@@ -90,7 +74,7 @@ export default function NewsWidget({ size }: Props) {
           <button
             onClick={handleSubmit}
             style={{
-              fontSize: inputSize,
+              fontSize: 14,
               padding: 4
             }}
           >
@@ -108,13 +92,14 @@ export default function NewsWidget({ size }: Props) {
               flex: 1
             }}
           >
-            {articles.slice(0, maxArticles).map((article, i) => (
+            {articles.slice(0, 6).map((article, i) => (
               <a
                 key={i}
                 href={article.url}
                 target="_blank"
+                rel="noreferrer"
                 style={{
-                  fontSize: inputSize,
+                  fontSize: 14,
                   textDecoration: "none"
                 }}
               >
@@ -122,9 +107,7 @@ export default function NewsWidget({ size }: Props) {
               </a>
             ))}
           </div>
-
         </div>
-
       </WidgetPane>
     </WidgetContainer>
   );
