@@ -55,6 +55,8 @@ export default function DashboardPage() {
   // widget system
   const {
     activeWidgets,
+    layouts,
+    updateLayout,
     toggleWidget,
   } = useWidgets();
 
@@ -268,6 +270,8 @@ export default function DashboardPage() {
 
         <DashboardGrid
           activeWidgets={activeWidgets}
+          layouts={layouts}
+          onLayoutChange={updateLayout}
           sidebarWidth={SIDEBAR_WIDTH}
         />
 
