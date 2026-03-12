@@ -19,6 +19,13 @@ export default function EditPanel({
   toggleWidget
 }: EditPanelProps) {
 
+  const hasWidgetType = (widgetType: string) => {
+    return activeWidgets.some((activeId) => {
+      if (activeId === widgetType) return true;
+      return activeId.startsWith(`${widgetType}:`);
+    });
+  };
+
   return (
     <div
       style={{
@@ -52,7 +59,8 @@ export default function EditPanel({
 
         {availableWidgets.map(widget => {
 
-          const isActive = activeWidgets.includes(widget.id);
+          const isActive = hasWidgetType(widget.id);
+          const isNotes = widget.id === "notes";
 
           return (
             <div
@@ -71,7 +79,7 @@ export default function EditPanel({
               }}
             >
               {widget.label}
-              {isActive && " ✓"}
+              {isNotes ? " +" : isActive ? " ✓" : ""}
             </div>
           );
         })}

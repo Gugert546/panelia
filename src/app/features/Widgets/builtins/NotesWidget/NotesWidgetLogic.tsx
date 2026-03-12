@@ -1,26 +1,67 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../../../auth/useAuth";
+import {
+  subscribeToStickyNote,
+  updateStickyNote,
+} from "../../../../../lib/firebase/firestore";
 
-const STORAGE_KEY = "panelia_notes_v1";
+const SAVE_DEBOUNCE_MS = 500;
 
-export function useNotesWidget() {
+export function useNotesWidget(widgetId: string) {
+  const { user } = useAuth();
   const [text, setText] = useState("");
+  const [isReady, setIsReady] = useState(false);
 
-  // Last inn ved start
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved != null) setText(saved);
-  }, []);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastRemoteTextRef = useRef("");
 
-  // Lagre når tekst endres
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, text);
-  }, [text]);
+    if (!user) {
+      setIsReady(true);
+      return;
+    }
+
+    setIsReady(false);
+
+    const unsubscribe = subscribeToStickyNote(user.uid, widgetId, (note) => {
+      const nextText = note?.text ?? "";
+      lastRemoteTextRef.current = nextText;
+      setText(nextText);
+      setIsReady(true);
+    });
+
+    return unsubscribe;
+  }, [user, widgetId]);
+
+  useEffect(() => {
+    if (!user || !isReady) return;
+    if (text === lastRemoteTextRef.current) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      void updateStickyNote(user.uid, widgetId, text)
+        .then(() => {
+          lastRemoteTextRef.current = text;
+        })
+        .catch((error) => {
+          console.error("Failed to save sticky note:", error);
+        });
+    }, SAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [isReady, text, user, widgetId]);
 
   return {
     state: { text },
     actions: {
       setText,
-      clear: () => setText(""),
     },
   };
 }
