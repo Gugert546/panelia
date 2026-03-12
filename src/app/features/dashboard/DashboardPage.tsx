@@ -58,6 +58,7 @@ export default function DashboardPage() {
     layouts,
     updateLayout,
     toggleWidget,
+    closeWidget,
   } = useWidgets();
 
   
@@ -272,6 +273,7 @@ export default function DashboardPage() {
           activeWidgets={activeWidgets}
           layouts={layouts}
           onLayoutChange={updateLayout}
+          onCloseWidget={closeWidget}
           sidebarWidth={SIDEBAR_WIDTH}
         />
 

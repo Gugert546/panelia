@@ -22,14 +22,16 @@ export type WidgetType =
 export type WidgetComponentProps = {
   config: Record<string, unknown>;
   onConfigChange: (patch: Record<string, unknown>) => void;
+  widgetId: string;
+  onClose?: () => void;
 };
 
 const ClockWidgetAdapter: FC<WidgetComponentProps> = () => {
   return <ClockWidget />
 };
 
-const NotesWidgetAdapter: FC<WidgetComponentProps> = () => {
-  return <NotesWidget />;
+const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId, onClose }) => {
+  return <NotesWidget widgetId={widgetId} onClose={onClose} />;
 };
 
 const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => {

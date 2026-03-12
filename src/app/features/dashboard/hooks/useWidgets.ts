@@ -3,6 +3,10 @@ import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../lib/firebase/client";
 import { useAuth } from "../../auth/useAuth";
 import type { WidgetLayout } from "../../../../types/firestore";
+import {
+  createStickyNote,
+  deleteStickyNote,
+} from "../../../../lib/firebase/firestore";
 
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke" },
@@ -15,6 +19,19 @@ export const AVAILABLE_WIDGETS = [
 ];
 
 const SAVE_DEBOUNCE_MS = 10000; // 10 seconds
+
+function isNotesWidgetId(widgetId: string) {
+  return widgetId === "notes" || widgetId.startsWith("notes:");
+}
+
+function createNotesWidgetInstanceId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `notes:${crypto.randomUUID()}`;
+  }
+
+  const randomPart = Math.random().toString(36).slice(2, 10);
+  return `notes:${Date.now().toString(36)}-${randomPart}`;
+}
 
 export function useWidgets() {
   const { user } = useAuth();
@@ -95,13 +112,45 @@ export function useWidgets() {
   }, []);
 
   const toggleWidget = useCallback((id: string) => {
-    setActiveWidgets(prev =>
+    if (id === "notes") {
+      const noteWidgetId = createNotesWidgetInstanceId();
+      setActiveWidgets((prev) => [...prev, noteWidgetId]);
+      debouncedSave();
+
+      if (user) {
+        void createStickyNote(user.uid, noteWidgetId).catch((error) => {
+          console.error("Failed to create sticky note:", error);
+        });
+      }
+
+      return;
+    }
+
+    setActiveWidgets((prev) =>
       prev.includes(id)
-        ? prev.filter(w => w !== id)
+        ? prev.filter((widgetId) => widgetId !== id)
         : [...prev, id]
     );
     debouncedSave();
-  }, [debouncedSave]);
+  }, [debouncedSave, user]);
+
+  const closeWidget = useCallback((widgetId: string) => {
+    setActiveWidgets((prev) => prev.filter((id) => id !== widgetId));
+    setLayouts((prev) => {
+      if (!prev[widgetId]) return prev;
+
+      const next = { ...prev };
+      delete next[widgetId];
+      return next;
+    });
+    debouncedSave();
+
+    if (user && isNotesWidgetId(widgetId)) {
+      void deleteStickyNote(user.uid, widgetId).catch((error) => {
+        console.error("Failed to delete sticky note:", error);
+      });
+    }
+  }, [debouncedSave, user]);
 
   const updateLayout = useCallback((newLayouts: Record<string, { x: number; y: number; w: number; h: number }>) => {
     setLayouts(newLayouts);
@@ -113,6 +162,7 @@ export function useWidgets() {
     layouts,
     isLoading,
     toggleWidget,
+    closeWidget,
     updateLayout,
   };
 }

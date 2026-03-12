@@ -6,13 +6,21 @@ type Props = {
   activeWidgets: string[];
   layouts: Record<string, { x: number; y: number; w: number; h: number }>;
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
+  onCloseWidget: (widgetId: string) => void;
   sidebarWidth: number;
 };
+
+function getWidgetType(widgetId: string) {
+  const separatorIndex = widgetId.indexOf(":");
+  if (separatorIndex === -1) return widgetId;
+  return widgetId.slice(0, separatorIndex);
+}
 
 export default function DashboardGrid({
   activeWidgets,
   layouts,
   onLayoutChange,
+  onCloseWidget,
   sidebarWidth
 }: Props) {
 
@@ -48,7 +56,8 @@ export default function DashboardGrid({
     >
       {activeWidgets.map((widgetId, index) => {
 
-        const widget = WIDGETS[widgetId as keyof typeof WIDGETS];
+        const widgetType = getWidgetType(widgetId);
+        const widget = WIDGETS[widgetType as keyof typeof WIDGETS];
 
         if (!widget) return null;
 
@@ -64,7 +73,12 @@ export default function DashboardGrid({
               y: currentLayout.y !== undefined ? currentLayout.y : Math.floor(index / 5) * widget.defaultGrid.h
             }}
           >
-            <Component config={{}} onConfigChange={() => {}} />
+            <Component
+              config={{}}
+              onConfigChange={() => {}}
+              widgetId={widgetId}
+              onClose={() => onCloseWidget(widgetId)}
+            />
           </div>
         );
       })}

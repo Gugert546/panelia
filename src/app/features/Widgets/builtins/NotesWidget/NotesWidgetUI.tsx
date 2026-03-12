@@ -2,9 +2,14 @@ import { useNotesWidget } from "./NotesWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
-export default function NotesWidget() {
+type NotesWidgetProps = {
+  widgetId: string;
+  onClose?: () => void;
+};
 
-  const { state, actions } = useNotesWidget();
+export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
+
+  const { state, actions } = useNotesWidget(widgetId);
 
   return (
     <WidgetContainer>
@@ -22,7 +27,7 @@ export default function NotesWidget() {
 
           <button
             type="button"
-            onClick={actions.clear}
+            onClick={onClose}
             style={{
               position: "absolute",
               top: 6,
@@ -36,6 +41,7 @@ export default function NotesWidget() {
               fontWeight: 700,
               zIndex: 1
             }}
+            aria-label="Lukk notat"
           >
             ×
           </button>

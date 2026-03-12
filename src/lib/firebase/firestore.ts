@@ -12,6 +12,7 @@ import {
 import { db } from "./client";
 import type { CalendarEvent } from "../../types/firestore";
 import type { Bookmark, BookmarkCategory } from "../../types/firestore";
+import type { StickyNote } from "../../types/firestore";
 
 const eventsRef = (uid: string) => collection(db, "users", uid, "calendarEvents");
 
@@ -208,4 +209,54 @@ export async function deleteBookmark(uid: string, bookmarkId: string) {
 
 export async function deleteCategory(uid: string, categoryId: string) {
   await deleteDoc(doc(categoriesRef(uid), categoryId));
+}
+
+
+const notesRef = (uid: string) =>
+  collection(db, "users", uid, "stickyNotes");
+
+
+export async function createStickyNote(uid: string, noteId: string) {
+  await setDoc(doc(notesRef(uid), noteId), {
+    id: noteId,
+    userId: uid,
+    text: "",
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+}
+
+
+export async function updateStickyNote(uid: string, noteId: string, text: string) {
+  await setDoc(
+    doc(notesRef(uid), noteId),
+    {
+      id: noteId,
+      userId: uid,
+      text,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+}
+
+
+export async function deleteStickyNote(uid: string, noteId: string) {
+  await deleteDoc(doc(notesRef(uid), noteId));
+}
+
+
+export function subscribeToStickyNote(
+  uid: string,
+  noteId: string,
+  onData: (note: StickyNote | null) => void
+) {
+  return onSnapshot(doc(notesRef(uid), noteId), (snap) => {
+    if (!snap.exists()) {
+      onData(null);
+      return;
+    }
+
+    onData(snap.data() as StickyNote);
+  });
 }
