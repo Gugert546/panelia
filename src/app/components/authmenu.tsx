@@ -2,10 +2,25 @@ import { useState } from "react";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../../lib/firebase/client";
 import { useAuth } from "../features/auth/useAuth";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
 
 export default function AuthMenu() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
+
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+
+    const handleEmailLogin = async () => {
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+    setOpen(false);
+  } catch (error: any) {
+    alert(error.message);
+  }
+};
+
 
   const handleGoogleLogin = async () => {
   await signInWithPopup(auth, googleProvider);
@@ -75,17 +90,38 @@ export default function AuthMenu() {
           }}
         >
           {!user ? (
-            <button
-              onClick={handleGoogleLogin}
-              style={{
-                width: "100%",
-                padding: 8,
-                cursor: "pointer",
-              }}
-            >
-              Logg inn med Google
-            </button>
-          ) : (
+  <>
+    <input
+      type="email"
+      placeholder="E-post"
+      value={email}
+      onChange={(e) => setEmail(e.target.value)}
+      style={{ width: "100%", marginBottom: 6 }}
+    />
+
+    <input
+      type="password"
+      placeholder="Passord"
+      value={password}
+      onChange={(e) => setPassword(e.target.value)}
+      style={{ width: "100%", marginBottom: 6 }}
+    />
+
+    <button
+      onClick={handleEmailLogin}
+      style={{ width: "100%", marginBottom: 6 }}
+    >
+      Logg inn
+    </button>
+
+    <button
+      onClick={handleGoogleLogin}
+      style={{ width: "100%" }}
+    >
+      Logg inn med Google
+    </button>
+  </>
+) : (
             <>
               <div style={{ marginBottom: 8, fontSize: 14 }}>
                 {user.displayName}

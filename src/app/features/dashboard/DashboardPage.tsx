@@ -15,6 +15,9 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 
+//Lås for inlogget bruker
+import { useAuth } from "../../features/auth/useAuth";
+
 // bakgrunn
 import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
 
@@ -32,6 +35,8 @@ import {
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
 export default function DashboardPage() {
+
+  const { user } = useAuth(); //Låser widget use for ikke innlogget bruker.
 
   const SIDEBAR_WIDTH = 60;
 
@@ -238,7 +243,13 @@ export default function DashboardPage() {
 
       <Sidebar
         onSidebarNav={handleSidebarNavigation}
-        onEditClick={() => setEditOpen((prev) => !prev)}
+        onEditClick={() => {
+                if (!user) {
+                  alert("Logg inn for å redigere widgets");
+                  return;
+                }
+                setEditOpen((prev) => !prev);
+  }}
       />
 
       <div
@@ -252,6 +263,7 @@ export default function DashboardPage() {
         <AuthMenu />
       </div>
 
+     {user && (
       <EditPanel
         open={editOpen}
         onClose={() => setEditOpen(false)}
@@ -259,7 +271,7 @@ export default function DashboardPage() {
         activeWidgets={activeWidgets}
         toggleWidget={toggleWidget}
       />
-
+)}
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
@@ -280,17 +292,23 @@ export default function DashboardPage() {
       </main>
 
       <button
-        onClick={toggleChat}
-        style={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          padding: "10px 20px",
-          borderRadius: "50px",
-        }}
-      >
-        {isChatVisible ? "Close Chat" : "Open Chat"}
-      </button>
+  onClick={() => {
+    if (!user) {
+      alert("Logg inn for å bruke chat");
+      return;
+    }
+    toggleChat();
+  }}
+  style={{
+    position: "fixed",
+    bottom: 20,
+    right: 20,
+    padding: "10px 20px",
+    borderRadius: "50px",
+  }}
+>
+  {isChatVisible ? "Close Chat" : "Open Chat"}
+</button>
 
       {isChatVisible && (
         <div
@@ -405,7 +423,24 @@ export default function DashboardPage() {
           }}
         />
       )}
-
+          {!user && (
+  <div
+    style={{
+      position: "fixed",
+      bottom: 20,
+      left: 80,
+      padding: "10px 14px",
+      background: "rgba(0,0,0,0.6)",
+      color: "white",
+      borderRadius: 8,
+      fontSize: 14,
+      backdropFilter: "blur(6px)",
+      zIndex: 1000,
+    }}
+  >
+    Logg inn for å legge til og redigere widgets
+  </div>
+)}
     </div>
   );
 }
