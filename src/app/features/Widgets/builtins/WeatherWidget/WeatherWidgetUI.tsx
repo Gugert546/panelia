@@ -1,10 +1,12 @@
 import { useWeatherWidget } from "./WeatherWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+import { useFontSize } from "../../../../providers/themeProviders";
 
 export default function WeatherWidgetUI() {
 
   const { state } = useWeatherWidget();
+  const { fontSize } = useFontSize();
 
   return (
     <WidgetContainer>
@@ -63,7 +65,7 @@ export default function WeatherWidgetUI() {
 
               </div>
 
-              <div style={{ fontSize: 14 }}>
+              <div style={{ fontSize }}>
                 Vind: {state.data.windSpeedMs ?? "—"} m/s
               </div>
             </>

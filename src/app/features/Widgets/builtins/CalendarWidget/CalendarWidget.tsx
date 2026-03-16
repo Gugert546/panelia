@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import WidgetPane from "../../components/WidgetPane";
 import { useCalendarLogic } from "./calendarLogic";
 import EventEditModal from "./EventEditModal";
+import { useFontSize } from "../../../../providers/themeProviders";
 
 export type CalendarWidgetSizeMode = "small" | "medium" | "large" | "xlarge";
 
@@ -99,6 +100,7 @@ export default function CalendarWidget({
   onSizeModeChange,
 }: CalendarWidgetProps) {
   const config = SIZE_CONFIG[sizeMode];
+  const { fontSize } = useFontSize();
 
   const handleConnectCalendar = () => {
     if (calendarConnectionBusy) return;
@@ -414,7 +416,7 @@ export default function CalendarWidget({
                               openEditModal(primaryEvent);
                             }}
                             style={{
-                              fontSize: "10px",
+                              fontSize,
                               lineHeight: 1.2,
                               padding: "2px 5px",
                               borderRadius: "5px",
@@ -432,7 +434,7 @@ export default function CalendarWidget({
                         {primaryEvent && isContinuation && (
                           <div
                             style={{
-                              fontSize: "9px",
+                              fontSize: fontSize - 2,
                               lineHeight: 1.2,
                               padding: "2px 4px",
                               borderRadius: "4px",

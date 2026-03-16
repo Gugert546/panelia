@@ -1,6 +1,7 @@
 import { useNotesWidget } from "./NotesWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+import { useFontSize } from "../../../../providers/themeProviders";
 
 type NotesWidgetProps = {
   widgetId: string;
@@ -10,6 +11,7 @@ type NotesWidgetProps = {
 export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
 
   const { state, actions } = useNotesWidget(widgetId);
+  const { fontSize } = useFontSize();
 
   return (
     <WidgetContainer>
@@ -59,7 +61,7 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
               border: "none",
               background: "transparent",
               outline: "none",
-              fontSize: 14,
+              fontSize,
               boxSizing: "border-box"
             }}
           />
