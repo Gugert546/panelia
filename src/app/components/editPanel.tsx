@@ -1,3 +1,5 @@
+import { useFontSize } from '../providers/themeProviders';
+
 type Widget = {
   id: string;
   label: string;
@@ -18,6 +20,7 @@ export default function EditPanel({
   activeWidgets,
   toggleWidget
 }: EditPanelProps) {
+  const { setFontSizeMode } = useFontSize();
 
   const hasWidgetType = (widgetType: string) => {
     return activeWidgets.some((activeId) => {
@@ -32,7 +35,7 @@ export default function EditPanel({
         position: "fixed",
         top: 0,
         left: open ? 86 : "-50%",
-        width: "15%",
+        width: "20%",
         height: "100%",
         backdropFilter: "blur(10px)",
         transition: "left 0.3s ease",
@@ -84,6 +87,48 @@ export default function EditPanel({
           );
         })}
 
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        <h3>Font Size</h3>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setFontSizeMode('small')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            Small
+          </button>
+          <button
+            onClick={() => setFontSizeMode('medium')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            Medium
+          </button>
+          <button
+            onClick={() => setFontSizeMode('large')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            Large
+          </button>
+        </div>
       </div>
     </div>
   );

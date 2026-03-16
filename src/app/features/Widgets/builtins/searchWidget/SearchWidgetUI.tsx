@@ -3,10 +3,12 @@ import { createPortal } from "react-dom";
 import { useSearchWidget } from "./SearchWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+import { useFontSize } from "../../../../providers/themeProviders";
 
 export default function SearchWidgetUI() {
 
   const { state, actions } = useSearchWidget();
+  const { fontSize } = useFontSize();
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -94,7 +96,7 @@ export default function SearchWidgetUI() {
               border: "none",
               outline: "none",
               background: "transparent",
-              fontSize: 14,
+              fontSize,
               color: "#111"
             }}
           />
@@ -144,7 +146,7 @@ export default function SearchWidgetUI() {
                       borderRadius: 8,
                       cursor: "pointer",
                       fontWeight: selected ? 700 : 600,
-                      fontSize: 14
+                      fontSize
                     }}
                   >
 

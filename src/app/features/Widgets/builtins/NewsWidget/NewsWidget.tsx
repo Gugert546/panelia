@@ -1,6 +1,7 @@
 import { useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+import { useFontSize } from "../../../../providers/themeProviders";
 
 type NewsArticle = {
   title: string;
@@ -17,6 +18,7 @@ export default function NewsWidget() {
   const [country, setCountry] = useState("");
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
+  const { fontSize } = useFontSize();
 
   async function fetchNewsByCountry(country: string) {
     const code = country.trim().toLowerCase();
@@ -66,7 +68,7 @@ export default function NewsWidget() {
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             style={{
-              fontSize: 14,
+              fontSize,
               padding: 4
             }}
           />
@@ -74,7 +76,7 @@ export default function NewsWidget() {
           <button
             onClick={handleSubmit}
             style={{
-              fontSize: 14,
+              fontSize,
               padding: 4
             }}
           >
@@ -99,7 +101,7 @@ export default function NewsWidget() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
-                  fontSize: 14,
+                  fontSize,
                   textDecoration: "none"
                 }}
               >
