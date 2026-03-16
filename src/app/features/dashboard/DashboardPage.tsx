@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import AuthMenu from "../../components/authmenu";
-
 import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import Chat from "../../components/chatUI";
@@ -14,30 +13,18 @@ import DashboardGrid from "../../components/DashboardGrid";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-
-//Lås for inlogget bruker
-import { useAuth } from "../../features/auth/useAuth";
-
-// bakgrunn
 import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
-
 import { auth } from "../../../lib/firebase/client";
 
-
-
-// widget hook
 import {
-  useWidgets,
   AVAILABLE_WIDGETS,
 } from "./hooks/useWidgets";
 
+import { WidgetsProvider, useWidgets } from "./hooks/WidgetsContext";
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
-export default function DashboardPage() {
-
-  const { user } = useAuth(); //Låser widget use for ikke innlogget bruker.
-
+function DashboardPageContent() {
   const SIDEBAR_WIDTH = 60;
 
   const [editOpen, setEditOpen] = useState(false);
@@ -47,27 +34,20 @@ export default function DashboardPage() {
   const [calendarConnectionStatus, setCalendarConnectionStatus] =
     useState<CalendarConnectionStatus>("loading");
 
-  const [calendarConnectionBusy, setCalendarConnectionBusy] =
-    useState(false);
-
-  const [calendarRefreshBusy, setCalendarRefreshBusy] =
-    useState(false);
-
+  const [calendarConnectionBusy, setCalendarConnectionBusy] = useState(false);
+  const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
   const [calendarSizeMode, setCalendarSizeMode] =
     useState<CalendarWidgetSizeMode>("xlarge");
 
-
-  // widget system
   const {
     activeWidgets,
+    customButtonConfigs,
     layouts,
     updateLayout,
     toggleWidget,
-    closeWidget,
+    removeCustomButton,
   } = useWidgets();
 
-  
-  // Natt / Dag refresh
   const [, setTime] = useState(new Date());
 
   useEffect(() => {
@@ -78,15 +58,12 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Kalender status
   useEffect(() => {
-
     if (!isCalendarVisible) return;
 
     let cancelled = false;
 
     const fetchCalendarStatus = async () => {
-
       const user = auth.currentUser;
 
       if (!user) {
@@ -97,7 +74,6 @@ export default function DashboardPage() {
       if (!cancelled) setCalendarConnectionStatus("loading");
 
       try {
-
         const idToken = await user.getIdToken();
 
         const response = await fetch("/api/google-calendar/status", {
@@ -118,11 +94,8 @@ export default function DashboardPage() {
             payload.connected ? "connected" : "disconnected"
           );
         }
-
       } catch {
-
         if (!cancelled) setCalendarConnectionStatus("disconnected");
-
       }
     };
 
@@ -131,12 +104,9 @@ export default function DashboardPage() {
     return () => {
       cancelled = true;
     };
-
   }, [isCalendarVisible]);
 
-  // OAuth refresh
   useEffect(() => {
-
     const url = new URL(window.location.href);
     const oauthResult = url.searchParams.get("calendar_oauth");
 
@@ -149,22 +119,17 @@ export default function DashboardPage() {
       "",
       `${url.pathname}${url.search}${url.hash}`
     );
-
   }, []);
 
-  // Pull Google events
   const pullFromGoogleCalendar = async (showAlert = false) => {
-
     if (calendarConnectionStatus !== "connected") return;
 
     const user = auth.currentUser;
-
     if (!user) return;
 
     setCalendarRefreshBusy(true);
 
     try {
-
       const idToken = await user.getIdToken();
 
       const response = await fetch("/api/google-calendar/sync/pull", {
@@ -179,23 +144,16 @@ export default function DashboardPage() {
       if (!response.ok && showAlert) {
         window.alert("Failed to refresh events from Google Calendar.");
       }
-
     } catch {
-
       if (showAlert) {
         window.alert("Failed to refresh events from Google Calendar.");
       }
-
     } finally {
-
       setCalendarRefreshBusy(false);
-
     }
   };
 
-  // Poll calendar
   useEffect(() => {
-
     if (!isCalendarVisible) return;
     if (calendarConnectionStatus !== "connected") return;
     if (calendarRefreshBusy) return;
@@ -207,17 +165,13 @@ export default function DashboardPage() {
     }, 30000);
 
     return () => clearInterval(interval);
+  }, [isCalendarVisible, calendarConnectionStatus, calendarRefreshBusy]);
 
-  }, [isCalendarVisible, calendarConnectionStatus]);
-
-  // chat toggle
   const toggleChat = () => {
     setIsChatVisible((prev) => !prev);
   };
 
-  // sidebar navigation
   const handleSidebarNavigation = (itemKey: string) => {
-
     if (itemKey === "calendar") {
       setIsCalendarVisible((prev) => !prev);
     }
@@ -225,7 +179,6 @@ export default function DashboardPage() {
     if (itemKey === "chat") {
       setIsChatVisible((prev) => !prev);
     }
-
   };
 
   return (
@@ -240,16 +193,9 @@ export default function DashboardPage() {
         backgroundRepeat: "no-repeat",
       }}
     >
-
       <Sidebar
         onSidebarNav={handleSidebarNavigation}
-        onEditClick={() => {
-                if (!user) {
-                  alert("Logg inn for å redigere widgets");
-                  return;
-                }
-                setEditOpen((prev) => !prev);
-  }}
+        onEditClick={() => setEditOpen((prev) => !prev)}
       />
 
       <div
@@ -263,15 +209,16 @@ export default function DashboardPage() {
         <AuthMenu />
       </div>
 
-     {user && (
       <EditPanel
         open={editOpen}
         onClose={() => setEditOpen(false)}
         availableWidgets={AVAILABLE_WIDGETS}
         activeWidgets={activeWidgets}
         toggleWidget={toggleWidget}
+        customButtonConfigs={customButtonConfigs}
+        removeCustomButton={removeCustomButton}
       />
-)}
+
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
@@ -280,35 +227,27 @@ export default function DashboardPage() {
           position: "relative",
         }}
       >
-
         <DashboardGrid
           activeWidgets={activeWidgets}
           layouts={layouts}
           onLayoutChange={updateLayout}
-          onCloseWidget={closeWidget}
+          onCloseWidget={removeCustomButton}
           sidebarWidth={SIDEBAR_WIDTH}
         />
-
       </main>
 
       <button
-  onClick={() => {
-    if (!user) {
-      alert("Logg inn for å bruke chat");
-      return;
-    }
-    toggleChat();
-  }}
-  style={{
-    position: "fixed",
-    bottom: 20,
-    right: 20,
-    padding: "10px 20px",
-    borderRadius: "50px",
-  }}
->
-  {isChatVisible ? "Close Chat" : "Open Chat"}
-</button>
+        onClick={toggleChat}
+        style={{
+          position: "fixed",
+          bottom: 20,
+          right: 20,
+          padding: "10px 20px",
+          borderRadius: "50px",
+        }}
+      >
+        {isChatVisible ? "Close Chat" : "Open Chat"}
+      </button>
 
       {isChatVisible && (
         <div
@@ -339,6 +278,7 @@ export default function DashboardPage() {
             }
 
             setCalendarConnectionBusy(true);
+
             try {
               const idToken = await user.getIdToken();
               const returnTo = window.location.href;
@@ -353,19 +293,13 @@ export default function DashboardPage() {
               });
 
               if (!response.ok) {
-                let details = "";
-                try {
-                  const errorPayload = (await response.json()) as { error?: string };
-                  if (errorPayload?.error) details = ` (${errorPayload.error})`;
-                } catch {
-                  // ignore parse failures
-                }
-                window.alert(`Failed to start Google Calendar OAuth.${details}`);
+                window.alert("Failed to start Google Calendar OAuth.");
                 setCalendarConnectionBusy(false);
                 return;
               }
 
               const payload = (await response.json()) as { url?: string };
+
               if (!payload.url) {
                 window.alert("OAuth URL missing from server response.");
                 setCalendarConnectionBusy(false);
@@ -380,14 +314,17 @@ export default function DashboardPage() {
           }}
           onDisconnectCalendar={async () => {
             const user = auth.currentUser;
+
             if (!user) {
               setCalendarConnectionStatus("disconnected");
               return;
             }
 
             setCalendarConnectionBusy(true);
+
             try {
               const idToken = await user.getIdToken();
+
               const response = await fetch("/api/google-calendar/disconnect", {
                 method: "POST",
                 headers: {
@@ -414,6 +351,7 @@ export default function DashboardPage() {
             }
 
             const user = auth.currentUser;
+
             if (!user) {
               window.alert("Please sign in before refreshing Google Calendar.");
               return;
@@ -423,24 +361,14 @@ export default function DashboardPage() {
           }}
         />
       )}
-          {!user && (
-  <div
-    style={{
-      position: "fixed",
-      bottom: 20,
-      left: 80,
-      padding: "10px 14px",
-      background: "rgba(0,0,0,0.6)",
-      color: "white",
-      borderRadius: 8,
-      fontSize: 14,
-      backdropFilter: "blur(6px)",
-      zIndex: 1000,
-    }}
-  >
-    Logg inn for å legge til og redigere widgets
-  </div>
-)}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <WidgetsProvider>
+      <DashboardPageContent />
+    </WidgetsProvider>
   );
 }
