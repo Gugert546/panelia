@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useFontSize } from "../../../../providers/themeProviders";
 
 export default function SpotifyWidget() {
 
@@ -6,6 +7,7 @@ export default function SpotifyWidget() {
   const [player, setPlayer] = useState<any>(null);
   const [devices, setDevices] = useState<any[]>([]);
   const [volume, setVolume] = useState(50);
+  const { fontSize } = useFontSize();
 
   useEffect(() => {
 
@@ -306,7 +308,7 @@ export default function SpotifyWidget() {
         {track.name}
       </div>
 
-      <div style={{ fontSize: 13, opacity: 0.7 }}>
+      <div style={{ fontSize, opacity: 0.7 }}>
         {track.artists.map((a:any)=>a.name).join(", ")}
       </div>
 

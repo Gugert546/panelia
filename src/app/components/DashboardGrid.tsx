@@ -26,14 +26,22 @@ export default function DashboardGrid({
 
   const handleLayoutChange = (newLayout: Layout) => {
     const newLayouts: Record<string, { x: number; y: number; w: number; h: number }> = {};
+
     newLayout.forEach(item => {
+      const widgetType = getWidgetType(item.i);
+      const widget = WIDGETS[widgetType as keyof typeof WIDGETS];
+      const baseGrid = widget?.defaultGrid;
+
       newLayouts[item.i] = {
         x: item.x,
         y: item.y,
-        w: item.w,
-        h: item.h,
+        
+        // Clamp to widget minimums so users can’t resize smaller than starting size
+        w: baseGrid ? Math.max(item.w, baseGrid.w) : item.w,
+        h: baseGrid ? Math.max(item.h, baseGrid.h) : item.h,
       };
     });
+
     onLayoutChange(newLayouts);
   };
 
@@ -62,15 +70,27 @@ export default function DashboardGrid({
         if (!widget) return null;
 
         const Component = widget.Component;
-        const currentLayout = layouts[widgetId] || widget.defaultGrid;
+        const baseGrid = widget.defaultGrid;
+        const storedLayout = layouts[widgetId];
 
+        type SafeLayout = { x?: number; y?: number; w: number; h: number };
+        const currentLayout: SafeLayout = storedLayout
+          ? {
+              ...storedLayout,
+              // Ensure persisted layouts never shrink below the widget's default size
+              w: Math.max(storedLayout.w, baseGrid.w),
+              h: Math.max(storedLayout.h, baseGrid.h),
+            }
+          : baseGrid;
         return (
           <div
             key={widgetId}
             data-grid={{
               ...currentLayout,
               x: currentLayout.x !== undefined ? currentLayout.x : (index * 4) % 20,
-              y: currentLayout.y !== undefined ? currentLayout.y : Math.floor(index / 5) * widget.defaultGrid.h
+              y: currentLayout.y !== undefined ? currentLayout.y : Math.floor(index / 5) * widget.defaultGrid.h,
+              minW: baseGrid.w,
+              minH: baseGrid.h,
             }}
           >
             <Component

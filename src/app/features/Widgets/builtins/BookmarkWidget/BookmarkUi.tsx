@@ -4,6 +4,7 @@ import WidgetPane from "../../components/WidgetPane";
 import { useBookmark } from "./BookmarkLogic";
 import BookmarkForm from "./BookmarkForm";
 import CategoryForm from "./CategoryForm";
+import { useFontSize } from "../../../../providers/themeProviders";
 
 
 
@@ -22,7 +23,7 @@ export default function BookmarkUi() {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedCategoryForBookmark, setSelectedCategoryForBookmark] = useState<string | null>(null);
 
-  const fontSize = 14 
+  const { fontSize } = useFontSize(); 
 
   if (loading) {
     return (
