@@ -1,3 +1,7 @@
+import { useEffect, useState } from "react";
+import AddCustomButtonModal from "./AddCustomButtonModal";
+import type { CustomButtonConfig } from "../features/dashboard/hooks/useWidgetsState";
+
 type Widget = {
   id: string;
   label: string;
@@ -6,9 +10,11 @@ type Widget = {
 type EditPanelProps = {
   open: boolean;
   onClose: () => void;
-  availableWidgets: Widget[];
+  availableWidgets: readonly Widget[];
   activeWidgets: string[];
   toggleWidget: (id: string) => void;
+  customButtonConfigs: Record<string, CustomButtonConfig>;
+  removeCustomButton: (id: string) => void;
 };
 
 export default function EditPanel({
@@ -16,15 +22,15 @@ export default function EditPanel({
   onClose,
   availableWidgets,
   activeWidgets,
-  toggleWidget
+  toggleWidget,
+  customButtonConfigs,
+  removeCustomButton
 }: EditPanelProps) {
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
 
-  const hasWidgetType = (widgetType: string) => {
-    return activeWidgets.some((activeId) => {
-      if (activeId === widgetType) return true;
-      return activeId.startsWith(`${widgetType}:`);
-    });
-  };
+  useEffect(() => {
+    setModalOpen(false);
+  }, [open]);
 
   return (
     <div
@@ -59,8 +65,7 @@ export default function EditPanel({
 
         {availableWidgets.map(widget => {
 
-          const isActive = hasWidgetType(widget.id);
-          const isNotes = widget.id === "notes";
+          const isActive = activeWidgets.includes(widget.id);
 
           return (
             <div
@@ -79,12 +84,29 @@ export default function EditPanel({
               }}
             >
               {widget.label}
-              {isNotes ? " +" : isActive ? " ✓" : ""}
+              {isActive && " ✓"}
             </div>
           );
         })}
 
+        <div
+          onClick={() => setModalOpen(true)}
+          style={{
+            padding: 12,
+            width: "90%",
+            marginBottom: 10,
+            borderRadius: 8,
+            cursor: "pointer",
+            background: "#f3f3f3",
+            border: "1px solid #ddd"
+          }}
+        >
+          Legg til egendefinert knapp
+        </div>
+
       </div>
+
+      <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} />
     </div>
   );
 }
