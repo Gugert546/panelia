@@ -2,6 +2,7 @@ import { useNotesWidget } from "./NotesWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useFontSize } from "../../../../providers/themeProviders";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 type NotesWidgetProps = {
   widgetId: string;
@@ -12,6 +13,7 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
 
   const { state, actions } = useNotesWidget(widgetId);
   const { fontSize } = useFontSize();
+  const { t } = useLanguage();
 
   return (
     <WidgetContainer>
@@ -43,7 +45,7 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
               fontWeight: 700,
               zIndex: 1
             }}
-            aria-label="Lukk notat"
+            aria-label={t('widgets.notesWidget.closeNote')}
           >
             ×
           </button>
@@ -51,7 +53,7 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
           <textarea
             value={state.text}
             onChange={(e) => actions.setText(e.target.value)}
-            placeholder="Skriv notater her..."
+            placeholder={t('widgets.notesWidget.placeholder')}
             style={{
               width: "100%",
               height: "100%",

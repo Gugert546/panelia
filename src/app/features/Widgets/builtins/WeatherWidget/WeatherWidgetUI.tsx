@@ -2,11 +2,13 @@ import { useWeatherWidget } from "./WeatherWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useFontSize } from "../../../../providers/themeProviders";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 export default function WeatherWidgetUI() {
 
   const { state } = useWeatherWidget();
   const { fontSize } = useFontSize();
+  const { t } = useLanguage();
 
   return (
     <WidgetContainer>
@@ -23,7 +25,7 @@ export default function WeatherWidgetUI() {
           }}
         >
 
-          {state.status === "loading" && <div>Henter vær...</div>}
+          {state.status === "loading" && <div>{t('widgets.weatherWidget.loading')}</div>}
 
           {state.status === "error" && (
             <div style={{ color: "#b91c1c" }}>
@@ -66,7 +68,7 @@ export default function WeatherWidgetUI() {
               </div>
 
               <div style={{ fontSize }}>
-                Vind: {state.data.windSpeedMs ?? "—"} m/s
+                {t('widgets.weatherWidget.wind')}: {state.data.windSpeedMs ?? "—"} m/s
               </div>
             </>
           )}

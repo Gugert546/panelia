@@ -4,11 +4,13 @@ import { useSearchWidget } from "./SearchWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useFontSize } from "../../../../providers/themeProviders";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 export default function SearchWidgetUI() {
 
   const { state, actions } = useSearchWidget();
   const { fontSize } = useFontSize();
+  const { t } = useLanguage();
 
   const menuRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
@@ -57,7 +59,7 @@ export default function SearchWidgetUI() {
               ref={buttonRef}
               type="button"
               onClick={actions.toggleMenu}
-              aria-label="Velg søkemotor"
+              aria-label={t('widgets.searchWidget.chooseEngine')}
               style={{
                 border: "none",
                 background: "transparent",
@@ -87,7 +89,7 @@ export default function SearchWidgetUI() {
 
           <input
             type="text"
-            placeholder={`Søk med ${state.engineInfo.label}`}
+            placeholder={`${t('widgets.searchWidget.searchPlaceholder')} ${state.engineInfo.label}`}
             value={state.query}
             onChange={(e) => actions.setQuery(e.target.value)}
             onKeyDown={actions.handleKeyDown}

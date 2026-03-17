@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import AddCustomButtonModal from "./AddCustomButtonModal";
 import type { CustomButtonConfig } from "../features/dashboard/hooks/useWidgetsState";
 import { useFontSize } from '../providers/themeProviders';
+import { useLanguage } from '../providers/languageProvider';
 
 type Widget = {
   id: string;
@@ -29,6 +30,7 @@ export default function EditPanel({
 }: EditPanelProps) {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const { setFontSizeMode } = useFontSize();
+  const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     setModalOpen(false);
@@ -52,9 +54,41 @@ export default function EditPanel({
       }}
     >
 
-      <button onClick={onClose}>Lukk</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setLanguage('no')}
+            style={{
+              padding: '4px 8px',
+              borderRadius: 4,
+              border: language === 'no' ? '2px solid #4da3ff' : '1px solid #ddd',
+              background: language === 'no' ? '#cde8ff' : '#f3f3f3',
+              cursor: 'pointer',
+              fontSize: 12
+            }}
+            title="Norsk"
+          >
+            Norsk
+          </button>
+          <button
+            onClick={() => setLanguage('en')}
+            style={{
+              padding: '4px 8px',
+              borderRadius: 4,
+              border: language === 'en' ? '2px solid #4da3ff' : '1px solid #ddd',
+              background: language === 'en' ? '#cde8ff' : '#f3f3f3',
+              cursor: 'pointer',
+              fontSize: 12
+            }}
+            title="English"
+          >
+            English
+          </button>
+        </div>
+        <button onClick={onClose}>{t('editPanel.close')}</button>
+      </div>
 
-      <h2>Velg Widgets</h2>
+      <h2>{t('editPanel.selectWidgets')}</h2>
 
       <div
         style={{
@@ -103,14 +137,14 @@ export default function EditPanel({
             border: "1px solid #ddd"
           }}
         >
-          Legg til egendefinert knapp
+          {t('editPanel.addCustomButton')}
         </div>
 
       </div>
 
       <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} />
       <div style={{ marginTop: 20 }}>
-        <h3>Font Size</h3>
+        <h3>{t('editPanel.fontSize')}</h3>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => setFontSizeMode('small')}
@@ -122,7 +156,7 @@ export default function EditPanel({
               cursor: 'pointer'
             }}
           >
-            Small
+            {t('editPanel.small')}
           </button>
           <button
             onClick={() => setFontSizeMode('medium')}
@@ -134,7 +168,7 @@ export default function EditPanel({
               cursor: 'pointer'
             }}
           >
-            Medium
+            {t('editPanel.medium')}
           </button>
           <button
             onClick={() => setFontSizeMode('large')}
@@ -146,7 +180,7 @@ export default function EditPanel({
               cursor: 'pointer'
             }}
           >
-            Large
+            {t('editPanel.large')}
           </button>
         </div>
       </div>

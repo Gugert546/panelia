@@ -1,0 +1,68 @@
+{
+  "editPanel": {
+    "close": "Close",
+    "selectWidgets": "Select Widgets",
+    "addCustomButton": "Add custom button",
+    "fontSize": "Font Size",
+    "small": "Small",
+    "medium": "Medium",
+    "large": "Large"
+  },
+  "addCustomButtonModal": {
+    "title": "Add custom button",
+    "buttonName": "Button name",
+    "link": "Link",
+    "adding": "Adding...",
+    "add": "Add",
+    "cancel": "Cancel",
+    "existingButtons": "Existing buttons:",
+    "deleteButton": "Delete button",
+    "closeModalComment": "Close modal when button is added",
+    "fetchPreviewError": "Could not fetch link preview:"
+  },
+  "widgets": {
+    "clock": "Clock",
+    "google_search": "Search",
+    "news": "News",
+    "weather": "Weather",
+    "bookmark": "Bookmark",
+    "notes": "Notes",
+    "spotify": "Spotify",
+    "calendar": "Calendar",
+    "bookmarkWidget": {
+      "title": "Bookmarks",
+      "loading": "Loading bookmarks...",
+      "addCategory": "+ Add Category",
+      "cancel": "Cancel",
+      "noCategories": "No categories yet. Create one to get started!",
+      "noBookmarks": "No bookmarks in this category",
+      "addBookmark": "Add bookmark",
+      "to": "to",
+      "delete": "Delete"
+    },
+    "newsWidget": {
+      "title": "World News",
+      "placeholder": "Country code (no, us...)",
+      "getHeadlines": "Get Headlines",
+      "loading": "Loading..."
+    },
+    "weatherWidget": {
+      "loading": "Fetching weather...",
+      "wind": "Wind"
+    },
+    "customButtons": {
+      "title": "Custom buttons",
+      "buttonName": "Button name",
+      "link": "Link",
+      "add": "Add"
+    },
+    "searchWidget": {
+      "chooseEngine": "Choose search engine",
+      "searchPlaceholder": "Search with"
+    },
+    "notesWidget": {
+      "closeNote": "Close note",
+      "placeholder": "Write notes here..."
+    }
+  }
+}
