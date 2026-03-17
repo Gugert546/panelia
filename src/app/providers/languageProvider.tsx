@@ -35,7 +35,7 @@ interface LanguageProviderProps {
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const [language, setLanguageState] = useState<Language>('no'); // default to Norwegian
+  const [language, setLanguageState] = useState<Language>('en'); // default to English
   const [isLoading, setIsLoading] = useState(true);
 
   const translations = {
