@@ -2,6 +2,7 @@ import { useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useFontSize } from "../../../../providers/themeProviders";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 type NewsArticle = {
   title: string;
@@ -19,6 +20,7 @@ export default function NewsWidget() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
   const { fontSize } = useFontSize();
+  const { t } = useLanguage();
 
   async function fetchNewsByCountry(country: string) {
     const code = country.trim().toLowerCase();
@@ -53,7 +55,7 @@ export default function NewsWidget() {
 
   return (
     <WidgetContainer>
-      <WidgetPane title="World News">
+      <WidgetPane title={t('widgets.newsWidget.title')}>
         <div
           style={{
             display: "flex",
@@ -64,7 +66,7 @@ export default function NewsWidget() {
         >
           <input
             type="text"
-            placeholder="Country code (no, us...)"
+            placeholder={t('widgets.newsWidget.placeholder')}
             value={country}
             onChange={(e) => setCountry(e.target.value)}
             style={{
@@ -80,10 +82,10 @@ export default function NewsWidget() {
               padding: 4
             }}
           >
-            Get Headlines
+            {t('widgets.newsWidget.getHeadlines')}
           </button>
 
-          {loading && <p>Loading...</p>}
+          {loading && <p>{t('widgets.newsWidget.loading')}</p>}
 
           <div
             style={{

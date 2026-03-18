@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useWidgets } from "../features/dashboard/hooks/WidgetsContext";
 import type { CustomButtonConfig } from "../features/dashboard/hooks/useWidgetsState";
+import { useLanguage } from "../providers/languageProvider";
 
 function normalizeUrl(url: string) {
   const trimmed = url.trim();
@@ -27,6 +28,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
   const [loading, setLoading] = useState(false);
 
   const { addCustomButton } = useWidgets();
+  const { t } = useLanguage();
 
   async function handleAddButton() {
     const trimmedLabel = label.trim();
@@ -58,7 +60,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
       setUrl("");
       onClose(); // Lukk modalen når knapp er lagt til
     } catch (err) {
-      console.error("Kunne ikke hente link preview:", err);
+      console.error(t('addCustomButtonModal.fetchPreviewError'), err);
     } finally {
       setLoading(false);
     }
@@ -104,13 +106,13 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
             letterSpacing: 0.4,
           }}
         >
-          Legg til egendefinert knapp
+          {t('addCustomButtonModal.title')}
         </h3>
 
         <div style={{ flex: 1 }}>
           <input
             type="text"
-            placeholder="Knappenavn"
+            placeholder={t('addCustomButtonModal.buttonName')}
             value={label}
             onChange={(e) => setLabel(e.target.value)}
             style={{
@@ -123,7 +125,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
           />
           <input
             type="text"
-            placeholder="Lenke"
+            placeholder={t('addCustomButtonModal.link')}
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             style={{
@@ -147,7 +149,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
                 cursor: loading ? "not-allowed" : "pointer",
               }}
             >
-              {loading ? "Legger til..." : "Legg til"}
+              {loading ? t('addCustomButtonModal.adding') : t('addCustomButtonModal.add')}
             </button>
             <button
               onClick={onClose}
@@ -159,14 +161,14 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
                 cursor: "pointer",
               }}
             >
-              Avbryt
+              {t('addCustomButtonModal.cancel')}
             </button>
           </div>
         </div>
 
         {Object.keys(customButtonConfigs).length > 0 && (
           <div style={{ marginTop: 12 }}>
-            <h4 style={{ margin: 0, marginBottom: 8 }}>Eksisterende knapper:</h4>
+            <h4 style={{ margin: 0, marginBottom: 8 }}>{t('addCustomButtonModal.existingButtons')}</h4>
             {Object.entries(customButtonConfigs).map(([id, config]) => (
               <div
                 key={id}
@@ -190,7 +192,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
                     cursor: "pointer",
                     fontSize: "16px",
                   }}
-                  title="Slett knapp"
+                  title={t('addCustomButtonModal.deleteButton')}
                 >
                   ×
                 </button>

@@ -1,0 +1,68 @@
+{
+  "editPanel": {
+    "close": "Lukk",
+    "selectWidgets": "Velg Widgets",
+    "addCustomButton": "Legg til egendefinert knapp",
+    "fontSize": "Skriftstørrelse",
+    "small": "Liten",
+    "medium": "Medium",
+    "large": "Stor"
+  },
+  "addCustomButtonModal": {
+    "title": "Legg til egendefinert knapp",
+    "buttonName": "Knappenavn",
+    "link": "Lenke",
+    "adding": "Legger til...",
+    "add": "Legg til",
+    "cancel": "Avbryt",
+    "existingButtons": "Eksisterende knapper:",
+    "deleteButton": "Slett knapp",
+    "closeModalComment": "Lukk modalen når knapp er lagt til",
+    "fetchPreviewError": "Kunne ikke hente link preview:"
+  },
+  "widgets": {
+    "clock": "Klokke",
+    "google_search": "Søk",
+    "news": "Nyheter",
+    "weather": "Vær",
+    "bookmark": "Bokmerke",
+    "notes": "Notater",
+    "spotify": "Spotify",
+    "calendar": "Kalender",
+    "bookmarkWidget": {
+      "title": "Bokmerker",
+      "loading": "Laster bokmerker...",
+      "addCategory": "+ Legg til kategori",
+      "cancel": "Avbryt",
+      "noCategories": "Ingen kategorier ennå. Opprett en for å komme i gang!",
+      "noBookmarks": "Ingen bokmerker i denne kategorien",
+      "addBookmark": "Legg til bokmerke",
+      "to": "til",
+      "delete": "Slett"
+    },
+    "newsWidget": {
+      "title": "Verdensnyheter",
+      "placeholder": "Landskode (no, us...)",
+      "getHeadlines": "Hent overskrifter",
+      "loading": "Laster..."
+    },
+    "weatherWidget": {
+      "loading": "Henter vær...",
+      "wind": "Vind"
+    },
+    "customButtons": {
+      "title": "Egne knapper",
+      "buttonName": "Knappenavn",
+      "link": "Lenke",
+      "add": "Legg til"
+    },
+    "searchWidget": {
+      "chooseEngine": "Velg søkemotor",
+      "searchPlaceholder": "Søk med"
+    },
+    "notesWidget": {
+      "closeNote": "Lukk notat",
+      "placeholder": "Skriv notater her..."
+    }
+  }
+}

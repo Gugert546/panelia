@@ -1,11 +1,13 @@
 import WidgetPane from "../../components/WidgetPane";
 import { useCustomButtonsWidget } from "./CustomButtonsWidgetLogic";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 export default function CustomButtonsWidgetUI() {
   const { state, actions } = useCustomButtonsWidget();
+  const { t } = useLanguage();
 
   return (
-    <WidgetPane title="Egne knapper">
+    <WidgetPane title={t('widgets.customButtons.title')}>
       <div
         style={{
           display: "flex",
@@ -15,7 +17,7 @@ export default function CustomButtonsWidgetUI() {
       >
         <input
           type="text"
-          placeholder="Knappenavn"
+          placeholder={t('widgets.customButtons.buttonName')}
           value={state.label}
           onChange={(e) => actions.setLabel(e.target.value)}
           style={{
@@ -27,7 +29,7 @@ export default function CustomButtonsWidgetUI() {
 
         <input
           type="text"
-          placeholder="Lenke"
+          placeholder={t('widgets.customButtons.link')}
           value={state.url}
           onChange={(e) => actions.setUrl(e.target.value)}
           style={{
@@ -49,7 +51,7 @@ export default function CustomButtonsWidgetUI() {
             fontWeight: 600,
           }}
         >
-          Legg til
+          {t('widgets.customButtons.add')}
         </button>
 
 

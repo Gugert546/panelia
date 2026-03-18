@@ -5,6 +5,7 @@ import { useBookmark } from "./BookmarkLogic";
 import BookmarkForm from "./BookmarkForm";
 import CategoryForm from "./CategoryForm";
 import { useFontSize } from "../../../../providers/themeProviders";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 
 
@@ -23,13 +24,14 @@ export default function BookmarkUi() {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedCategoryForBookmark, setSelectedCategoryForBookmark] = useState<string | null>(null);
 
-  const { fontSize } = useFontSize(); 
+  const { fontSize } = useFontSize();
+  const { t } = useLanguage(); 
 
   if (loading) {
     return (
       <WidgetContainer >
-        <WidgetPane title="Bookmarks">
-          <div style={{ padding: 16, textAlign: "center" }}>Loading bookmarks...</div>
+        <WidgetPane title={t('widgets.bookmarkWidget.title')}>
+          <div style={{ padding: 16, textAlign: "center" }}>{t('widgets.bookmarkWidget.loading')}</div>
         </WidgetPane>
       </WidgetContainer>
     );
@@ -37,7 +39,7 @@ export default function BookmarkUi() {
 
   return (
     <WidgetContainer>
-      <WidgetPane title="Bookmarks">
+      <WidgetPane title={t('widgets.bookmarkWidget.title')}>
         <div
           style={{
             display: "flex",
@@ -66,7 +68,7 @@ export default function BookmarkUi() {
                 fontSize,
               }}
             >
-              + Add Category
+              {t('widgets.bookmarkWidget.addCategory')}
             </button>
           ) : (
             <div style={{ background: "#f0f0f0", padding: 8, borderRadius: 4 }}>
@@ -90,7 +92,7 @@ export default function BookmarkUi() {
                   cursor: "pointer",
                 }}
               >
-                Cancel
+                {t('widgets.bookmarkWidget.cancel')}
               </button>
             </div>
           )}
@@ -106,7 +108,7 @@ export default function BookmarkUi() {
           >
             {categories.length === 0 ? (
               <div style={{ fontSize, color: "#999", textAlign: "center", padding: 16 }}>
-                No categories yet. Create one to get started!
+                {t('widgets.bookmarkWidget.noCategories')}
               </div>
             ) : (
               categories.map((category) => {
@@ -142,8 +144,8 @@ export default function BookmarkUi() {
                             selectedCategoryForBookmark === category.id ? null : category.id
                           );
                         }}
-                        title="Add bookmark"
-                        aria-label={`Add bookmark to ${category.name}`}
+                        title={t('widgets.bookmarkWidget.addBookmark')}
+                        aria-label={`${t('widgets.bookmarkWidget.addBookmark')} ${t('widgets.bookmarkWidget.to')} ${category.name}`}
                         style={{
                           width: 20,
                           height: 20,
@@ -171,7 +173,7 @@ export default function BookmarkUi() {
                     {isExpanded && (
                       <div style={{ marginTop: 8 }}>
                         {categoryBookmarks.length === 0 ? (
-                          <div style={{ fontSize: 12, color: "#999", padding: 8 }}>No bookmarks in this category</div>
+                          <div style={{ fontSize: 12, color: "#999", padding: 8 }}>{t('widgets.bookmarkWidget.noBookmarks')}</div>
                         ) : (
                           <ul
                             style={{
@@ -216,7 +218,7 @@ export default function BookmarkUi() {
                                     marginLeft: 8,
                                   }}
                                 >
-                                  Delete
+                                    {t('widgets.bookmarkWidget.delete')}
                                 </button>
                               </li>
                             ))}
@@ -245,7 +247,7 @@ export default function BookmarkUi() {
                                 width: "100%",
                               }}
                             >
-                              Cancel
+                              {t('widgets.bookmarkWidget.cancel')}
                             </button>
                           </div>
                         ) : null}

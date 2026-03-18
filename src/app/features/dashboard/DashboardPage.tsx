@@ -21,6 +21,7 @@ import {
 } from "./hooks/useWidgets";
 
 import { WidgetsProvider, useWidgets } from "./hooks/WidgetsContext";
+import { useLanguage } from "../../providers/languageProvider";
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
@@ -39,6 +40,8 @@ function DashboardPageContent() {
   const [calendarSizeMode, setCalendarSizeMode] =
     useState<CalendarWidgetSizeMode>("xlarge");
 
+  const { t } = useLanguage();
+
   const {
     activeWidgets,
     customButtonConfigs,
@@ -47,6 +50,11 @@ function DashboardPageContent() {
     toggleWidget,
     removeCustomButton,
   } = useWidgets();
+
+  const translatedAvailableWidgets = AVAILABLE_WIDGETS.map(widget => ({
+    ...widget,
+    label: t(`widgets.${widget.id}`)
+  }));
 
   const [, setTime] = useState(new Date());
 
@@ -212,7 +220,7 @@ function DashboardPageContent() {
       <EditPanel
         open={editOpen}
         onClose={() => setEditOpen(false)}
-        availableWidgets={AVAILABLE_WIDGETS}
+        availableWidgets={translatedAvailableWidgets}
         activeWidgets={activeWidgets}
         toggleWidget={toggleWidget}
         customButtonConfigs={customButtonConfigs}
