@@ -3,7 +3,7 @@ import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../../lib/firebase/client";
 import { useAuth } from "../features/auth/useAuth";
 import { signInWithEmailAndPassword } from "firebase/auth";
-
+import { createUserWithEmailAndPassword } from "firebase/auth";
 
 export default function AuthMenu() {
   const [open, setOpen] = useState(false);
@@ -21,6 +21,14 @@ export default function AuthMenu() {
   }
 };
 
+const handleRegister = async () => {
+  try {
+    await createUserWithEmailAndPassword(auth, email, password);
+    setOpen(false);
+  } catch (error: any) {
+    alert(error.message);
+  }
+};
 
   const handleGoogleLogin = async () => {
   await signInWithPopup(auth, googleProvider);
@@ -108,18 +116,25 @@ export default function AuthMenu() {
     />
 
     <button
-      onClick={handleEmailLogin}
-      style={{ width: "100%", marginBottom: 6 }}
-    >
-      Logg inn
-    </button>
+  onClick={handleEmailLogin}
+  style={{ width: "100%", marginBottom: 6 }}
+>
+  Logg inn
+</button>
 
-    <button
-      onClick={handleGoogleLogin}
-      style={{ width: "100%" }}
-    >
-      Logg inn med Google
-    </button>
+<button
+  onClick={handleRegister}
+  style={{ width: "100%", marginBottom: 6 }}
+>
+  Registrer bruker
+</button>
+
+<button
+  onClick={handleGoogleLogin}
+  style={{ width: "100%" }}
+>
+  Logg inn med Google
+</button>
   </>
 ) : (
             <>
