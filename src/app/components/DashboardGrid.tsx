@@ -48,15 +48,15 @@ export default function DashboardGrid({
   return (
     <GridLayout
       className="layout"
-      cols={40}          // increase number of columns for finer horizontal control
-      rowHeight={30}    // reduce row height for finer vertical control
+      cols={40}          // Mer columns --> Finere horisontal kontroll
+      rowHeight={30}    // Mindre rowHeight --> Mer vertikal kontroll og flere rader tilgjengelig
       width={window.innerWidth - sidebarWidth}
       isDraggable
       isResizable
       compactType={null}
       preventCollision={false}
-      margin={[0, 0]}    // no margins for almost touching widgets
-      maxRows={40}      // allow more rows when using smaller rowHeight
+      margin={[0, 0]}    
+      maxRows={40}      // tillatter flere rader for å unngå at widgets blir presset sammen vertikalt
       containerPadding={[0, 0]}
       autoSize={false}
       style={{ height: "100%" }}
