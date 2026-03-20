@@ -39,7 +39,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "spotify", label: "Spotify" },
 ] as const;
 
-const SAVE_DEBOUNCE_MS = 1000;
+const SAVE_DEBOUNCE_MS = 5000;
 
 const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   clock: { x: 0, y: 0, w: 3, h: 2 },
