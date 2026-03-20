@@ -16,12 +16,6 @@ export type CustomButtonConfig = {
   favicon: string;
 };
 
-export type WidgetInstance = {
-  id: string;
-  type: string;
-  config: Record<string, unknown>;
-};
-
 type WidgetLayoutDocument = {
   activeWidgets?: string[];
   layouts?: Record<string, LayoutItem>;
@@ -29,6 +23,7 @@ type WidgetLayoutDocument = {
   updatedAt?: unknown;
 };
 
+// Available widgets for the dashboard
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke" },
   { id: "google_search", label: "Søk" },
@@ -39,30 +34,31 @@ export const AVAILABLE_WIDGETS = [
   { id: "spotify", label: "Spotify" },
 ] as const;
 
+// Debounce delay for saving to Firestore (5 seconds)
 const SAVE_DEBOUNCE_MS = 5000;
 
+// Default layouts for new widgets (aligned with WidgetRegistry defaultGrid sizes)
 const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
-  clock: { x: 0, y: 0, w: 3, h: 2 },
-  notes: { x: 0, y: 0, w: 4, h: 4 },
-  calendar: { x: 0, y: 0, w: 8, h: 6 },
-  google_search: { x: 0, y: 0, w: 8, h: 2 },
-  weather: { x: 0, y: 0, w: 3, h: 3 },
-  news: { x: 0, y: 0, w: 6, h: 6 },
+  clock: { x: 0, y: 0, w: 5, h: 3 },
+  notes: { x: 0, y: 0, w: 8, h: 8 },
+  calendar: { x: 0, y: 0, w: 16, h: 12 },
+  google_search: { x: 0, y: 0, w: 14, h: 3 },
+  weather: { x: 0, y: 0, w: 5, h: 4 },
+  news: { x: 0, y: 0, w: 10, h: 10 },
   spotify: { x: 0, y: 0, w: 4, h: 3 },
   bookmark: { x: 0, y: 0, w: 4, h: 4 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
 
+// Generate a unique ID for custom buttons
 function createCustomButtonId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `customButton:${crypto.randomUUID()}`;
   }
-
-  return `customButton:${Date.now()}-${Math.random()
-    .toString(36)
-    .slice(2, 9)}`;
+  return `customButton:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+// Legacy migration functions (for backward compatibility)
 function migrateLegacyCustomButtonId(id: string) {
   if (!id.startsWith("customButton__")) return id;
   return `customButton:${id.slice("customButton__".length)}`;
@@ -78,14 +74,13 @@ export function useWidgetsState() {
   const { user } = useAuth();
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
-  const [customButtonConfigs, setCustomButtonConfigs] = useState<
-    Record<string, CustomButtonConfig>
-  >({});
+  const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const hasLoadedRef = useRef(false);
 
+  // Load widget layout from Firestore
   const loadLayout = useCallback(async () => {
     if (!user) {
       setActiveWidgets([]);
@@ -110,6 +105,7 @@ export function useWidgetsState() {
 
       const data = docSnap.data() as WidgetLayoutDocument;
 
+      // Apply legacy migrations
       const migratedActiveWidgets = Array.isArray(data.activeWidgets)
         ? data.activeWidgets.map(migrateLegacyCustomButtonId)
         : [];
@@ -131,15 +127,13 @@ export function useWidgetsState() {
     void loadLayout();
   }, [loadLayout]);
 
+  // Auto-save changes to Firestore with debouncing
   useEffect(() => {
-    if (!user) return;
-    if (isLoading) return;
-    if (!hasLoadedRef.current) return;
+    if (!user || isLoading || !hasLoadedRef.current) return;
 
     const timeout = setTimeout(async () => {
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
-
         await setDoc(docRef, {
           activeWidgets,
           customButtonConfigs,
@@ -154,80 +148,44 @@ export function useWidgetsState() {
     return () => clearTimeout(timeout);
   }, [user, activeWidgets, customButtonConfigs, layouts, isLoading]);
 
+  // Toggle a widget on/off
   const toggleWidget = useCallback((id: string) => {
     setActiveWidgets((prev) => {
       const exists = prev.includes(id);
-
-      if (exists) {
-        return prev.filter((widgetId) => widgetId !== id);
-      }
-
-      return [...prev, id];
+      return exists ? prev.filter((widgetId) => widgetId !== id) : [...prev, id];
     });
 
     setLayouts((prev) => {
       if (prev[id]) return prev;
-
       const defaultLayout = DEFAULT_LAYOUTS[id];
-      if (!defaultLayout) return prev;
-
-      return {
-        ...prev,
-        [id]: defaultLayout,
-      };
+      return defaultLayout ? { ...prev, [id]: defaultLayout } : prev;
     });
   }, []);
 
-  const updateLayout = useCallback(
-    (newLayouts: Record<string, LayoutItem>) => {
-      setLayouts(newLayouts);
-    },
-    []
-  );
+  // Update widget layouts (e.g., after dragging/resizing)
+  const updateLayout = useCallback((newLayouts: Record<string, LayoutItem>) => {
+    setLayouts(newLayouts);
+  }, []);
 
+  // Add a new custom button
   const addCustomButton = useCallback((config: CustomButtonConfig) => {
     const id = createCustomButtonId();
 
-    console.log("🟢 addCustomButton called");
-    console.log("generated id:", id);
-    console.log("config:", config);
-
-    setActiveWidgets((prev) => {
-      const next = [...prev, id];
-      console.log("new activeWidgets:", next);
-      return next;
-    });
-
-    setCustomButtonConfigs((prev) => {
-      const next = {
-        ...prev,
-        [id]: config,
-      };
-      console.log("new customButtonConfigs:", next);
-      return next;
-    });
-
-    setLayouts((prev) => {
-      const next = {
-        ...prev,
-        [id]: DEFAULT_LAYOUTS.customButton,
-      };
-      console.log("new layouts:", next);
-      return next;
-    });
+    setActiveWidgets((prev) => [...prev, id]);
+    setCustomButtonConfigs((prev) => ({ ...prev, [id]: config }));
+    setLayouts((prev) => ({ ...prev, [id]: DEFAULT_LAYOUTS.customButton }));
 
     return id;
   }, []);
 
+  // Remove a custom button
   const removeCustomButton = useCallback((id: string) => {
     setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
-
     setCustomButtonConfigs((prev) => {
       const next = { ...prev };
       delete next[id];
       return next;
     });
-
     setLayouts((prev) => {
       const next = { ...prev };
       delete next[id];
