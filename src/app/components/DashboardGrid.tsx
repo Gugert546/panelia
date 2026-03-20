@@ -54,7 +54,7 @@ export default function DashboardGrid({
       isDraggable
       isResizable
       compactType={null}
-      preventCollision={false}
+      preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
       margin={[0, 0]}    
       maxRows={40}      // tillatter flere rader for å unngå at widgets blir presset sammen vertikalt
       containerPadding={[0, 0]}
