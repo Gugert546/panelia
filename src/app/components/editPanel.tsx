@@ -1,8 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AddCustomButtonModal from "./AddCustomButtonModal";
-import type { CustomButtonConfig } from "../features/dashboard/hooks/useWidgetsState";
+import type {
+  CustomButtonConfig,
+  DashboardBackgroundId,
+  WidgetSizeMode,
+} from "../features/dashboard/hooks/useWidgetsState";
 import { useFontSize } from '../providers/themeProviders';
 import { useLanguage } from '../providers/languageProvider';
+import sol1 from "../../assets/panelia-bg/Sol 1.png";
+import sol2 from "../../assets/panelia-bg/Sol 2.png";
+import sol3 from "../../assets/panelia-bg/Sol 3.png";
+import natt1 from "../../assets/panelia-bg/Natt 1.png";
+import natt2 from "../../assets/panelia-bg/Natt 2.png";
+import natt3 from "../../assets/panelia-bg/Natt 3.png";
 
 type Widget = {
   id: string;
@@ -17,7 +27,54 @@ type EditPanelProps = {
   toggleWidget: (id: string) => void;
   customButtonConfigs: Record<string, CustomButtonConfig>;
   removeCustomButton: (id: string) => void;
+  widgetSurfaceColor: string;
+  setWidgetSurfaceColor: (color: string) => void;
+  widgetBorderColor: string;
+  setWidgetBorderColor: (color: string) => void;
+  widgetBorderWidth: number;
+  setWidgetBorderWidth: (width: number) => void;
+  widgetSizeMode: WidgetSizeMode;
+  setWidgetSizeMode: (mode: WidgetSizeMode) => void;
+  dashboardBackgroundId: DashboardBackgroundId;
+  setDashboardBackgroundId: (backgroundId: DashboardBackgroundId) => void;
+  setCustomVideoBackgroundUrl: (url: string) => void;
 };
+
+const BACKGROUND_OPTIONS: Array<{
+  id: DashboardBackgroundId;
+  labelKey: string;
+  preview?: string;
+}> = [
+  { id: "sol1", labelKey: "editPanel.backgroundSol1", preview: sol1 },
+  { id: "sol2", labelKey: "editPanel.backgroundSol2", preview: sol2 },
+  { id: "sol3", labelKey: "editPanel.backgroundSol3", preview: sol3 },
+  { id: "natt1", labelKey: "editPanel.backgroundNatt1", preview: natt1 },
+  { id: "natt2", labelKey: "editPanel.backgroundNatt2", preview: natt2 },
+  { id: "natt3", labelKey: "editPanel.backgroundNatt3", preview: natt3 },
+  { id: "videoCustom", labelKey: "editPanel.backgroundVideoCustom" },
+];
+
+const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
+const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
+const DEFAULT_WIDGET_BORDER_WIDTH = 1;
+const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
+
+function toColorInputValue(value: string) {
+  const trimmed = value.trim();
+
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
+    if (trimmed.length === 4) {
+      const r = trimmed[1];
+      const g = trimmed[2];
+      const b = trimmed[3];
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
+
+    return trimmed;
+  }
+
+  return "#ffffff";
+}
 
 export default function EditPanel({
   open,
@@ -26,15 +83,65 @@ export default function EditPanel({
   activeWidgets,
   toggleWidget,
   customButtonConfigs,
-  removeCustomButton
+  removeCustomButton,
+  widgetSurfaceColor,
+  setWidgetSurfaceColor,
+  widgetBorderColor,
+  setWidgetBorderColor,
+  widgetBorderWidth,
+  setWidgetBorderWidth,
+  widgetSizeMode,
+  setWidgetSizeMode,
+  dashboardBackgroundId,
+  setDashboardBackgroundId,
+  setCustomVideoBackgroundUrl,
 }: EditPanelProps) {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [viewMode, setViewMode] = useState<"widgets" | "background">("widgets");
+  const customVideoInputRef = useRef<HTMLInputElement | null>(null);
+  const customVideoObjectUrlRef = useRef<string | null>(null);
   const { setFontSizeMode } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
 
   useEffect(() => {
     setModalOpen(false);
+    setViewMode("widgets");
   }, [open]);
+
+  useEffect(() => {
+    return () => {
+      if (customVideoObjectUrlRef.current) {
+        URL.revokeObjectURL(customVideoObjectUrlRef.current);
+      }
+    };
+  }, []);
+
+  const handleCustomVideoUpload = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (customVideoObjectUrlRef.current) {
+      URL.revokeObjectURL(customVideoObjectUrlRef.current);
+      customVideoObjectUrlRef.current = null;
+    }
+
+    const objectUrl = URL.createObjectURL(file);
+    customVideoObjectUrlRef.current = objectUrl;
+    setCustomVideoBackgroundUrl(objectUrl);
+    setDashboardBackgroundId("videoCustom");
+
+    event.target.value = "";
+  };
+
+  const handleResetWidgetStyle = () => {
+    setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
+    setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
+    setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
+    setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
+    setFontSizeMode("medium");
+  };
 
   return (
     <div
@@ -88,7 +195,45 @@ export default function EditPanel({
         <button onClick={onClose}>{t('editPanel.close')}</button>
       </div>
 
-      <h2>{t('editPanel.selectWidgets')}</h2>
+      <h2>
+        {viewMode === "widgets"
+          ? t('editPanel.selectWidgets')
+          : t('editPanel.modeBackground')}
+      </h2>
+
+      <div
+        style={{
+          display: "flex",
+          gap: 8,
+          marginTop: 8,
+          marginBottom: 8,
+        }}
+      >
+        <button
+          onClick={() => setViewMode("widgets")}
+          style={{
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: viewMode === "widgets" ? "2px solid #4da3ff" : "1px solid #ddd",
+            background: viewMode === "widgets" ? "#cde8ff" : "#f3f3f3",
+            cursor: "pointer",
+          }}
+        >
+          {t('editPanel.modeWidgets')}
+        </button>
+        <button
+          onClick={() => setViewMode("background")}
+          style={{
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: viewMode === "background" ? "2px solid #4da3ff" : "1px solid #ddd",
+            background: viewMode === "background" ? "#cde8ff" : "#f3f3f3",
+            cursor: "pointer",
+          }}
+        >
+          {t('editPanel.modeBackground')}
+        </button>
+      </div>
 
       <div
         style={{
@@ -99,50 +244,347 @@ export default function EditPanel({
         }}
       >
 
-        {availableWidgets.map(widget => {
+        {viewMode === "widgets" &&
+          availableWidgets.map(widget => {
 
-          const isActive = activeWidgets.includes(widget.id);
+            const isActive = activeWidgets.includes(widget.id);
 
-          return (
-            <div
-              key={widget.id}
-              onClick={() => toggleWidget(widget.id)}
+            return (
+              <div
+                key={widget.id}
+                onClick={() => toggleWidget(widget.id)}
+                style={{
+                  padding: 12,
+                  width: "90%",
+                  marginBottom: 10,
+                  borderRadius: 8,
+                  cursor: "pointer",
+                  background: isActive ? "#cde8ff" : "#f3f3f3",
+                  border: isActive
+                    ? "2px solid #4da3ff"
+                    : "1px solid #ddd"
+                }}
+              >
+                {widget.label}
+                {isActive && " ✓"}
+              </div>
+            );
+          })}
+
+        {viewMode === "widgets" && (
+          <div
+            onClick={() => setModalOpen(true)}
+            style={{
+              padding: 12,
+              width: "90%",
+              marginBottom: 10,
+              borderRadius: 8,
+              cursor: "pointer",
+              background: "#f3f3f3",
+              border: "1px solid #ddd"
+            }}
+          >
+            {t('editPanel.addCustomButton')}
+          </div>
+        )}
+
+        {viewMode === "background" && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              width: "90%",
+            }}
+          >
+            <label style={{ fontSize: 14, fontWeight: 600 }}>
+              {t('editPanel.widgetColor')}
+            </label>
+
+            <label
               style={{
-                padding: 12,
-                width: "90%",
-                marginBottom: 10,
-                borderRadius: 8,
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                width: "fit-content",
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#f6f6f6",
                 cursor: "pointer",
-                background: isActive ? "#cde8ff" : "#f3f3f3",
-                border: isActive
-                  ? "2px solid #4da3ff"
-                  : "1px solid #ddd"
               }}
             >
-              {widget.label}
-              {isActive && " ✓"}
-            </div>
-          );
-        })}
+              <input
+                type="color"
+                value={toColorInputValue(widgetSurfaceColor)}
+                onChange={(event) => setWidgetSurfaceColor(event.target.value)}
+                aria-label={t('editPanel.widgetColor')}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  cursor: "pointer",
+                }}
+              />
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 999,
+                  border: "1px solid rgba(0,0,0,0.3)",
+                  background: widgetSurfaceColor,
+                }}
+              />
+              <span style={{ fontSize: 13, fontWeight: 500 }}>
+                {t('editPanel.widgetColor')}
+              </span>
+            </label>
 
-        <div
-          onClick={() => setModalOpen(true)}
-          style={{
-            padding: 12,
-            width: "90%",
-            marginBottom: 10,
-            borderRadius: 8,
-            cursor: "pointer",
-            background: "#f3f3f3",
-            border: "1px solid #ddd"
-          }}
-        >
-          {t('editPanel.addCustomButton')}
-        </div>
+            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+              {t('editPanel.widgetBorderColor')}
+            </label>
+
+            <label
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                width: "fit-content",
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#f6f6f6",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="color"
+                value={toColorInputValue(widgetBorderColor)}
+                onChange={(event) => setWidgetBorderColor(event.target.value)}
+                aria-label={t('editPanel.widgetBorderColor')}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  cursor: "pointer",
+                }}
+              />
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 999,
+                  border: "1px solid rgba(0,0,0,0.3)",
+                  background: widgetBorderColor,
+                }}
+              />
+              <span style={{ fontSize: 13, fontWeight: 500 }}>
+                {t('editPanel.widgetBorderColor')}
+              </span>
+            </label>
+
+            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+              {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
+            </label>
+
+            <input
+              type="range"
+              min={0}
+              max={12}
+              step={1}
+              value={widgetBorderWidth}
+              onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
+              aria-label={t('editPanel.widgetBorderWidth')}
+              style={{ width: "100%" }}
+            />
+
+            <button
+              onClick={handleResetWidgetStyle}
+              style={{
+                marginTop: 8,
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#f3f3f3",
+                cursor: "pointer",
+                fontWeight: 600,
+                textAlign: "left",
+              }}
+            >
+              {t('editPanel.resetWidgetStyle')}
+            </button>
+
+            <input
+              ref={customVideoInputRef}
+              type="file"
+              accept="video/mp4,video/webm"
+              onChange={handleCustomVideoUpload}
+              style={{ display: "none" }}
+            />
+
+            <button
+              onClick={() => customVideoInputRef.current?.click()}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#f3f3f3",
+                cursor: "pointer",
+                textAlign: "left",
+                fontWeight: 600,
+              }}
+            >
+              {t('editPanel.uploadCustomVideo')}
+            </button>
+
+            {BACKGROUND_OPTIONS.map((option) => {
+              const selected = dashboardBackgroundId === option.id;
+
+              if (option.preview) {
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => setDashboardBackgroundId(option.id)}
+                    aria-label={t(option.labelKey)}
+                    style={{
+                      width: "100%",
+                      padding: 0,
+                      borderRadius: 10,
+                      border: selected ? "2px solid #4da3ff" : "1px solid #ddd",
+                      background: selected ? "#eaf4ff" : "#f7f7f7",
+                      cursor: "pointer",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <img
+                      src={option.preview}
+                      alt=""
+                      style={{
+                        width: "100%",
+                        height: 72,
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  </button>
+                );
+              }
+
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => setDashboardBackgroundId(option.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    width: "100%",
+                    padding: 10,
+                    borderRadius: 10,
+                    border: selected ? "2px solid #4da3ff" : "1px solid #ddd",
+                    background: selected ? "#eaf4ff" : "#f7f7f7",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  {option.id.startsWith("video") ? (
+                    <div
+                      style={{
+                        width: 64,
+                        height: 38,
+                        borderRadius: 6,
+                        border: "1px solid rgba(0,0,0,0.2)",
+                        background: "linear-gradient(135deg, #294b82, #5f8cc7, #b2d9ff)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: "#eaf4ff",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Video
+                    </div>
+                  ) : (
+                    <div
+                      style={{
+                        width: 64,
+                        height: 38,
+                        borderRadius: 6,
+                        border: "1px solid rgba(0,0,0,0.2)",
+                        background:
+                          "linear-gradient(120deg, rgba(255,255,255,0.85), rgba(200,220,255,0.95))",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#1e2d4d",
+                        flexShrink: 0,
+                      }}
+                    >
+                      Auto
+                    </div>
+                  )}
+
+                  <span style={{ fontWeight: 500 }}>
+                    {t(option.labelKey)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
 
       </div>
 
       <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} />
+      <div style={{ marginTop: 20 }}>
+        <h3>{t('editPanel.widgetSize')}</h3>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setWidgetSizeMode('small')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: widgetSizeMode === 'small' ? '2px solid #4da3ff' : '1px solid #ddd',
+              background: widgetSizeMode === 'small' ? '#cde8ff' : '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            {t('editPanel.small')}
+          </button>
+          <button
+            onClick={() => setWidgetSizeMode('medium')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: widgetSizeMode === 'medium' ? '2px solid #4da3ff' : '1px solid #ddd',
+              background: widgetSizeMode === 'medium' ? '#cde8ff' : '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            {t('editPanel.medium')}
+          </button>
+          <button
+            onClick={() => setWidgetSizeMode('large')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: widgetSizeMode === 'large' ? '2px solid #4da3ff' : '1px solid #ddd',
+              background: widgetSizeMode === 'large' ? '#cde8ff' : '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            {t('editPanel.large')}
+          </button>
+        </div>
+      </div>
       <div style={{ marginTop: 20 }}>
         <h3>{t('editPanel.fontSize')}</h3>
         <div style={{ display: 'flex', gap: 8 }}>

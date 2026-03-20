@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
 
 type Props = {
   label: string;
@@ -11,7 +12,9 @@ export default function CustomButtonItemWidget({
   url,
   favicon,
 }: Props) {
+  const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -46,17 +49,14 @@ export default function CustomButtonItemWidget({
         height: "100%",
         padding: 12,
         borderRadius: 8,
-        background: "rgba(255,255,255,0.1)",
-        border: "none",
-        transition: "background 0.2s ease",
+        background: widgetSurfaceColor,
+        filter: isHovered ? "brightness(1.07)" : "none",
+        border: `${widgetBorderWidth}px solid ${widgetBorderColor}`,
+        transition: "filter 0.2s ease",
         cursor: "pointer",
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.2)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.1)";
-      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
       {favicon ? (
         <img

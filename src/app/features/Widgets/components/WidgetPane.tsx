@@ -1,4 +1,5 @@
 import React from "react";
+import { useWidgets } from "../../dashboard/hooks/WidgetsContext";
 
 type WidgetPaneProps = {
   title?: string;
@@ -7,6 +8,8 @@ type WidgetPaneProps = {
 };
 
 export default function WidgetPane({ title, children }: WidgetPaneProps) {
+  const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
+
   return (
     <div
       style={{
@@ -15,7 +18,8 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         padding: 20,
         borderRadius: 20,
 
-        background: "rgba(255,255,255,0.15)",
+        background: widgetSurfaceColor,
+        border: `${widgetBorderWidth}px solid ${widgetBorderColor}`,
         backdropFilter: "blur(14px)",
 
         display: "flex",

@@ -13,8 +13,14 @@ import DashboardGrid from "../../components/DashboardGrid";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
-import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
 import { auth } from "../../../lib/firebase/client";
+import type { DashboardBackgroundId } from "./hooks/useWidgetsState";
+import sol1 from "../../../assets/panelia-bg/Sol 1.png";
+import sol2 from "../../../assets/panelia-bg/Sol 2.png";
+import sol3 from "../../../assets/panelia-bg/Sol 3.png";
+import natt1 from "../../../assets/panelia-bg/Natt 1.png";
+import natt2 from "../../../assets/panelia-bg/Natt 2.png";
+import natt3 from "../../../assets/panelia-bg/Natt 3.png";
 
 import {
   AVAILABLE_WIDGETS,
@@ -24,6 +30,34 @@ import { WidgetsProvider, useWidgets } from "./hooks/WidgetsContext";
 import { useLanguage } from "../../providers/languageProvider";
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
+
+function resolveDashboardBackground(
+  backgroundId: DashboardBackgroundId
+) {
+  if (backgroundId === "sol1") return sol1;
+  if (backgroundId === "sol2") return sol2;
+  if (backgroundId === "sol3") return sol3;
+  if (backgroundId === "natt1") return natt1;
+  if (backgroundId === "natt2") return natt2;
+  if (backgroundId === "natt3") return natt3;
+
+  // Animated backgrounds render as CSS overlays, keep an image fallback below.
+  if (backgroundId === "videoCustom") {
+    return sol1;
+  }
+
+  return sol1;
+}
+
+function getVideoBackgroundSource(
+  backgroundId: DashboardBackgroundId,
+  customVideoBackgroundUrl: string
+) {
+  if (backgroundId === "videoCustom") {
+    return customVideoBackgroundUrl || null;
+  }
+  return null;
+}
 
 function DashboardPageContent() {
   const SIDEBAR_WIDTH = 60;
@@ -46,9 +80,21 @@ function DashboardPageContent() {
     activeWidgets,
     customButtonConfigs,
     layouts,
+    widgetSurfaceColor,
+    widgetBorderColor,
+    widgetBorderWidth,
+    widgetSizeMode,
+    dashboardBackgroundId,
+    customVideoBackgroundUrl,
     updateLayout,
     toggleWidget,
     removeCustomButton,
+    setWidgetSurfaceColor,
+    setWidgetBorderColor,
+    setWidgetBorderWidth,
+    setWidgetSizeMode,
+    setDashboardBackgroundId,
+    setCustomVideoBackgroundUrl,
   } = useWidgets();
 
   const translatedAvailableWidgets = AVAILABLE_WIDGETS.map(widget => ({
@@ -57,6 +103,12 @@ function DashboardPageContent() {
   }));
 
   const [, setTime] = useState(new Date());
+
+  const backgroundImageUrl = resolveDashboardBackground(dashboardBackgroundId);
+  const videoBackgroundSource = getVideoBackgroundSource(
+    dashboardBackgroundId,
+    customVideoBackgroundUrl
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -195,12 +247,33 @@ function DashboardPageContent() {
         position: "fixed",
         inset: 0,
         overflow: "hidden",
-        backgroundImage: `url(${getBackgroundByTime()})`,
+        backgroundImage: `url(${backgroundImageUrl})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
       }}
     >
+      {videoBackgroundSource && (
+        <video
+          className="dashboard-bg-video"
+          src={videoBackgroundSource}
+          autoPlay
+          loop
+          muted
+          playsInline
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            objectFit: "cover",
+            zIndex: 0,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+
       <Sidebar
         onSidebarNav={handleSidebarNavigation}
         onEditClick={() => setEditOpen((prev) => !prev)}
@@ -225,6 +298,17 @@ function DashboardPageContent() {
         toggleWidget={toggleWidget}
         customButtonConfigs={customButtonConfigs}
         removeCustomButton={removeCustomButton}
+        widgetSurfaceColor={widgetSurfaceColor}
+        setWidgetSurfaceColor={setWidgetSurfaceColor}
+        widgetBorderColor={widgetBorderColor}
+        setWidgetBorderColor={setWidgetBorderColor}
+        widgetBorderWidth={widgetBorderWidth}
+        setWidgetBorderWidth={setWidgetBorderWidth}
+        widgetSizeMode={widgetSizeMode}
+        setWidgetSizeMode={setWidgetSizeMode}
+        dashboardBackgroundId={dashboardBackgroundId}
+        setDashboardBackgroundId={setDashboardBackgroundId}
+        setCustomVideoBackgroundUrl={setCustomVideoBackgroundUrl}
       />
 
       <main
