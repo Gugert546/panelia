@@ -48,16 +48,16 @@ export default function DashboardGrid({
   return (
     <GridLayout
       className="layout"
-      cols={20}
-      rowHeight={50}
+      cols={40}          // increase number of columns for finer horizontal control
+      rowHeight={30}    // reduce row height for finer vertical control
       width={window.innerWidth - sidebarWidth}
       isDraggable
       isResizable
       compactType={null}
       preventCollision={false}
-      margin={[10, 10]}
-      maxRows={22}
-      containerPadding={[20, 20]}
+      margin={[0, 0]}    // no margins for almost touching widgets
+      maxRows={40}      // allow more rows when using smaller rowHeight
+      containerPadding={[0, 0]}
       autoSize={false}
       style={{ height: "100%" }}
       onLayoutChange={handleLayoutChange}

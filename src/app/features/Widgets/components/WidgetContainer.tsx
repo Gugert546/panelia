@@ -8,7 +8,7 @@ export default function WidgetContainer({ children }: Props) {
       style={{
         width: "100%",
         height: "100%",
-        padding: 10,
+        padding: 5,
         boxSizing: "border-box",
         display: "flex",
         overflow: "hidden"
