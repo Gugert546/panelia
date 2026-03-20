@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useFontSize } from "../../../../providers/themeProviders";
+import WidgetContainer from "../../components/WidgetContainer";
+import WidgetPane from "../../components/WidgetPane";
 
 export default function SpotifyWidget() {
 
@@ -254,34 +256,45 @@ export default function SpotifyWidget() {
       "user-read-playback-state user-read-currently-playing user-modify-playback-state";
 
     return (
-      <button
-        onClick={() => {
+      <WidgetContainer>
+        <WidgetPane title="">
+          <button
+            onClick={() => {
 
-          window.location.href =
-            "https://accounts.spotify.com/authorize" +
-            `?client_id=${clientId}` +
-            `&response_type=code` +
-            `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-            `&scope=${encodeURIComponent(scope)}`;
+              window.location.href =
+                "https://accounts.spotify.com/authorize" +
+                `?client_id=${clientId}` +
+                `&response_type=code` +
+                `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+                `&scope=${encodeURIComponent(scope)}`;
 
-        }}
-        style={{
-          padding: 12,
-          background: "#1DB954",
-          color: "white",
-          border: "none",
-          borderRadius: 8,
-          cursor: "pointer"
-        }}
-      >
-        Connect Spotify
-      </button>
+            }}
+            style={{
+              padding: 12,
+              background: "#1DB954",
+              color: "white",
+              border: "none",
+              borderRadius: 8,
+              cursor: "pointer",
+              width: "100%"
+            }}
+          >
+            Connect Spotify
+          </button>
+        </WidgetPane>
+      </WidgetContainer>
     );
 
   }
 
   if (!player) {
-    return <div>Start playing Spotify on a device</div>;
+    return (
+      <WidgetContainer>
+        <WidgetPane title="">
+          <div>Start playing Spotify on a device</div>
+        </WidgetPane>
+      </WidgetContainer>
+    );
   }
 
   const track = player.item;
@@ -289,14 +302,14 @@ export default function SpotifyWidget() {
   const duration = track.duration_ms;
 
   return (
-
-    <div style={{
-      padding: 16,
-      width: 300,
-      background: "#181818",
-      color: "white",
-      borderRadius: 12
-    }}>
+    <WidgetContainer>
+      <WidgetPane title="Now Playing">
+        <div style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          width: "100%"
+        }}>
 
       <img
         src={track.album.images[0].url}
@@ -357,8 +370,9 @@ export default function SpotifyWidget() {
         </select>
       </div>
 
-    </div>
-
+        </div>
+      </WidgetPane>
+    </WidgetContainer>
   );
 
 }
