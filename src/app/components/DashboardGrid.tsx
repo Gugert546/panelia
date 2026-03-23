@@ -1,7 +1,6 @@
 import GridLayout from "react-grid-layout/legacy";
 import type { Layout } from "react-grid-layout";
 import { WIDGETS } from "../features/Widgets/registry/WidgetRegistry";
-import { useEffect, useRef, useState } from "react";
 
 type Props = {
   activeWidgets: string[];
@@ -24,30 +23,6 @@ export default function DashboardGrid({
   onCloseWidget,
   sidebarWidth
 }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-
-  useEffect(() => {
-    const updateWidth = () => {
-      if (containerRef.current) {
-        const rect = containerRef.current.getBoundingClientRect();
-        setContainerWidth(rect.width);
-      }
-    };
-
-    // Initial measurement
-    updateWidth();
-
-    // Use ResizeObserver to detect actual container size changes (not zoom)
-    const resizeObserver = new ResizeObserver(updateWidth);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, [sidebarWidth]); // Re-measure when sidebar width changes
 
   const handleLayoutChange = (newLayout: Layout) => {
     const newLayouts: Record<string, { x: number; y: number; w: number; h: number }> = {};
