@@ -13,7 +13,9 @@ export default function CustomButtonItemWidget({
   url,
   favicon,
 }: Props) {
+  const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
