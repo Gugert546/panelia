@@ -296,7 +296,48 @@ export default function EditPanel({
               gap: 12,
               width: "90%",
             }}
+          >  
+        <div style={{ marginTop: 1}}>
+        <h3>{t('editPanel.fontSize')}</h3>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => setFontSizeMode('small')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer'
+            }}
           >
+            {t('editPanel.small')}
+          </button>
+          <button
+            onClick={() => setFontSizeMode('medium')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            {t('editPanel.medium')}
+          </button>
+          <button
+            onClick={() => setFontSizeMode('large')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer'
+            }}
+          >
+            {t('editPanel.large')}
+          </button>
+        </div>
+      </div>
             <label style={{ fontSize: 14, fontWeight: 600 }}>
               {t('editPanel.widgetColor')}
             </label>
@@ -544,88 +585,8 @@ export default function EditPanel({
       </div>
 
       <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} />
-      <div style={{ marginTop: 20 }}>
-        <h3>{t('editPanel.widgetSize')}</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setWidgetSizeMode('small')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: widgetSizeMode === 'small' ? '2px solid #4da3ff' : '1px solid #ddd',
-              background: widgetSizeMode === 'small' ? '#cde8ff' : '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.small')}
-          </button>
-          <button
-            onClick={() => setWidgetSizeMode('medium')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: widgetSizeMode === 'medium' ? '2px solid #4da3ff' : '1px solid #ddd',
-              background: widgetSizeMode === 'medium' ? '#cde8ff' : '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.medium')}
-          </button>
-          <button
-            onClick={() => setWidgetSizeMode('large')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: widgetSizeMode === 'large' ? '2px solid #4da3ff' : '1px solid #ddd',
-              background: widgetSizeMode === 'large' ? '#cde8ff' : '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.large')}
-          </button>
-        </div>
-      </div>
-      <div style={{ marginTop: 20 }}>
-        <h3>{t('editPanel.fontSize')}</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setFontSizeMode('small')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: '1px solid #ddd',
-              background: '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.small')}
-          </button>
-          <button
-            onClick={() => setFontSizeMode('medium')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: '1px solid #ddd',
-              background: '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.medium')}
-          </button>
-          <button
-            onClick={() => setFontSizeMode('large')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: '1px solid #ddd',
-              background: '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.large')}
-          </button>
-        </div>
-      </div>
+      
+
     </div>
   );
 }
