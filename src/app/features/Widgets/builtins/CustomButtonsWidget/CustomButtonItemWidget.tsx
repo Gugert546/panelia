@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
+import WidgetContainer from "../../components/WidgetContainer";
+import WidgetPane from "../../components/WidgetPane";
 
 type Props = {
   label: string;
@@ -35,52 +36,59 @@ export default function CustomButtonItemWidget({
   };
 
   return (
-    <button
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        textDecoration: "none",
-        color: "#111",
-        width: "100%",
-        height: "100%",
-        padding: 12,
-        borderRadius: 8,
-        background: widgetSurfaceColor,
-        filter: isHovered ? "brightness(1.07)" : "none",
-        border: `${widgetBorderWidth}px solid ${widgetBorderColor}`,
-        transition: "filter 0.2s ease",
-        cursor: "pointer",
-      }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
-      {favicon ? (
-        <img
-          src={favicon}
-          alt=""
+    <WidgetContainer>
+      <WidgetPane title="">
+        <button
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
           style={{
-            width: 20,
-            height: 20,
-            objectFit: "contain",
-            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            textDecoration: "none",
+            color: "#111",
+            width: "100%",
+            height: "100%",
+            padding: 12,
+            borderRadius: 8,
+            background: "none",
+            border: "none",
+            transition: "opacity 0.2s ease",
+            cursor: "pointer",
           }}
-        />
-      ) : null}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "0.8";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+        >
+          {favicon ? (
+            <img
+              src={favicon}
+              alt=""
+              style={{
+                width: 20,
+                height: 20,
+                objectFit: "contain",
+                flexShrink: 0,
+              }}
+            />
+          ) : null}
 
-      <span
-        style={{
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          fontWeight: 500,
-        }}
-      >
-        {label}
-      </span>
-    </button>
+          <span
+            style={{
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              fontWeight: 500,
+            }}
+          >
+            {label}
+          </span>
+        </button>
+      </WidgetPane>
+    </WidgetContainer>
   );
 }
