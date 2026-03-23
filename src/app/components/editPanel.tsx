@@ -90,7 +90,7 @@ export default function EditPanel({
   setWidgetBorderColor,
   widgetBorderWidth,
   setWidgetBorderWidth,
-  widgetSizeMode,
+
   setWidgetSizeMode,
   dashboardBackgroundId,
   setDashboardBackgroundId,
