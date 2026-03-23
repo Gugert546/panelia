@@ -22,10 +22,26 @@ export type WidgetInstance = {
   config: Record<string, unknown>;
 };
 
+export type WidgetSizeMode = "small" | "medium" | "large";
+export type DashboardBackgroundId =
+  | "sol1"
+  | "sol2"
+  | "sol3"
+  | "natt1"
+  | "natt2"
+  | "natt3"
+  | "videoCustom";
+
 type WidgetLayoutDocument = {
   activeWidgets?: string[];
   layouts?: Record<string, LayoutItem>;
   customButtonConfigs?: Record<string, CustomButtonConfig>;
+  widgetSurfaceColor?: string;
+  widgetBorderColor?: string;
+  widgetBorderWidth?: number;
+  widgetSizeMode?: WidgetSizeMode;
+  dashboardBackgroundId?: DashboardBackgroundId;
+  customVideoBackgroundUrl?: string;
   updatedAt?: unknown;
 };
 
@@ -40,6 +56,23 @@ export const AVAILABLE_WIDGETS = [
 ] as const;
 
 const SAVE_DEBOUNCE_MS = 1000;
+const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
+const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
+const DEFAULT_WIDGET_BORDER_WIDTH = 1;
+const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
+const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "sol1";
+
+function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
+  return (
+    value === "sol1" ||
+    value === "sol2" ||
+    value === "sol3" ||
+    value === "natt1" ||
+    value === "natt2" ||
+    value === "natt3" ||
+    value === "videoCustom"
+  );
+}
 
 const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   clock: { x: 0, y: 0, w: 3, h: 2 },
@@ -82,6 +115,21 @@ export function useWidgetsState() {
     Record<string, CustomButtonConfig>
   >({});
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
+  const [widgetSurfaceColor, setWidgetSurfaceColor] = useState(
+    DEFAULT_WIDGET_SURFACE_COLOR
+  );
+  const [widgetBorderColor, setWidgetBorderColor] = useState(
+    DEFAULT_WIDGET_BORDER_COLOR
+  );
+  const [widgetBorderWidth, setWidgetBorderWidth] = useState(
+    DEFAULT_WIDGET_BORDER_WIDTH
+  );
+  const [widgetSizeMode, setWidgetSizeMode] = useState<WidgetSizeMode>(
+    DEFAULT_WIDGET_SIZE_MODE
+  );
+  const [dashboardBackgroundId, setDashboardBackgroundId] =
+    useState<DashboardBackgroundId>(DEFAULT_DASHBOARD_BACKGROUND_ID);
+  const [customVideoBackgroundUrl, setCustomVideoBackgroundUrl] = useState("");
   const [isLoading, setIsLoading] = useState(true);
 
   const hasLoadedRef = useRef(false);
@@ -91,6 +139,12 @@ export function useWidgetsState() {
       setActiveWidgets([]);
       setCustomButtonConfigs({});
       setLayouts({});
+      setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
+      setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
+      setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
+      setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
+      setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
+      setCustomVideoBackgroundUrl("");
       setIsLoading(false);
       hasLoadedRef.current = false;
       return;
@@ -104,6 +158,12 @@ export function useWidgetsState() {
         setActiveWidgets([]);
         setCustomButtonConfigs({});
         setLayouts({});
+        setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
+        setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
+        setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
+        setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
+        setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
+        setCustomVideoBackgroundUrl("");
         hasLoadedRef.current = true;
         return;
       }
@@ -119,6 +179,38 @@ export function useWidgetsState() {
       setActiveWidgets(migratedActiveWidgets);
       setCustomButtonConfigs(migratedCustomButtonConfigs);
       setLayouts(migratedLayouts);
+      setWidgetSurfaceColor(
+        typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
+          ? data.widgetSurfaceColor
+          : DEFAULT_WIDGET_SURFACE_COLOR
+      );
+      setWidgetBorderColor(
+        typeof data.widgetBorderColor === "string" && data.widgetBorderColor
+          ? data.widgetBorderColor
+          : DEFAULT_WIDGET_BORDER_COLOR
+      );
+      setWidgetBorderWidth(
+        typeof data.widgetBorderWidth === "number" && Number.isFinite(data.widgetBorderWidth)
+          ? Math.min(12, Math.max(0, Math.round(data.widgetBorderWidth)))
+          : DEFAULT_WIDGET_BORDER_WIDTH
+      );
+      setWidgetSizeMode(
+        data.widgetSizeMode === "small" ||
+          data.widgetSizeMode === "medium" ||
+          data.widgetSizeMode === "large"
+          ? data.widgetSizeMode
+          : DEFAULT_WIDGET_SIZE_MODE
+      );
+      setDashboardBackgroundId(
+        isDashboardBackgroundId(data.dashboardBackgroundId)
+          ? data.dashboardBackgroundId
+          : DEFAULT_DASHBOARD_BACKGROUND_ID
+      );
+      setCustomVideoBackgroundUrl(
+        typeof data.customVideoBackgroundUrl === "string"
+          ? data.customVideoBackgroundUrl
+          : ""
+      );
       hasLoadedRef.current = true;
     } catch (error) {
       console.error("Failed to load widget layout:", error);
@@ -144,6 +236,12 @@ export function useWidgetsState() {
           activeWidgets,
           customButtonConfigs,
           layouts,
+          widgetSurfaceColor,
+          widgetBorderColor,
+          widgetBorderWidth,
+          widgetSizeMode,
+          dashboardBackgroundId,
+          customVideoBackgroundUrl,
           updatedAt: serverTimestamp(),
         });
       } catch (error) {
@@ -152,7 +250,19 @@ export function useWidgetsState() {
     }, SAVE_DEBOUNCE_MS);
 
     return () => clearTimeout(timeout);
-  }, [user, activeWidgets, customButtonConfigs, layouts, isLoading]);
+  }, [
+    user,
+    activeWidgets,
+    customButtonConfigs,
+    layouts,
+    widgetSurfaceColor,
+    widgetBorderColor,
+    widgetBorderWidth,
+    widgetSizeMode,
+    dashboardBackgroundId,
+    customVideoBackgroundUrl,
+    isLoading,
+  ]);
 
   const toggleWidget = useCallback((id: string) => {
     setActiveWidgets((prev) => {
@@ -239,10 +349,22 @@ export function useWidgetsState() {
     activeWidgets,
     customButtonConfigs,
     layouts,
+    widgetSurfaceColor,
+    widgetBorderColor,
+    widgetBorderWidth,
+    widgetSizeMode,
+    dashboardBackgroundId,
+    customVideoBackgroundUrl,
     isLoading,
     toggleWidget,
     updateLayout,
     addCustomButton,
     removeCustomButton,
+    setWidgetSurfaceColor,
+    setWidgetBorderColor,
+    setWidgetBorderWidth,
+    setWidgetSizeMode,
+    setDashboardBackgroundId,
+    setCustomVideoBackgroundUrl,
   };
 }
