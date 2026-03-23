@@ -71,47 +71,47 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
   clock: {
     title: "Klokke",
     Component: ClockWidgetAdapter,
-    defaultGrid: { w: 3, h: 2 },
+    defaultGrid: { w: 5, h: 3 },
   },
   notes: {
     title: "Notater",
     Component: NotesWidgetAdapter,
-    defaultGrid: { w: 4, h: 4 },
+    defaultGrid: { w: 8, h: 8 },
   },
   calendar: {
     title: "Kalender",
     Component: CalendarWidgetAdapter,
-    defaultGrid: { w: 8, h: 6 },
+    defaultGrid: { w: 16, h: 12 },
   },
   google_search: {
     title: "Søk",
     Component: SearchWidgetAdapter,
-    defaultGrid: { w: 8, h: 2 },
+    defaultGrid: { w: 14, h: 3 },
   },
   weather: {
     title: "Vær",
     Component: WeatherWidgetAdapter,
-    defaultGrid: { w: 3, h: 3 },
+    defaultGrid: { w: 5, h: 4 },
   },
   news: {
     title: "Nyheter",
     Component: NewsWidgetAdapter,
-    defaultGrid: { w: 6, h: 6 },
+    defaultGrid: { w: 10, h: 10 },
   },
   spotify: {
     title: "Spotify",
     Component: SpotifyWidgetAdapter,
-    defaultGrid: { w: 4, h: 3 },
+    defaultGrid: { w: 8, h: 6 },
   },
   bookmark: {
     title: "Bokmerker",
     Component: BookmarkWidgetAdapter,
-    defaultGrid: { w: 4, h: 4 },
+    defaultGrid: { w: 8, h: 8 },
   },
   customButton: {
     title: "Egendefinert knapp",
     Component: CustomButtonWidgetAdapter,
-    defaultGrid: { w: 2, h: 2 },
+    defaultGrid: { w: 4, h: 4 },
   },
 };
 

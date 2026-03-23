@@ -1,6 +1,7 @@
 import GridLayout from "react-grid-layout/legacy";
 import type { Layout } from "react-grid-layout";
 import { WIDGETS } from "../features/Widgets/registry/WidgetRegistry";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   activeWidgets: string[];
@@ -23,6 +24,30 @@ export default function DashboardGrid({
   onCloseWidget,
   sidebarWidth
 }: Props) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        setContainerWidth(rect.width);
+      }
+    };
+
+    // Initial measurement
+    updateWidth();
+
+    // Use ResizeObserver to detect actual container size changes (not zoom)
+    const resizeObserver = new ResizeObserver(updateWidth);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [sidebarWidth]); // Re-measure when sidebar width changes
 
   const handleLayoutChange = (newLayout: Layout) => {
     const newLayouts: Record<string, { x: number; y: number; w: number; h: number }> = {};
@@ -48,16 +73,16 @@ export default function DashboardGrid({
   return (
     <GridLayout
       className="layout"
-      cols={20}
-      rowHeight={50}
+      cols={40}          // Mer columns --> Finere horisontal kontroll
+      rowHeight={30}    // Mindre rowHeight --> Mer vertikal kontroll og flere rader tilgjengelig
       width={window.innerWidth - sidebarWidth}
       isDraggable
       isResizable
       compactType={null}
-      preventCollision={false}
-      margin={[10, 10]}
-      maxRows={22}
-      containerPadding={[20, 20]}
+      preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
+      margin={[0, 0]}    
+      maxRows={40}      // tillatter flere rader for å unngå at widgets blir presset sammen vertikalt
+      containerPadding={[0, 0]}
       autoSize={false}
       style={{ height: "100%" }}
       onLayoutChange={handleLayoutChange}
