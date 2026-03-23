@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useBookmark } from "./BookmarkLogic";
@@ -6,9 +6,6 @@ import BookmarkForm from "./BookmarkForm";
 import CategoryForm from "./CategoryForm";
 import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
-
-
-
 
 export default function BookmarkUi() {
   const {
@@ -18,20 +15,67 @@ export default function BookmarkUi() {
     handleAddCategory,
     handleAddBookmark,
     handleDeleteBookmark,
+    handleDeleteCategory,
     getBookmarksByCategory,
   } = useBookmark();
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedCategoryForBookmark, setSelectedCategoryForBookmark] = useState<string | null>(null);
+  const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+
+  const categorySelectorRef = useRef<HTMLDivElement | null>(null);
 
   const { fontSize } = useFontSize();
-  const { t } = useLanguage(); 
+  const { t } = useLanguage();
+
+  const activeCategory = useMemo(() => {
+    if (categories.length === 0) return null;
+    return categories.find((category) => category.id === selectedCategoryId) ?? categories[0];
+  }, [categories, selectedCategoryId]);
+
+  const activeCategoryBookmarks = useMemo(() => {
+    if (!activeCategory) return [];
+    return getBookmarksByCategory(activeCategory.id);
+  }, [activeCategory, getBookmarksByCategory]);
+
+  const changeCategoryByOffset = (offset: number) => {
+    if (!activeCategory || categories.length <= 1) return;
+
+    const currentIndex = categories.findIndex((item) => item.id === activeCategory.id);
+    const nextIndex = (currentIndex + offset + categories.length) % categories.length;
+
+    setSelectedCategoryId(categories[nextIndex].id);
+    setSelectedCategoryForBookmark(null);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (!categorySelectorRef.current?.contains(target)) {
+        setIsCategoryMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      setIsCategoryMenuOpen(false);
+      setSelectedCategoryForBookmark(null);
+    }
+  }, [categories.length]);
 
   if (loading) {
     return (
-      <WidgetContainer >
-        <WidgetPane title={t('widgets.bookmarkWidget.title')}>
-          <div style={{ padding: 16, textAlign: "center" }}>{t('widgets.bookmarkWidget.loading')}</div>
+      <WidgetContainer>
+        <WidgetPane title={t("widgets.bookmarkWidget.title")}>
+          <div style={{ padding: 16, textAlign: "center" }}>{t("widgets.bookmarkWidget.loading")}</div>
         </WidgetPane>
       </WidgetContainer>
     );
@@ -39,18 +83,26 @@ export default function BookmarkUi() {
 
   return (
     <WidgetContainer>
-      <WidgetPane title={t('widgets.bookmarkWidget.title')}>
+      <WidgetPane title={t("widgets.bookmarkWidget.title")}>
         <div
           style={{
             display: "flex",
             flexDirection: "column",
             height: "100%",
-            gap: 12,
-            padding: 8,
+            gap: 10,
+            padding: 6,
           }}
         >
           {error && (
-            <div style={{ color: "#dc3545", fontSize: 12, padding: 8, background: "#f8d7da", borderRadius: 4 }}>
+            <div
+              style={{
+                color: "#111827",
+                fontSize: 12,
+                padding: "8px 10px",
+                borderRadius: 10,
+                background: "rgba(255, 200, 200, 0.65)",
+              }}
+            >
               {error}
             </div>
           )}
@@ -59,19 +111,26 @@ export default function BookmarkUi() {
             <button
               onClick={() => setShowCategoryForm(true)}
               style={{
-                padding: "6px 10px",
-                borderRadius: 6,
-                background: "#007BFF",
-                color: "#FFF",
+                padding: "7px 10px",
+                borderRadius: 10,
+                background: "rgba(255,255,255,0.18)",
+                color: "#0b1320",
                 border: "none",
                 cursor: "pointer",
                 fontSize,
+                fontWeight: 500,
               }}
             >
-              {t('widgets.bookmarkWidget.addCategory')}
+              {t("widgets.bookmarkWidget.addCategory")}
             </button>
           ) : (
-            <div style={{ background: "#f0f0f0", padding: 8, borderRadius: 4 }}>
+            <div
+              style={{
+                background: "rgba(255,255,255,0.18)",
+                padding: 10,
+                borderRadius: 12,
+              }}
+            >
               <CategoryForm
                 onSubmit={async (name) => {
                   await handleAddCategory(name);
@@ -85,14 +144,15 @@ export default function BookmarkUi() {
                   marginTop: 8,
                   padding: "4px 8px",
                   fontSize: 12,
-                  background: "#6c757d",
-                  color: "#fff",
+                  background: "rgba(17, 24, 39, 0.18)",
+                  color: "#0b1320",
                   border: "none",
-                  borderRadius: 4,
+                  borderRadius: 8,
                   cursor: "pointer",
+                  fontWeight: 500,
                 }}
               >
-                {t('widgets.bookmarkWidget.cancel')}
+                {t("widgets.bookmarkWidget.cancel")}
               </button>
             </div>
           )}
@@ -103,161 +163,318 @@ export default function BookmarkUi() {
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
-              gap: 12,
+              gap: 10,
             }}
           >
             {categories.length === 0 ? (
-              <div style={{ fontSize, color: "#999", textAlign: "center", padding: 16 }}>
-                {t('widgets.bookmarkWidget.noCategories')}
+              <div
+                style={{
+                  fontSize,
+                  color: "rgba(17, 24, 39, 0.78)",
+                  textAlign: "center",
+                  padding: 16,
+                  background: "rgba(255,255,255,0.2)",
+                  borderRadius: 12,
+                }}
+              >
+                {t("widgets.bookmarkWidget.noCategories")}
               </div>
             ) : (
-              categories.map((category) => {
-                const categoryBookmarks = getBookmarksByCategory(category.id);
-                const isExpanded = expandedCategory === category.id;
-
-                return (
-                  <div key={category.id} style={{ borderLeft: "3px solid #007BFF", paddingLeft: 8 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        userSelect: "none",
-                        gap: 8,
+              <>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    paddingLeft: 2,
+                    color: "#0b1320",
+                    fontSize: Math.max(12, fontSize - 1),
+                    fontWeight: 500,
+                  }}
+                >
+                  <span style={{ opacity: 0.75 }}>Kategori:</span>
+                  <div
+                    ref={categorySelectorRef}
+                    style={{
+                      position: "relative",
+                      display: "inline-flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                    }}
+                  >
+                    <button
+                      onClick={() => setIsCategoryMenuOpen((prev) => !prev)}
+                      onWheel={(event) => {
+                        if (categories.length <= 1) return;
+                        event.preventDefault();
+                        if (event.deltaY > 0) changeCategoryByOffset(1);
+                        if (event.deltaY < 0) changeCategoryByOffset(-1);
                       }}
-                      onClick={() => setExpandedCategory(isExpanded ? null : category.id)}
+                      title={categories.length > 1 ? "Click to choose category, or hover and scroll" : "Category"}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "#0b1320",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: 0,
+                        cursor: categories.length > 1 ? "pointer" : "default",
+                        fontSize,
+                        fontWeight: 500,
+                      }}
                     >
-                      <h4
-                        style={{
-                          margin: "6px 0",
-                          fontSize,
-                          flex: 1,
-                        }}
-                      >
-                        {category.name} ({categoryBookmarks.length})
-                      </h4>
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setExpandedCategory(category.id);
-                          setSelectedCategoryForBookmark(
-                            selectedCategoryForBookmark === category.id ? null : category.id
-                          );
-                        }}
-                        title={t('widgets.bookmarkWidget.addBookmark')}
-                        aria-label={`${t('widgets.bookmarkWidget.addBookmark')} ${t('widgets.bookmarkWidget.to')} ${category.name}`}
-                        style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: 999,
-                          border: "1px solid #28a745",
-                          background: "#fff",
-                          color: "#28a745",
-                          fontSize: 14,
-                          lineHeight: 1,
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          cursor: "pointer",
-                          padding: 0,
-                          flexShrink: 0,
-                        }}
-                      >
-                        +
-                      </button>
-                      <span style={{ fontSize: 12, color: "#999", marginLeft: "auto" }}>
-                        {isExpanded ? "▼" : "▶"}
+                      <span>{activeCategory?.name ?? "-"}</span>
+                      <span style={{ fontSize: 10, transform: "translateY(1px)", opacity: 0.85 }}>
+                        {isCategoryMenuOpen ? "▲" : "▼"}
                       </span>
-                    </div>
+                    </button>
 
-                    {isExpanded && (
-                      <div style={{ marginTop: 8 }}>
-                        {categoryBookmarks.length === 0 ? (
-                          <div style={{ fontSize: 12, color: "#999", padding: 8 }}>{t('widgets.bookmarkWidget.noBookmarks')}</div>
-                        ) : (
-                          <ul
-                            style={{
-                              margin: 0,
-                              paddingLeft: 16,
-                              fontSize,
-                              marginBottom: 8,
-                            }}
-                          >
-                            {categoryBookmarks.map((bookmark) => (
-                              <li
-                                key={bookmark.id}
-                                style={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  alignItems: "center",
-                                  marginBottom: 4,
-                                }}
-                              >
-                                <a
-                                  href={bookmark.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{
-                                    textDecoration: "none",
-                                    color: "#007BFF",
-                                    flex: 1,
-                                  }}
-                                >
-                                  {bookmark.title}
-                                </a>
-                                <button
-                                  onClick={() => handleDeleteBookmark(bookmark.id)}
-                                  style={{
-                                    padding: "2px 6px",
-                                    fontSize: 10,
-                                    background: "#dc3545",
-                                    color: "#fff",
-                                    border: "none",
-                                    borderRadius: 3,
-                                    cursor: "pointer",
-                                    marginLeft: 8,
-                                  }}
-                                >
-                                    {t('widgets.bookmarkWidget.delete')}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
+                    {isCategoryMenuOpen && (
+                      <div
+                        style={{
+                          position: "absolute",
+                          top: "calc(100% + 6px)",
+                          left: 0,
+                          minWidth: 150,
+                          maxHeight: 180,
+                          overflowY: "auto",
+                          borderRadius: 10,
+                          background: "rgba(255, 255, 255, 0.97)",
+                          border: "1px solid rgba(17,24,39,0.14)",
+                          boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
+                          padding: 6,
+                          zIndex: 20,
+                        }}
+                      >
+                        {categories.map((category) => {
+                          const isSelected = category.id === activeCategory?.id;
 
-                        {selectedCategoryForBookmark === category.id ? (
-                          <div style={{ background: "#f0f0f0", padding: 8, borderRadius: 4, marginBottom: 8 }}>
-                            <BookmarkForm
-                              onSubmit={async (title, url) => {
-                                await handleAddBookmark(category.id, title, url);
-                                setSelectedCategoryForBookmark(null);
-                              }}
-                            />
+                          return (
                             <button
-                              onClick={() => setSelectedCategoryForBookmark(null)}
+                              key={category.id}
+                              onClick={() => {
+                                setSelectedCategoryId(category.id);
+                                setSelectedCategoryForBookmark(null);
+                                setIsCategoryMenuOpen(false);
+                              }}
                               style={{
-                                marginTop: 8,
-                                padding: "4px 8px",
-                                fontSize: 12,
-                                background: "#6c757d",
-                                color: "#fff",
-                                border: "none",
-                                borderRadius: 4,
-                                cursor: "pointer",
                                 width: "100%",
+                                textAlign: "left",
+                                border: "none",
+                                borderRadius: 8,
+                                padding: "7px 8px",
+                                cursor: "pointer",
+                                fontSize: 13,
+                                fontWeight: isSelected ? 600 : 500,
+                                color: "#0b1320",
+                                background: isSelected
+                                  ? "rgba(59,130,246,0.20)"
+                                  : "transparent",
                               }}
                             >
-                              {t('widgets.bookmarkWidget.cancel')}
+                              {category.name}
                             </button>
-                          </div>
-                        ) : null}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-                );
-              })
+                </div>
+
+                <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={() => {
+                      if (!activeCategory) return;
+                      setSelectedCategoryForBookmark(
+                        selectedCategoryForBookmark === activeCategory.id ? null : activeCategory.id
+                      );
+                    }}
+                    title={t("widgets.bookmarkWidget.addBookmark")}
+                    aria-label={
+                      activeCategory
+                        ? `${t("widgets.bookmarkWidget.addBookmark")} ${t("widgets.bookmarkWidget.to")} ${activeCategory.name}`
+                        : t("widgets.bookmarkWidget.addBookmark")
+                    }
+                    style={{
+                      border: "none",
+                      borderRadius: 8,
+                      background: "rgba(255,255,255,0.22)",
+                      color: "#0b1320",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: "4px 8px",
+                      cursor: activeCategory ? "pointer" : "not-allowed",
+                      opacity: activeCategory ? 1 : 0.65,
+                    }}
+                  >
+                    + {t("widgets.bookmarkWidget.addBookmark")}
+                  </button>
+                </div>
+
+                {activeCategoryBookmarks.length === 0 ? (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "rgba(17, 24, 39, 0.75)",
+                      padding: 10,
+                      borderRadius: 12,
+                      background: "rgba(255,255,255,0.22)",
+                      textAlign: "center",
+                    }}
+                  >
+                    {t("widgets.bookmarkWidget.noBookmarks")}
+                  </div>
+                ) : (
+                  <ul
+                    style={{
+                      margin: 0,
+                      padding: 0,
+                      listStyle: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                    }}
+                  >
+                    {activeCategoryBookmarks.map((bookmark) => (
+                      <li key={bookmark.id}>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            background:
+                              "linear-gradient(180deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.18) 100%)",
+                            border: "1px solid rgba(255,255,255,0.28)",
+                            borderRadius: 10,
+                            padding: "8px 10px",
+                          }}
+                        >
+                          <a
+                            href={bookmark.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 7,
+                              border: "1px solid rgba(17,24,39,0.28)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              color: "#0b1320",
+                              textDecoration: "none",
+                              flexShrink: 0,
+                              fontSize: 16,
+                            }}
+                            aria-label={bookmark.title}
+                          >
+                            ↗
+                          </a>
+
+                          <a
+                            href={bookmark.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              textDecoration: "none",
+                              color: "#0b1320",
+                              fontSize,
+                              fontWeight: 500,
+                              flex: 1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {bookmark.title}
+                          </a>
+
+                          <button
+                            onClick={() => handleDeleteBookmark(bookmark.id)}
+                            style={{
+                              border: "none",
+                              background: "rgba(17,24,39,0.16)",
+                              color: "#0b1320",
+                              borderRadius: 7,
+                              padding: "3px 8px",
+                              fontSize: 11,
+                              cursor: "pointer",
+                              fontWeight: 500,
+                            }}
+                          >
+                            {t("widgets.bookmarkWidget.delete")}
+                          </button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {selectedCategoryForBookmark === activeCategory?.id ? (
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.2)",
+                      padding: 10,
+                      borderRadius: 12,
+                      marginTop: 2,
+                    }}
+                  >
+                    <BookmarkForm
+                      onSubmit={async (title, url) => {
+                        if (!activeCategory) return;
+                        await handleAddBookmark(activeCategory.id, title, url);
+                        setSelectedCategoryForBookmark(null);
+                      }}
+                    />
+                    <button
+                      onClick={() => setSelectedCategoryForBookmark(null)}
+                      style={{
+                        marginTop: 8,
+                        padding: "6px 8px",
+                        fontSize: 12,
+                        background: "rgba(17,24,39,0.16)",
+                        color: "#0b1320",
+                        border: "none",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        width: "100%",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {t("widgets.bookmarkWidget.cancel")}
+                    </button>
+                  </div>
+                ) : null}
+              </>
             )}
           </div>
+
+          <button
+            onClick={async () => {
+              if (!activeCategory) return;
+              await handleDeleteCategory(activeCategory.id);
+              setSelectedCategoryForBookmark(null);
+              setIsCategoryMenuOpen(false);
+              setSelectedCategoryId(null);
+            }}
+            disabled={!activeCategory}
+            style={{
+              marginTop: 8,
+              alignSelf: "flex-end",
+              border: "none",
+              borderRadius: 8,
+              background: "rgba(17,24,39,0.16)",
+              color: "#0b1320",
+              padding: "4px 8px",
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: activeCategory ? "pointer" : "not-allowed",
+              opacity: activeCategory ? 1 : 0.6,
+            }}
+          >
+            Delete category
+          </button>
         </div>
       </WidgetPane>
     </WidgetContainer>

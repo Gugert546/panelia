@@ -17,7 +17,6 @@ export default function BookmarkForm({
     e.preventDefault();
     setError(null);
 
-    // Basic validation
     if (!title.trim()) {
       setError("Title is required");
       return;
@@ -28,7 +27,6 @@ export default function BookmarkForm({
       return;
     }
 
-    // Validate URL format
     try {
       new URL(url);
     } catch {
@@ -48,7 +46,15 @@ export default function BookmarkForm({
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {error && (
-        <div style={{ color: "#dc3545", fontSize: 12 }}>
+        <div
+          style={{
+            color: "#111827",
+            fontSize: 12,
+            padding: "7px 9px",
+            borderRadius: 8,
+            background: "rgba(255, 200, 200, 0.65)",
+          }}
+        >
           {error}
         </div>
       )}
@@ -60,10 +66,13 @@ export default function BookmarkForm({
         onChange={(e) => setTitle(e.target.value)}
         disabled={isLoading}
         style={{
-          padding: "6px 8px",
-          borderRadius: 4,
-          border: "1px solid #ccc",
-          fontSize: 14,
+          padding: "7px 10px",
+          borderRadius: 8,
+          border: "1px solid rgba(17,24,39,0.2)",
+          fontSize: 13,
+          background: "rgba(255,255,255,0.6)",
+          color: "#0b1320",
+          outline: "none",
         }}
       />
 
@@ -74,10 +83,13 @@ export default function BookmarkForm({
         onChange={(e) => setUrl(e.target.value)}
         disabled={isLoading}
         style={{
-          padding: "6px 8px",
-          borderRadius: 4,
-          border: "1px solid #ccc",
-          fontSize: 14,
+          padding: "7px 10px",
+          borderRadius: 8,
+          border: "1px solid rgba(17,24,39,0.2)",
+          fontSize: 13,
+          background: "rgba(255,255,255,0.6)",
+          color: "#0b1320",
+          outline: "none",
         }}
       />
 
@@ -85,14 +97,15 @@ export default function BookmarkForm({
         type="submit"
         disabled={isLoading}
         style={{
-          padding: "6px 10px",
-          borderRadius: 4,
-          background: "#28a745",
-          color: "#fff",
+          padding: "7px 10px",
+          borderRadius: 8,
+          background: "rgba(255,255,255,0.22)",
+          color: "#0b1320",
           border: "none",
           cursor: isLoading ? "not-allowed" : "pointer",
           opacity: isLoading ? 0.6 : 1,
-          fontSize: 14,
+          fontSize: 13,
+          fontWeight: 600,
         }}
       >
         {isLoading ? "Adding..." : "Add Bookmark"}
