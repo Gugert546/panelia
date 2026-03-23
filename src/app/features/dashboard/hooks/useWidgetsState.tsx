@@ -58,7 +58,6 @@ export const AVAILABLE_WIDGETS = [
 
 // Debounce delay for saving to Firestore (5 seconds)
 const SAVE_DEBOUNCE_MS = 5000;
-const SAVE_DEBOUNCE_MS = 1000;
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
