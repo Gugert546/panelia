@@ -1,6 +1,7 @@
 import { useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+//import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
 
 type Props = {
   label: string;
@@ -13,9 +14,8 @@ export default function CustomButtonItemWidget({
   url,
   favicon,
 }: Props) {
-  const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
+  //const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
   const [isDragging, setIsDragging] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
 
   const handleMouseDown = (e: React.MouseEvent) => {
