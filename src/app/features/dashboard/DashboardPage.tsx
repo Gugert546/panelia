@@ -4,9 +4,7 @@ import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import Chat from "../../components/chatUI";
 
-import CalendarWidget, {
-  type CalendarWidgetSizeMode,
-} from "../Widgets/builtins/CalendarWidget/CalendarWidget";
+import CalendarWidget from "../Widgets/builtins/CalendarWidget/CalendarWidget";
 
 import DashboardGrid from "../../components/DashboardGrid";
 
@@ -71,8 +69,6 @@ function DashboardPageContent() {
 
   const [calendarConnectionBusy, setCalendarConnectionBusy] = useState(false);
   const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
-  const [calendarSizeMode, setCalendarSizeMode] =
-    useState<CalendarWidgetSizeMode>("xlarge");
 
   const { t } = useLanguage();
 
@@ -466,8 +462,6 @@ function DashboardPageContent() {
           calendarConnectionStatus={calendarConnectionStatus}
           calendarConnectionBusy={calendarConnectionBusy}
           calendarRefreshBusy={calendarRefreshBusy}
-          sizeMode={calendarSizeMode}
-          onSizeModeChange={setCalendarSizeMode}
           onConnectCalendar={handleConnectCalendar}
           onDisconnectCalendar={handleDisconnectCalendar}
           onRefreshCalendar={handleRefreshCalendar}

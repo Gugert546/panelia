@@ -259,7 +259,13 @@ export function useCalendarLogic(selectedCalendarIds: string[] = ["primary"]) {
             isContinuation: !isStart,
           };
         })
-        .sort((a, b) => a.lane - b.lane);
+        .sort((a, b) => {
+          if (a.isStart !== b.isStart) {
+            return a.isStart ? -1 : 1;
+          }
+
+          return a.lane - b.lane;
+        });
 
       return {
         items: items.slice(0, maxVisible),
