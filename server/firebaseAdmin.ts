@@ -1,11 +1,17 @@
 import admin from "firebase-admin";
-import { getFirestore } from "firebase-admin/firestore";
+import { Firestore } from "@google-cloud/firestore";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 function env(key: string) {
   return process.env[key]?.trim();
+}
+
+function normalizeDatabaseId(raw?: string | null) {
+  const value = raw?.trim();
+  if (!value) return "(default)";
+  return value === "default" ? "default" : value;
 }
 
 function getProjectId() {
@@ -83,5 +89,50 @@ if (!admin.apps.length) {
   });
 }
 
+function getFirestoreClient() {
+  const databaseId = normalizeDatabaseId(env("FIRESTORE_DATABASE_ID"));
+  const serviceAccountJson = env("FIREBASE_SERVICE_ACCOUNT_JSON");
+  const projectId = getProjectId();
+
+  if (serviceAccountJson) {
+    const parsed = JSON.parse(serviceAccountJson) as {
+      project_id?: string;
+      client_email?: string;
+      private_key?: string;
+    };
+
+    return new Firestore({
+      projectId: parsed.project_id || projectId,
+      databaseId,
+      credentials:
+        parsed.client_email && parsed.private_key
+          ? {
+              client_email: parsed.client_email,
+              private_key: normalizePrivateKey(parsed.private_key),
+            }
+          : undefined,
+    });
+  }
+
+  const clientEmail = env("FIREBASE_CLIENT_EMAIL");
+  const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY;
+
+  if (projectId && clientEmail && privateKeyRaw) {
+    return new Firestore({
+      projectId,
+      databaseId,
+      credentials: {
+        client_email: clientEmail,
+        private_key: normalizePrivateKey(privateKeyRaw),
+      },
+    });
+  }
+
+  return new Firestore({
+    projectId,
+    databaseId,
+  });
+}
+
 export const adminAuth = admin.auth();
-export const adminDb = getFirestore(admin.app());
+export const adminDb = getFirestoreClient();

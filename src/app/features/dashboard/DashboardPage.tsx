@@ -4,9 +4,7 @@ import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
 import Chat from "../../components/chatUI";
 
-import CalendarWidget, {
-  type CalendarWidgetSizeMode,
-} from "../Widgets/builtins/CalendarWidget/CalendarWidget";
+import CalendarWidget from "../Widgets/builtins/CalendarWidget/CalendarWidget";
 
 import DashboardGrid from "../../components/DashboardGrid";
 
@@ -71,8 +69,6 @@ function DashboardPageContent() {
 
   const [calendarConnectionBusy, setCalendarConnectionBusy] = useState(false);
   const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
-  const [calendarSizeMode, setCalendarSizeMode] =
-    useState<CalendarWidgetSizeMode>("xlarge");
 
   const { t } = useLanguage();
 
@@ -231,7 +227,6 @@ function DashboardPageContent() {
   }, [
     shouldManageCalendarConnection,
     calendarConnectionStatus,
-    calendarRefreshBusy,
   ]);
 
   const handleConnectCalendar = async () => {
@@ -326,9 +321,6 @@ function DashboardPageContent() {
     await pullFromGoogleCalendar(true);
   };
 
-  const toggleChat = () => {
-    setIsChatVisible((prev) => !prev);
-  };
 
   const handleSidebarNavigation = (itemKey: string) => {
     if (itemKey === "calendar") {
@@ -435,18 +427,7 @@ function DashboardPageContent() {
         />
       </main>
 
-      <button
-        onClick={toggleChat}
-        style={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          padding: "10px 20px",
-          borderRadius: "50px",
-        }}
-      >
-        {isChatVisible ? "Close Chat" : "Open Chat"}
-      </button>
+
 
       {isChatVisible && (
         <div
@@ -467,8 +448,6 @@ function DashboardPageContent() {
           calendarConnectionStatus={calendarConnectionStatus}
           calendarConnectionBusy={calendarConnectionBusy}
           calendarRefreshBusy={calendarRefreshBusy}
-          sizeMode={calendarSizeMode}
-          onSizeModeChange={setCalendarSizeMode}
           onConnectCalendar={handleConnectCalendar}
           onDisconnectCalendar={handleDisconnectCalendar}
           onRefreshCalendar={handleRefreshCalendar}

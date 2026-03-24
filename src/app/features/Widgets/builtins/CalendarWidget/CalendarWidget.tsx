@@ -1,12 +1,21 @@
-import React, { useLayoutEffect, useMemo, useRef } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useCalendarLogic } from "./calendarLogic";
 import EventEditModal from "./EventEditModal";
+import CalendarSelector from "./CalendarSelector";
+import { useGoogleCalendars } from "./useGoogleCalendars"; // or ./useGoogleCalendars if you renamed
+import type { CalendarEvent } from "../../../../../types/firestore";
 import { useFontSize } from "../../../../providers/themeProviders";
 
-export type CalendarWidgetSizeMode = "small" | "medium" | "large" | "xlarge";
 export type CalendarWidgetVariant = "popup" | "widget";
+
+type StickyDayLabel = {
+  key: string;
+  title: string;
+  timeRange: string;
+  event: CalendarEvent | null;
+};
 
 export type CalendarWidgetProps = {
   onClose?: () => void;
@@ -17,58 +26,19 @@ export type CalendarWidgetProps = {
   calendarConnectionStatus?: "loading" | "connected" | "disconnected";
   calendarConnectionBusy?: boolean;
   calendarRefreshBusy?: boolean;
-  sizeMode?: CalendarWidgetSizeMode;
-  onSizeModeChange?: (mode: CalendarWidgetSizeMode) => void;
   variant?: CalendarWidgetVariant;
 };
 
-const SIZE_CONFIG: Record<
-  CalendarWidgetSizeMode,
-  {
-    width: number;
-    heightVh: number;
-    dayCount: number;
-    fromHour: number;
-    toHour: number;
-    cellHeight: number;
-  }
-> = {
-  small: {
-    width: 380,
-    heightVh: 58,
-    dayCount: 3,
-    fromHour: 8,
-    toHour: 18,
-    cellHeight: 28,
-  },
-  medium: {
-    width: 450,
-    heightVh: 68,
-    dayCount: 5,
-    fromHour: 7,
-    toHour: 21,
-    cellHeight: 30,
-  },
-  large: {
-    width: 510,
-    heightVh: 76,
-    dayCount: 6,
-    fromHour: 6,
-    toHour: 22,
-    cellHeight: 32,
-  },
-  xlarge: {
-    width: 560,
-    heightVh: 82,
-    dayCount: 7,
-    fromHour: 6,
-    toHour: 23,
-    cellHeight: 34,
-  },
-};
+const CALENDAR_MIN_WIDTH = 560;
+const CALENDAR_MIN_HEIGHT_VH = 82;
+const CALENDAR_DAY_COUNT = 7;
+const CALENDAR_CELL_HEIGHT = 34;
 
 const WEEK_WHEEL_THRESHOLD = 30;
 const GRID_COLUMN_TIME_WIDTH = 56;
+const STICKY_LABEL_EVENT_LIMIT = 6;
+const STICKY_LABEL_RENDER_LIMIT = 3;
+const STICKY_ROW_MIN_HEIGHT = 26;
 
 function slotHour(slot: string) {
   return Number(slot.split(":")[0]);
@@ -113,6 +83,48 @@ function getInitialVisibleSlot(timeSlots: string[]) {
   return closestSlot ?? timeSlots[0] ?? null;
 }
 
+function formatEventTimeRange(startAt: string, endAt: string) {
+  const start = new Date(startAt);
+  const end = new Date(endAt);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return "";
+  }
+
+  const timeOptions: Intl.DateTimeFormatOptions = {
+    hour: "2-digit",
+    minute: "2-digit",
+  };
+
+  return `${start.toLocaleTimeString("nb-NO", timeOptions)}–${end.toLocaleTimeString("nb-NO", timeOptions)}`;
+}
+
+function normalizeHexColor(color: string) {
+  const raw = color.trim().replace("#", "");
+
+  if (raw.length === 3) {
+    return raw
+      .split("")
+      .map((ch) => ch + ch)
+      .join("");
+  }
+
+  return raw;
+}
+
+function hexToRgba(color: string, alpha: number) {
+  const normalized = normalizeHexColor(color);
+  if (!/^[0-9a-fA-F]{6}$/.test(normalized)) {
+    return `rgba(59,130,246,${alpha})`;
+  }
+
+  const r = Number.parseInt(normalized.slice(0, 2), 16);
+  const g = Number.parseInt(normalized.slice(2, 4), 16);
+  const b = Number.parseInt(normalized.slice(4, 6), 16);
+
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
 export default function CalendarWidget({
   onClose,
   leftOffset = 80,
@@ -122,15 +134,13 @@ export default function CalendarWidget({
   calendarConnectionStatus = "disconnected",
   calendarConnectionBusy = false,
   calendarRefreshBusy = false,
-  sizeMode = "xlarge",
-  onSizeModeChange,
   variant = "popup",
 }: CalendarWidgetProps) {
   const isPopup = variant === "popup";
-  const config = SIZE_CONFIG[sizeMode];
   const { fontSize } = useFontSize();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerWheelDeltaRef = useRef(0);
+  const [topVisibleTime, setTopVisibleTime] = useState<string | null>(null);
 
   const handleConnectCalendar = () => {
     if (calendarConnectionBusy) return;
@@ -147,6 +157,15 @@ export default function CalendarWidget({
 
     window.alert("Google Calendar connect will be enabled in the next step.");
   };
+
+  const {
+    calendars,
+    selectedCalendarIds,
+    loading: calendarsLoading,
+    saving: calendarsSaving,
+    toggleCalendar,
+    saveSelection,
+  } = useGoogleCalendars(calendarConnectionStatus === "connected");
 
   const handleRefreshCalendar = () => {
     if (
@@ -189,23 +208,14 @@ export default function CalendarWidget({
     saveEditModal,
     deleteEditModal,
     getCellRenderState,
-  } = useCalendarLogic();
+  } = useCalendarLogic(selectedCalendarIds);
 
   const displayWeekDays = useMemo(
-    () => weekDays.slice(0, config.dayCount),
-    [weekDays, config.dayCount]
+    () => weekDays.slice(0, CALENDAR_DAY_COUNT),
+    [weekDays]
   );
 
-  const displayTimeSlots = useMemo(
-    () =>
-      isPopup
-        ? timeSlots.filter(
-            (slot) =>
-              slotHour(slot) >= config.fromHour && slotHour(slot) < config.toHour
-          )
-        : timeSlots,
-    [isPopup, timeSlots, config.fromHour, config.toHour]
-  );
+  const displayTimeSlots = useMemo(() => timeSlots, [timeSlots]);
 
   const rangeLabel = useMemo(
     () => formatRangeLabel(displayWeekDays),
@@ -217,8 +227,39 @@ export default function CalendarWidget({
     [isPopup, displayTimeSlots]
   );
 
+  const updateTopVisibleTime = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const slotNodes = Array.from(
+      container.querySelectorAll<HTMLElement>("[data-time-slot]")
+    );
+
+    if (!slotNodes.length) {
+      setTopVisibleTime(null);
+      return;
+    }
+
+    const targetTop = container.scrollTop + 1;
+    let active = slotNodes[0].dataset.timeSlot ?? null;
+
+    for (const node of slotNodes) {
+      if (node.offsetTop <= targetTop) {
+        active = node.dataset.timeSlot ?? active;
+        continue;
+      }
+
+      break;
+    }
+
+    setTopVisibleTime((prev) => (prev === active ? prev : active));
+  }, []);
+
   useLayoutEffect(() => {
-    if (isPopup || !initialVisibleSlot || !scrollContainerRef.current) return;
+    if (isPopup || !initialVisibleSlot || !scrollContainerRef.current) {
+      requestAnimationFrame(updateTopVisibleTime);
+      return;
+    }
 
     const container = scrollContainerRef.current;
 
@@ -230,9 +271,11 @@ export default function CalendarWidget({
       if (!target) return;
 
       container.scrollTo({
-        top: Math.max(0, target.offsetTop - config.cellHeight),
+        top: Math.max(0, target.offsetTop - CALENDAR_CELL_HEIGHT),
         behavior: "auto",
       });
+
+      updateTopVisibleTime();
     };
 
     const frameOne = requestAnimationFrame(() => {
@@ -241,7 +284,12 @@ export default function CalendarWidget({
     });
 
     return () => cancelAnimationFrame(frameOne);
-  }, [isPopup, initialVisibleSlot, config.cellHeight, rangeLabel]);
+  }, [
+    isPopup,
+    initialVisibleSlot,
+    rangeLabel,
+    updateTopVisibleTime,
+  ]);
 
   const handleHeaderWheel: React.WheelEventHandler<HTMLDivElement> = (event) => {
     event.preventDefault();
@@ -259,7 +307,58 @@ export default function CalendarWidget({
     }
   };
 
+  const maxVisibleEventsPerCell = 3;
+
+  const calendarColorById = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const calendar of calendars) {
+      if (!calendar.id) continue;
+      map.set(calendar.id, calendar.backgroundColor || "#3b82f6");
+    }
+
+    if (!map.has("primary")) {
+      map.set("primary", "#3b82f6");
+    }
+
+    return map;
+  }, [calendars]);
+
   const gridTemplateColumns = `${GRID_COLUMN_TIME_WIDTH}px repeat(${displayWeekDays.length}, minmax(0, 1fr))`;
+
+  const stickyReferenceTime = topVisibleTime ?? displayTimeSlots[0] ?? null;
+
+  const stickyLabelsByDay = useMemo(() => {
+    return displayWeekDays.map((_, dayIdx) => {
+      if (!stickyReferenceTime) return [];
+
+      const { items, hiddenCount } = getCellRenderState(
+        dayIdx,
+        stickyReferenceTime,
+        STICKY_LABEL_EVENT_LIMIT
+      );
+
+      const labels: StickyDayLabel[] = items
+        .slice(0, STICKY_LABEL_RENDER_LIMIT)
+        .map((item) => ({
+        key: item.event.id,
+        title: item.event.title || "Untitled",
+        timeRange: formatEventTimeRange(item.event.startAt, item.event.endAt),
+        event: item.event,
+      }));
+
+      if (hiddenCount > 0) {
+        labels.push({
+          key: `overflow-${dayIdx}`,
+          title: `+${hiddenCount} more`,
+          timeRange: "",
+          event: null,
+        });
+      }
+
+      return labels;
+    });
+  }, [displayWeekDays, stickyReferenceTime, getCellRenderState]);
 
   const renderWeekHeader = () => (
     <>
@@ -297,6 +396,72 @@ export default function CalendarWidget({
     </>
   );
 
+  const renderStickyLabels = () => (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns,
+        gap: "1px",
+        backgroundColor: "rgba(255, 255, 255, 0)",
+        padding: "1px",
+        borderTop: "1px solid rgba(148,163,184,0.22)",
+      }}
+    >
+      <div
+        style={{
+          backgroundColor: "transparent",
+          minHeight: `${STICKY_ROW_MIN_HEIGHT}px`,
+        }}
+      />
+
+      {stickyLabelsByDay.map((labels, dayIdx) => (
+        <div
+          key={`sticky-${dayIdx}`}
+          style={{
+            backgroundColor: "transparent",
+            padding: "2px 4px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "2px",
+            minHeight: `${STICKY_ROW_MIN_HEIGHT}px`,
+          }}
+        >
+          {labels.map((label) => (
+            <div
+              key={label.key}
+              onClick={(e) => {
+                if (!label.event) return;
+                e.stopPropagation();
+                openEditModal(label.event);
+              }}
+              style={{
+                fontSize: "10px",
+                lineHeight: 1.15,
+                padding: "1px 4px",
+                borderRadius: "4px",
+                background: label.event
+                  ? hexToRgba(
+                      calendarColorById.get(label.event.calendarId || "primary") || "#3b82f6",
+                      0.95
+                    )
+                  : "rgba(15,23,42,0.12)",
+                color: "rgba(15,23,42,0.95)",
+                whiteSpace: "normal",
+                wordBreak: "break-word",
+                textOverflow: "clip",
+                overflow: "visible",
+                cursor: label.event ? "pointer" : "default",
+              }}
+              title={label.timeRange ? `${label.title} · ${label.timeRange}` : label.title}
+            >
+              {label.timeRange ? `${label.title} · ${label.timeRange}` : label.title}
+            </div>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+
   const renderTimeRows = () =>
     displayTimeSlots.map((time, timeIdx) => (
       <React.Fragment key={timeIdx}>
@@ -315,24 +480,24 @@ export default function CalendarWidget({
 
         {displayWeekDays.map((_, dayIdx) => {
           const cellKey = `${dayIdx}-${time}`;
-          const { primaryEvent, isStart, isEnd, isContinuation } =
-            getCellRenderState(dayIdx, time);
+          const { items, hiddenCount } = getCellRenderState(
+            dayIdx,
+            time,
+            maxVisibleEventsPerCell
+          );
+          const hasEvents = items.length > 0;
 
           return (
             <div
               key={`${timeIdx}-${dayIdx}`}
               style={{
-                backgroundColor: primaryEvent
-                  ? "rgba(59,130,246,0.14)"
+                backgroundColor: hasEvents
+                  ? "rgba(59,130,246,0.08)"
                   : "rgba(255,255,255,0.92)",
-                borderLeft: primaryEvent
-                  ? "3px solid rgba(59,130,246,0.45)"
+                borderLeft: hasEvents
+                  ? "3px solid rgba(59,130,246,0.35)"
                   : "3px solid transparent",
-                borderTopLeftRadius: isStart ? "8px" : "0px",
-                borderTopRightRadius: isStart ? "8px" : "0px",
-                borderBottomLeftRadius: isEnd ? "8px" : "0px",
-                borderBottomRightRadius: isEnd ? "8px" : "0px",
-                minHeight: `${config.cellHeight}px`,
+                minHeight: `${CALENDAR_CELL_HEIGHT}px`,
                 padding: "4px",
                 cursor:
                   calendarConnectionBusy ||
@@ -351,52 +516,78 @@ export default function CalendarWidget({
                 e.currentTarget.style.backgroundColor = "rgba(224, 242, 254, 1)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = primaryEvent
-                  ? "rgba(59,130,246,0.14)"
+                e.currentTarget.style.backgroundColor = hasEvents
+                  ? "rgba(59,130,246,0.08)"
                   : "rgba(255,255,255,0.92)";
               }}
               onClick={() => {
                 void handleCellClick(dayIdx, time);
               }}
             >
-              {primaryEvent && isStart && (
+              {items.map((item) => {
+                const laneTone = Math.max(0.16, 0.28 - item.lane * 0.04);
+                const calendarColor =
+                  calendarColorById.get(item.event.calendarId || "primary") || "#3b82f6";
+                const eventTitle = item.event.title || "Untitled";
+                const timeRangeLabel = formatEventTimeRange(item.event.startAt, item.event.endAt);
+                const continuationTitle = timeRangeLabel
+                  ? `${eventTitle} (${timeRangeLabel})`
+                  : eventTitle;
+
+                return (
+                  <div
+                    key={item.event.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(item.event);
+                    }}
+                    style={{
+                      fontSize: item.isStart ? fontSize : Math.max(fontSize - 3, 9),
+                      lineHeight: 1.15,
+                      padding: item.isStart ? "2px 5px" : "1px 0px",
+                      borderRadius: item.isStart
+                        ? "6px 6px 3px 3px"
+                        : item.isEnd
+                          ? "3px 3px 6px 6px"
+                          : "0px",
+                      background: hexToRgba(calendarColor, laneTone),
+                      borderLeft: `2px solid ${hexToRgba(calendarColor, 0.72)}`,
+                      color: "rgba(15,23,42,0.95)",
+                      whiteSpace: item.isStart ? "normal" : "nowrap",
+                      wordBreak: item.isStart ? "break-word" : "normal",
+                      textOverflow: item.isStart ? "clip" : "ellipsis",
+                      overflow: item.isStart ? "visible" : "hidden",
+                      cursor: "pointer",
+                    }}
+                    title={item.isStart ? continuationTitle : `Continues: ${continuationTitle}`}
+                  >
+                    {item.isStart ? (
+                      <span style={{ display: "block" }}>
+                        {eventTitle}
+                        {timeRangeLabel ? ` · ${timeRangeLabel}` : ""}
+                      </span>
+                    ) : (
+                      <span style={{ display: "block", width: "100%", height: "100%" }} />
+                    )}
+                  </div>
+                );
+              })}
+
+              {hiddenCount > 0 && (
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditModal(primaryEvent);
-                  }}
                   style={{
-                    fontSize,
-                    lineHeight: 1.2,
+                    alignSelf: "flex-start",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    lineHeight: 1,
                     padding: "2px 5px",
-                    borderRadius: "5px",
-                    background: "rgba(59,130,246,0.28)",
-                    color: "rgba(15,23,42,0.95)",
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
+                    borderRadius: "9999px",
+                    background: "rgba(15,23,42,0.1)",
+                    color: "rgba(15,23,42,0.9)",
                   }}
-                  title={primaryEvent.title}
+                  title={`${hiddenCount} more events in this slot`}
                 >
-                  {primaryEvent.title}
-                </div>
-              )}
-              {primaryEvent && isContinuation && (
-                <div
-                  style={{
-                    fontSize: fontSize - 2,
-                    lineHeight: 1.2,
-                    padding: "2px 4px",
-                    borderRadius: "4px",
-                    background: "rgba(59,130,246,0.25)",
-                    color: "rgba(15,23,42,0.95)",
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                  }}
-                  title="Continuation of event"
-                >
-                  ...
+                  +{hiddenCount}
                 </div>
               )}
             </div>
@@ -466,33 +657,20 @@ export default function CalendarWidget({
               →
             </button>
           </div>
+          
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {isPopup && (
-              <select
-                value={sizeMode}
-                onChange={(e) =>
-                  onSizeModeChange?.(e.target.value as CalendarWidgetSizeMode)
-                }
-                style={{
-                  borderRadius: "9999px",
-                  border: "none",
-                  padding: "8px 10px",
-                  background: "rgba(255,255,255,0.55)",
-                  color: "rgba(15,23,42,0.95)",
-                  fontSize: "12px",
-                  fontWeight: 600,
-                  cursor: "pointer",
-                }}
-                title="Calendar size"
-              >
-                <option value="small">Small</option>
-                <option value="medium">Medium</option>
-                <option value="large">Large</option>
-                <option value="xlarge">XLarge</option>
-              </select>
+            {isPopup && calendarConnectionStatus === "connected" && (
+              <CalendarSelector
+                calendars={calendars}
+                selectedCalendarIds={selectedCalendarIds}
+                loading={calendarsLoading}
+                saving={calendarsSaving}
+                onToggle={toggleCalendar}
+                onSave={saveSelection}
+              />
             )}
-
+            
             <button
               onClick={handleRefreshCalendar}
               style={{
@@ -524,7 +702,7 @@ export default function CalendarWidget({
             >
               {refreshButtonLabel}
             </button>
-
+            
             <button
               onClick={handleConnectCalendar}
               style={{
@@ -577,8 +755,9 @@ export default function CalendarWidget({
         {isPopup ? (
           <div
             ref={scrollContainerRef}
+            onScroll={updateTopVisibleTime}
             style={{
-              overflowY: "hidden",
+              overflowY: "auto",
               overflowX: "auto",
               width: "100%",
               flex: 1,
@@ -587,17 +766,49 @@ export default function CalendarWidget({
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns,
-                gap: "1px",
-                backgroundColor: "rgba(255,255,255,0.32)",
-                padding: "1px",
+                position: "relative",
                 borderRadius: "12px",
                 overflow: "hidden",
               }}
             >
-              {renderWeekHeader()}
-              {renderTimeRows()}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns,
+                  gap: "1px",
+                  backgroundColor: "rgba(255,255,255,0.32)",
+                  padding: "1px",
+                }}
+              >
+                {renderWeekHeader()}
+              </div>
+
+              <div
+                style={{
+                  position: "absolute",
+                  top: "100%",
+                  left: 0,
+                  right: 0,
+                  transform: "translateY(-1px)",
+                  zIndex: 5,
+                  pointerEvents: "auto",
+                }}
+              >
+                {renderStickyLabels()}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns,
+                  gap: "1px",
+                  backgroundColor: "rgba(255,255,255,0.32)",
+                  padding: "1px",
+                  paddingTop: `${STICKY_ROW_MIN_HEIGHT + 4}px`,
+                }}
+              >
+                {renderTimeRows()}
+              </div>
             </div>
           </div>
         ) : (
@@ -619,7 +830,9 @@ export default function CalendarWidget({
 
             <div
               ref={scrollContainerRef}
+              onScroll={updateTopVisibleTime}
               style={{
+                position: "relative",
                 overflowY: "auto",
                 overflowX: "auto",
                 width: "100%",
@@ -629,11 +842,22 @@ export default function CalendarWidget({
             >
               <div
                 style={{
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 6,
+                }}
+              >
+                {renderStickyLabels()}
+              </div>
+
+              <div
+                style={{
                   display: "grid",
                   gridTemplateColumns,
                   gap: "1px",
                   backgroundColor: "rgba(255,255,255,0.32)",
                   padding: "1px",
+                  paddingTop: `${STICKY_ROW_MIN_HEIGHT + 4}px`,
                   borderBottomLeftRadius: "12px",
                   borderBottomRightRadius: "12px",
                   overflow: "hidden",
@@ -657,8 +881,12 @@ export default function CalendarWidget({
             top: 20,
             left: leftOffset,
             zIndex: 1500,
-            width: config.width,
-            height: `${config.heightVh}vh`,
+            width: `${CALENDAR_MIN_WIDTH}px`,
+            minWidth: `${CALENDAR_MIN_WIDTH}px`,
+            height: `${CALENDAR_MIN_HEIGHT_VH}vh`,
+            minHeight: `${CALENDAR_MIN_HEIGHT_VH}vh`,
+            resize: "both",
+            overflow: "hidden",
           }}
         >
           <div style={{ width: "100%", height: "100%", overflow: "hidden" }}>

@@ -11,10 +11,20 @@ export type CalendarEvent = {
   timezone: string;
   source: "local" | "google";
   googleEventId?: string;
+  calendarId?: string; 
   updatedAt: number;      // server epoch ms
   createdAt: number;      // server epoch ms
   deletedAt?: number;     // soft delete for sync safety
   syncStatus: CalendarSyncStatus;
+};
+
+export type GoogleCalendarMeta = {
+  id: string;
+  summary: string;
+  backgroundColor: string;
+  foregroundColor?: string;
+  selected?: boolean;
+  primary?: boolean;
 };
 
 export type Bookmark = {

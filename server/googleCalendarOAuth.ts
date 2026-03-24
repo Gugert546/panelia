@@ -11,6 +11,7 @@ type IntegrationDoc = {
   scope?: string | null;
   tokenType?: string | null;
   updatedAt?: number;
+  selectedCalendarIds?: string[];
 };
 
 type SyncEventPayload = {
@@ -22,6 +23,7 @@ type SyncEventPayload = {
   allDay?: boolean;
   timezone?: string;
   googleEventId?: string;
+  calendarId?: string;
 };
 
 const router = express.Router();
@@ -286,6 +288,31 @@ function toIso(date: string | null | undefined, fallbackMs: number) {
   return new Date(fallbackMs).toISOString();
 }
 
+function mapGoogleCalendarListItem(item: Record<string, unknown>) {
+  const id = typeof item.id === "string" ? item.id : "";
+  if (!id) return null;
+
+  return {
+    id,
+    summary: typeof item.summary === "string" ? item.summary : "Untitled calendar",
+    backgroundColor: typeof item.backgroundColor === "string" ? item.backgroundColor : "#1a73e8",
+    foregroundColor: typeof item.foregroundColor === "string" ? item.foregroundColor : undefined,
+    selected: typeof item.selected === "boolean" ? item.selected : undefined,
+    primary: typeof item.primary === "boolean" ? item.primary : undefined,
+  };
+}
+function sanitizeCalendarIds(value: unknown) {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .filter((id): id is string => typeof id === "string")
+        .map((id) => id.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
 function mapGoogleEvent(item: Record<string, unknown>, fallbackNow: number) {
   const id = typeof item.id === "string" ? item.id : `tmp-${fallbackNow}`;
   const summary = typeof item.summary === "string" ? item.summary : "Untitled event";
@@ -483,12 +510,16 @@ router.post("/sync/create", async (req, res) => {
   if (!event?.id || !event?.title || !event?.startAt || !event?.endAt) {
     return res.status(400).json({ error: "invalid event payload" });
   }
-
+    const calendarId = typeof req.body?.calendarId === "string" && req.body.calendarId.trim()
+    ? req.body.calendarId.trim()
+    : typeof event?.calendarId === "string" && event.calendarId.trim()
+      ? event.calendarId.trim()
+      : "primary";
   try {
     const accessToken = await getUsableAccessToken(uid);
     const payload = await googleApiRequest(
       accessToken,
-      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
       "POST",
       toGoogleEventBody(event)
     );
@@ -496,6 +527,7 @@ router.post("/sync/create", async (req, res) => {
     return res.json({
       ok: true,
       googleEventId: typeof payload?.id === "string" ? payload.id : null,
+      calendarId,
     });
   } catch (err) {
     console.error("Google sync create error:", err);
@@ -509,6 +541,11 @@ router.post("/sync/update", async (req, res) => {
 
   const event = req.body?.event as SyncEventPayload | undefined;
   const googleEventId = typeof req.body?.googleEventId === "string" ? req.body.googleEventId : event?.googleEventId;
+  const calendarId = typeof req.body?.calendarId === "string" && req.body.calendarId.trim()
+    ? req.body.calendarId.trim()
+    : typeof event?.calendarId === "string" && event.calendarId.trim()
+      ? event.calendarId.trim()
+      : "primary";
 
   if (!event?.id || !event?.title || !event?.startAt || !event?.endAt || !googleEventId) {
     return res.status(400).json({ error: "invalid update payload" });
@@ -518,12 +555,12 @@ router.post("/sync/update", async (req, res) => {
     const accessToken = await getUsableAccessToken(uid);
     await googleApiRequest(
       accessToken,
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(googleEventId)}`,
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(googleEventId)}`,
       "PUT",
       toGoogleEventBody(event)
     );
 
-    return res.json({ ok: true, googleEventId });
+    return res.json({ ok: true, googleEventId, calendarId });
   } catch (err) {
     console.error("Google sync update error:", err);
     return res.status(500).json({ error: "failed to sync update" });
@@ -535,6 +572,10 @@ router.post("/sync/delete", async (req, res) => {
   if (!uid) return;
 
   const googleEventId = typeof req.body?.googleEventId === "string" ? req.body.googleEventId : null;
+    const calendarId = typeof req.body?.calendarId === "string" && req.body.calendarId.trim()
+      ? req.body.calendarId.trim()
+      : "primary";
+
   if (!googleEventId) {
     return res.status(400).json({ error: "missing googleEventId" });
   }
@@ -543,17 +584,65 @@ router.post("/sync/delete", async (req, res) => {
     const accessToken = await getUsableAccessToken(uid);
     await googleApiRequest(
       accessToken,
-      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(googleEventId)}`,
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(googleEventId)}`,
       "DELETE"
     );
 
-    return res.json({ ok: true });
+    return res.json({ ok: true, calendarId });
   } catch (err) {
     console.error("Google sync delete error:", err);
     return res.status(500).json({ error: "failed to sync delete" });
   }
 });
+router.get("/calendars", async (req, res) => {
+  const uid = await requireUid(req, res);
+  if (!uid) return;
 
+  try {
+    const accessToken = await getUsableAccessToken(uid);
+
+    const payload = await googleApiGet(
+      accessToken,
+      "https://www.googleapis.com/calendar/v3/users/me/calendarList"
+    );
+
+    const items = Array.isArray(payload?.items) ? (payload.items as Record<string, unknown>[]) : [];
+    const calendars = items
+      .map(mapGoogleCalendarListItem)
+      .filter((item): item is NonNullable<ReturnType<typeof mapGoogleCalendarListItem>> => Boolean(item));
+
+    const { data: integration} = await getIntegration(uid);
+    const selectedCalendarIds = sanitizeCalendarIds(integration?.selectedCalendarIds);
+    const calendarIds = selectedCalendarIds.length ? selectedCalendarIds :["primary"];
+    return res.json({ ok: true, calendars, selectedCalendarIds: calendarIds });
+  } catch (err) {
+    console.error("Google calendars list error:", err);
+    return res.status(500).json({ error: "failed to list calendars" });
+  }
+});
+router.post("/calendars/selected", async (req, res) => {
+  const uid = await requireUid(req, res);
+  if (!uid) return;
+
+  const incoming = sanitizeCalendarIds(req.body?.calendarIds);
+  const calendarIds = incoming.length ? incoming : ["primary"];
+
+  try {
+    const ref = await getIntegrationRef(uid);
+    await ref.set(
+      {
+        selectedCalendarIds: calendarIds.length ? calendarIds : ["primary"],
+        updatedAt: Date.now(),
+      },
+      { merge: true }
+    );
+
+    return res.json({ ok: true,selectedCalendarIds: calendarIds});
+  } catch (err) {
+    console.error("Google calendars selection error:", err);
+    return res.status(500).json({ error: "failed to save selected calendars" });
+  }
+});
 router.post("/sync/pull", async (req, res) => {
   const uid = await requireUid(req, res);
   if (!uid) return;
@@ -565,48 +654,98 @@ router.post("/sync/pull", async (req, res) => {
 
   try {
     const accessToken = await getUsableAccessToken(uid);
+    const requestedCalendarIds = sanitizeCalendarIds(req.body?.calendarIds);
+    const { data: integration } = await getIntegration(uid);
+    const selectedCalendarIds = sanitizeCalendarIds(integration?.selectedCalendarIds);
+    const calendarIds = requestedCalendarIds.length
+      ? requestedCalendarIds
+      : selectedCalendarIds.length
+        ? selectedCalendarIds
+        : ["primary"];
 
-    const listUrl = new URL("https://www.googleapis.com/calendar/v3/calendars/primary/events");
-    listUrl.searchParams.set("singleEvents", "true");
-    listUrl.searchParams.set("orderBy", "startTime");
-    listUrl.searchParams.set("timeMin", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-    listUrl.searchParams.set("maxResults", String(maxResults));
+    console.log("[sync/pull] DEBUG - requestedCalendarIds from body:", req.body?.calendarIds);
+    console.log("[sync/pull] DEBUG - selectedCalendarIds from firestore:", integration?.selectedCalendarIds);
+    console.log("[sync/pull] DEBUG - final calendarIds to fetch:", calendarIds);
 
-    const payload = await googleApiGet(accessToken, listUrl.toString());
-    const items = Array.isArray(payload?.items) ? (payload.items as Record<string, unknown>[]) : [];
+     const syncNow = Date.now();
+  const syncNowIso = new Date(syncNow).toISOString();
 
-    const eventsCollection = adminDb.collection(`users/${uid}/calendarEvents`);
-    const localSnapshot = await eventsCollection.get();
+  const items: Array<Record<string, unknown> & { __calendarId: string }> = [];
+  const failedCalendarIds: string[] = [];
+  const pulledByCalendar: Record<string, number> = {};
+  const createdByCalendar: Record<string, number> = {};
+  const updatedByCalendar: Record<string, number> = {};
 
-    const byGoogleEventId = new Map<
-      string,
-      { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
-    >();
+    for (const calendarId of calendarIds) {
+      const listUrl = new URL(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`
+      );
+      listUrl.searchParams.set("singleEvents", "true");
+      listUrl.searchParams.set("orderBy", "startTime");
+      listUrl.searchParams.set("timeMin", syncNowIso);
+      listUrl.searchParams.set("timeMax", new Date(syncNow + 2 * 365 * 24 * 60 * 60 * 1000).toISOString());
+      listUrl.searchParams.set("maxResults", String(maxResults));
 
-    for (const doc of localSnapshot.docs) {
-      const data = (doc.data() || {}) as Record<string, unknown>;
-      const googleEventId = typeof data.googleEventId === "string" ? data.googleEventId : null;
-      if (!googleEventId) continue;
+      try {
+        console.log(`[sync/pull] Fetching calendar: ${calendarId}`);
+        const payload = await googleApiGet(accessToken, listUrl.toString());
+        const calendarItems = Array.isArray(payload?.items) ? (payload.items as Record<string, unknown>[]) : [];
+        pulledByCalendar[calendarId] = calendarItems.length;
+        console.log(`[sync/pull] Calendar ${calendarId} returned ${calendarItems.length} events`);
 
-      byGoogleEventId.set(googleEventId, {
-        id: doc.id,
-        updatedAt: toEpoch(data.updatedAt),
-        createdAt: toEpoch(data.createdAt),
-        ref: doc.ref,
-      });
+        for (const item of calendarItems) {
+          items.push({ ...item, __calendarId: calendarId });
+        }
+      } catch (err) {
+        failedCalendarIds.push(calendarId);
+        console.error(`Google sync pull calendar error (${calendarId}):`, err);
+      }
     }
+const eventsCollection = adminDb.collection(`users/${uid}/calendarEvents`);
+const localSnapshot = await eventsCollection.get();
 
-    const batch = adminDb.batch();
-    let created = 0;
-    let updated = 0;
-    let skipped = 0;
-    let deleted = 0;
+const byGoogleEventId = new Map<
+  string,
+  { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
+>();
+
+const batch = adminDb.batch();
+let created = 0;
+let updated = 0;
+let skipped = 0;
+let deleted = 0;
+
+for (const doc of localSnapshot.docs) {
+  const data = (doc.data() || {}) as Record<string, unknown>;
+  const source = typeof data.source === "string" ? data.source : "";
+  const endAt = toEpoch(data.endAt);
+
+  if (source === "google" && endAt > 0 && endAt < syncNow) {
+    batch.delete(doc.ref);
+    deleted += 1;
+    continue;
+  }
+
+  const googleEventId = typeof data.googleEventId === "string" ? data.googleEventId : null;
+  const docCalendarId = typeof data.calendarId === "string" ? data.calendarId : "primary";
+  if (!googleEventId) continue;
+
+  const mapKey = `${docCalendarId}/${googleEventId}`;
+  byGoogleEventId.set(mapKey, {
+    id: doc.id,
+    updatedAt: toEpoch(data.updatedAt),
+    createdAt: toEpoch(data.createdAt),
+    ref: doc.ref,
+  });
+}
 
     for (const item of items) {
-      const now = Date.now();
+      const now = syncNow;
       const status = typeof item.status === "string" ? item.status : "confirmed";
       const mapped = mapGoogleEvent(item, now);
-      const existing = byGoogleEventId.get(mapped.googleEventId);
+      const calendarId = (item as { __calendarId?: string }).__calendarId || "primary";
+      const mapKey = `${calendarId}/${mapped.googleEventId}`;
+      const existing = byGoogleEventId.get(mapKey);
 
       if (status === "cancelled") {
         if (existing) {
@@ -615,8 +754,7 @@ router.post("/sync/pull", async (req, res) => {
         }
         continue;
       }
-
-      const nextId = existing?.id ?? `g_${mapped.googleEventId.replace(/\//g, "_")}`;
+      const nextId = existing?.id ?? `g_${calendarId}_${mapped.googleEventId.replace(/\//g, "_")}`;
       const targetRef = existing?.ref ?? eventsCollection.doc(nextId);
       const incomingUpdatedAt = mapped.updatedAt;
       const currentUpdatedAt = existing?.updatedAt ?? 0;
@@ -639,6 +777,7 @@ router.post("/sync/pull", async (req, res) => {
           timezone: mapped.timezone,
           source: "google",
           googleEventId: mapped.googleEventId,
+          calendarId: calendarId,
           syncStatus: "synced",
           updatedAt: mapped.updatedAt,
           createdAt: existing?.createdAt || mapped.createdAt,
@@ -648,12 +787,16 @@ router.post("/sync/pull", async (req, res) => {
 
       if (existing) {
         updated += 1;
+        updatedByCalendar[calendarId] = (updatedByCalendar[calendarId] || 0) + 1;
       } else {
         created += 1;
+        createdByCalendar[calendarId] = (createdByCalendar[calendarId] || 0) + 1;
       }
     }
 
     await batch.commit();
+
+    console.log("[sync/pull] Batch committed - total items pulled:", items.length, "created:", created, "updated:", updated);
 
     return res.json({
       ok: true,
@@ -662,11 +805,17 @@ router.post("/sync/pull", async (req, res) => {
       updated,
       deleted,
       skipped,
+      calendarIds,
+      failedCalendarIds,
+      pulledByCalendar,
+      createdByCalendar,
+      updatedByCalendar,
     });
   } catch (err) {
     console.error("Google sync pull error:", err);
     return res.status(500).json({ error: "failed to sync pull" });
   }
+
 });
 
 export default router;
