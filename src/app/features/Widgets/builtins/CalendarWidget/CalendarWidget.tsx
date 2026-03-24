@@ -32,8 +32,6 @@ export type CalendarWidgetProps = {
 const CALENDAR_MIN_WIDTH = 560;
 const CALENDAR_MIN_HEIGHT_VH = 82;
 const CALENDAR_DAY_COUNT = 7;
-const CALENDAR_FROM_HOUR = 6;
-const CALENDAR_TO_HOUR = 23;
 const CALENDAR_CELL_HEIGHT = 34;
 
 const WEEK_WHEEL_THRESHOLD = 30;
@@ -217,17 +215,7 @@ export default function CalendarWidget({
     [weekDays]
   );
 
-  const displayTimeSlots = useMemo(
-    () =>
-      isPopup
-        ? timeSlots.filter(
-            (slot) =>
-              slotHour(slot) >= CALENDAR_FROM_HOUR &&
-              slotHour(slot) < CALENDAR_TO_HOUR
-          )
-        : timeSlots,
-    [isPopup, timeSlots]
-  );
+  const displayTimeSlots = useMemo(() => timeSlots, [timeSlots]);
 
   const rangeLabel = useMemo(
     () => formatRangeLabel(displayWeekDays),
@@ -454,7 +442,7 @@ export default function CalendarWidget({
                 background: label.event
                   ? hexToRgba(
                       calendarColorById.get(label.event.calendarId || "primary") || "#3b82f6",
-                      0.82
+                      0.95
                     )
                   : "rgba(15,23,42,0.12)",
                 color: "rgba(15,23,42,0.95)",
@@ -769,7 +757,7 @@ export default function CalendarWidget({
             ref={scrollContainerRef}
             onScroll={updateTopVisibleTime}
             style={{
-              overflowY: "hidden",
+              overflowY: "auto",
               overflowX: "auto",
               width: "100%",
               flex: 1,

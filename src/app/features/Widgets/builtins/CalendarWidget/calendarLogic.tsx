@@ -144,10 +144,11 @@ export function useCalendarLogic(selectedCalendarIds: string[] = ["primary"]) {
     }
     return days;
   }, [weekOffset]);
-
+  const CALENDAR_FROM_HOUR = 0;
+  const CALENDAR_TO_HOUR = 24;
   const timeSlots = useMemo(() => {
     const slots: string[] = [];
-    for (let hour = 6; hour < 23; hour++) {
+    for (let hour = CALENDAR_FROM_HOUR; hour < CALENDAR_TO_HOUR; hour++) {
       slots.push(`${hour.toString().padStart(2, "0")}:00`);
     }
     return slots;

@@ -667,11 +667,14 @@ router.post("/sync/pull", async (req, res) => {
     console.log("[sync/pull] DEBUG - selectedCalendarIds from firestore:", integration?.selectedCalendarIds);
     console.log("[sync/pull] DEBUG - final calendarIds to fetch:", calendarIds);
 
-    const items: Array<Record<string, unknown> & { __calendarId: string }> = [];
-    const failedCalendarIds: string[] = [];
-    const pulledByCalendar: Record<string, number> = {};
-    const createdByCalendar: Record<string, number> = {};
-    const updatedByCalendar: Record<string, number> = {};
+     const syncNow = Date.now();
+  const syncNowIso = new Date(syncNow).toISOString();
+
+  const items: Array<Record<string, unknown> & { __calendarId: string }> = [];
+  const failedCalendarIds: string[] = [];
+  const pulledByCalendar: Record<string, number> = {};
+  const createdByCalendar: Record<string, number> = {};
+  const updatedByCalendar: Record<string, number> = {};
 
     for (const calendarId of calendarIds) {
       const listUrl = new URL(
@@ -679,7 +682,8 @@ router.post("/sync/pull", async (req, res) => {
       );
       listUrl.searchParams.set("singleEvents", "true");
       listUrl.searchParams.set("orderBy", "startTime");
-      listUrl.searchParams.set("timeMin", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
+      listUrl.searchParams.set("timeMin", syncNowIso);
+      listUrl.searchParams.set("timeMax", new Date(syncNow + 2 * 365 * 24 * 60 * 60 * 1000).toISOString());
       listUrl.searchParams.set("maxResults", String(maxResults));
 
       try {
@@ -697,37 +701,46 @@ router.post("/sync/pull", async (req, res) => {
         console.error(`Google sync pull calendar error (${calendarId}):`, err);
       }
     }
-    const eventsCollection = adminDb.collection(`users/${uid}/calendarEvents`);
-    const localSnapshot = await eventsCollection.get();
+const eventsCollection = adminDb.collection(`users/${uid}/calendarEvents`);
+const localSnapshot = await eventsCollection.get();
 
-    const byGoogleEventId = new Map<
-      string,
-      { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
-    >();
+const byGoogleEventId = new Map<
+  string,
+  { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
+>();
 
-    for (const doc of localSnapshot.docs) {
-      const data = (doc.data() || {}) as Record<string, unknown>;
-      const googleEventId = typeof data.googleEventId === "string" ? data.googleEventId : null;
-      const docCalendarId = typeof data.calendarId === "string" ? data.calendarId : "primary";
-      if (!googleEventId) continue;
+const batch = adminDb.batch();
+let created = 0;
+let updated = 0;
+let skipped = 0;
+let deleted = 0;
 
-      const mapKey = `${docCalendarId}/${googleEventId}`;
-      byGoogleEventId.set(mapKey, {
-        id: doc.id,
-        updatedAt: toEpoch(data.updatedAt),
-        createdAt: toEpoch(data.createdAt),
-        ref: doc.ref,
-      });
-    }
+for (const doc of localSnapshot.docs) {
+  const data = (doc.data() || {}) as Record<string, unknown>;
+  const source = typeof data.source === "string" ? data.source : "";
+  const endAt = toEpoch(data.endAt);
 
-    const batch = adminDb.batch();
-    let created = 0;
-    let updated = 0;
-    let skipped = 0;
-    let deleted = 0;
+  if (source === "google" && endAt > 0 && endAt < syncNow) {
+    batch.delete(doc.ref);
+    deleted += 1;
+    continue;
+  }
+
+  const googleEventId = typeof data.googleEventId === "string" ? data.googleEventId : null;
+  const docCalendarId = typeof data.calendarId === "string" ? data.calendarId : "primary";
+  if (!googleEventId) continue;
+
+  const mapKey = `${docCalendarId}/${googleEventId}`;
+  byGoogleEventId.set(mapKey, {
+    id: doc.id,
+    updatedAt: toEpoch(data.updatedAt),
+    createdAt: toEpoch(data.createdAt),
+    ref: doc.ref,
+  });
+}
 
     for (const item of items) {
-      const now = Date.now();
+      const now = syncNow;
       const status = typeof item.status === "string" ? item.status : "confirmed";
       const mapped = mapGoogleEvent(item, now);
       const calendarId = (item as { __calendarId?: string }).__calendarId || "primary";
