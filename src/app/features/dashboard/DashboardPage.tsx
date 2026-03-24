@@ -109,6 +109,9 @@ function DashboardPageContent() {
     dashboardBackgroundId,
     customVideoBackgroundUrl
   );
+  const isCalendarWidgetActive = activeWidgets.includes("calendar");
+  const shouldManageCalendarConnection =
+    isCalendarVisible || isCalendarWidgetActive;
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -119,7 +122,7 @@ function DashboardPageContent() {
   }, []);
 
   useEffect(() => {
-    if (!isCalendarVisible) return;
+    if (!shouldManageCalendarConnection) return;
 
     let cancelled = false;
 
@@ -164,7 +167,7 @@ function DashboardPageContent() {
     return () => {
       cancelled = true;
     };
-  }, [isCalendarVisible]);
+  }, [shouldManageCalendarConnection]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -214,7 +217,7 @@ function DashboardPageContent() {
   };
 
   useEffect(() => {
-    if (!isCalendarVisible) return;
+    if (!shouldManageCalendarConnection) return;
     if (calendarConnectionStatus !== "connected") return;
     if (calendarRefreshBusy) return;
 
@@ -225,7 +228,103 @@ function DashboardPageContent() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [isCalendarVisible, calendarConnectionStatus, calendarRefreshBusy]);
+  }, [
+    shouldManageCalendarConnection,
+    calendarConnectionStatus,
+    calendarRefreshBusy,
+  ]);
+
+  const handleConnectCalendar = async () => {
+    const user = auth.currentUser;
+    if (!user) {
+      window.alert("Please sign in before connecting Google Calendar.");
+      return;
+    }
+
+    setCalendarConnectionBusy(true);
+
+    try {
+      const idToken = await user.getIdToken();
+      const returnTo = window.location.href;
+
+      const response = await fetch("/api/google-calendar/connect-url", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${idToken}`,
+        },
+        body: JSON.stringify({ returnTo }),
+      });
+
+      if (!response.ok) {
+        window.alert("Failed to start Google Calendar OAuth.");
+        setCalendarConnectionBusy(false);
+        return;
+      }
+
+      const payload = (await response.json()) as { url?: string };
+
+      if (!payload.url) {
+        window.alert("OAuth URL missing from server response.");
+        setCalendarConnectionBusy(false);
+        return;
+      }
+
+      window.location.href = payload.url;
+    } catch {
+      window.alert("Failed to start Google Calendar OAuth.");
+      setCalendarConnectionBusy(false);
+    }
+  };
+
+  const handleDisconnectCalendar = async () => {
+    const user = auth.currentUser;
+
+    if (!user) {
+      setCalendarConnectionStatus("disconnected");
+      return;
+    }
+
+    setCalendarConnectionBusy(true);
+
+    try {
+      const idToken = await user.getIdToken();
+
+      const response = await fetch("/api/google-calendar/disconnect", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        window.alert("Failed to disconnect Google Calendar.");
+        return;
+      }
+
+      setCalendarConnectionStatus("disconnected");
+    } catch {
+      window.alert("Failed to disconnect Google Calendar.");
+    } finally {
+      setCalendarConnectionBusy(false);
+    }
+  };
+
+  const handleRefreshCalendar = async () => {
+    if (calendarConnectionStatus !== "connected") {
+      window.alert("Connect Google Calendar before refreshing.");
+      return;
+    }
+
+    const user = auth.currentUser;
+
+    if (!user) {
+      window.alert("Please sign in before refreshing Google Calendar.");
+      return;
+    }
+
+    await pullFromGoogleCalendar(true);
+  };
 
   const toggleChat = () => {
     setIsChatVisible((prev) => !prev);
@@ -325,6 +424,14 @@ function DashboardPageContent() {
           onLayoutChange={updateLayout}
           onCloseWidget={removeCustomButton}
           sidebarWidth={SIDEBAR_WIDTH}
+          calendarWidgetConfig={{
+            calendarConnectionStatus,
+            calendarConnectionBusy,
+            calendarRefreshBusy,
+            onConnectCalendar: handleConnectCalendar,
+            onDisconnectCalendar: handleDisconnectCalendar,
+            onRefreshCalendar: handleRefreshCalendar,
+          }}
         />
       </main>
 
@@ -362,95 +469,9 @@ function DashboardPageContent() {
           calendarRefreshBusy={calendarRefreshBusy}
           sizeMode={calendarSizeMode}
           onSizeModeChange={setCalendarSizeMode}
-          onConnectCalendar={async () => {
-            const user = auth.currentUser;
-            if (!user) {
-              window.alert("Please sign in before connecting Google Calendar.");
-              return;
-            }
-
-            setCalendarConnectionBusy(true);
-
-            try {
-              const idToken = await user.getIdToken();
-              const returnTo = window.location.href;
-
-              const response = await fetch("/api/google-calendar/connect-url", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${idToken}`,
-                },
-                body: JSON.stringify({ returnTo }),
-              });
-
-              if (!response.ok) {
-                window.alert("Failed to start Google Calendar OAuth.");
-                setCalendarConnectionBusy(false);
-                return;
-              }
-
-              const payload = (await response.json()) as { url?: string };
-
-              if (!payload.url) {
-                window.alert("OAuth URL missing from server response.");
-                setCalendarConnectionBusy(false);
-                return;
-              }
-
-              window.location.href = payload.url;
-            } catch {
-              window.alert("Failed to start Google Calendar OAuth.");
-              setCalendarConnectionBusy(false);
-            }
-          }}
-          onDisconnectCalendar={async () => {
-            const user = auth.currentUser;
-
-            if (!user) {
-              setCalendarConnectionStatus("disconnected");
-              return;
-            }
-
-            setCalendarConnectionBusy(true);
-
-            try {
-              const idToken = await user.getIdToken();
-
-              const response = await fetch("/api/google-calendar/disconnect", {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${idToken}`,
-                },
-              });
-
-              if (!response.ok) {
-                window.alert("Failed to disconnect Google Calendar.");
-                return;
-              }
-
-              setCalendarConnectionStatus("disconnected");
-            } catch {
-              window.alert("Failed to disconnect Google Calendar.");
-            } finally {
-              setCalendarConnectionBusy(false);
-            }
-          }}
-          onRefreshCalendar={async () => {
-            if (calendarConnectionStatus !== "connected") {
-              window.alert("Connect Google Calendar before refreshing.");
-              return;
-            }
-
-            const user = auth.currentUser;
-
-            if (!user) {
-              window.alert("Please sign in before refreshing Google Calendar.");
-              return;
-            }
-
-            await pullFromGoogleCalendar(true);
-          }}
+          onConnectCalendar={handleConnectCalendar}
+          onDisconnectCalendar={handleDisconnectCalendar}
+          onRefreshCalendar={handleRefreshCalendar}
         />
       )}
     </div>

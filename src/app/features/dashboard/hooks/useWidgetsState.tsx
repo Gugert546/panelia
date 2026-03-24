@@ -48,6 +48,7 @@ type WidgetLayoutDocument = {
 // Available widgets for the dashboard
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke" },
+  { id: "calendar", label: "Kalender" },
   { id: "google_search", label: "Søk" },
   { id: "news", label: "Nyheter" },
   { id: "weather", label: "Vær" },

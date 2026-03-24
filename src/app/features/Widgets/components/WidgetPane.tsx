@@ -38,8 +38,8 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
           {title}
         </h3>
       )}
-
-      <div style={{ flex: 1 }}>
+        //endret for å fikse scroll problem i kalender widget
+      <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {children}
       </div>
     </div>
