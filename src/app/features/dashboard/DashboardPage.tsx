@@ -321,9 +321,6 @@ function DashboardPageContent() {
     await pullFromGoogleCalendar(true);
   };
 
-  const toggleChat = () => {
-    setIsChatVisible((prev) => !prev);
-  };
 
   const handleSidebarNavigation = (itemKey: string) => {
     if (itemKey === "calendar") {
@@ -430,18 +427,7 @@ function DashboardPageContent() {
         />
       </main>
 
-      <button
-        onClick={toggleChat}
-        style={{
-          position: "fixed",
-          bottom: 20,
-          right: 20,
-          padding: "10px 20px",
-          borderRadius: "50px",
-        }}
-      >
-        {isChatVisible ? "Close Chat" : "Open Chat"}
-      </button>
+
 
       {isChatVisible && (
         <div
