@@ -20,8 +20,8 @@ export function useBookmark() {
 
   // Subscribe to real-time updates when user changes
   useEffect(() => {
-    console.log("Current user:", user); // Add this line
-    console.log("User UID:", user?.uid); // Add this line
+    // console.log("Current user:", user); // test for å se om user er null eller undefined
+    // console.log("User UID:", user?.uid); // test for å se om user.uid er tilgjengelig
     
     if (!user?.uid) {
       setCategories([]);

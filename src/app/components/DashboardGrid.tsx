@@ -8,6 +8,7 @@ type Props = {
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
   onCloseWidget: (widgetId: string) => void;
   sidebarWidth: number;
+  calendarWidgetConfig?: Record<string, unknown>;
 };
 
 function getWidgetType(widgetId: string) {
@@ -21,7 +22,8 @@ export default function DashboardGrid({
   layouts,
   onLayoutChange,
   onCloseWidget,
-  sidebarWidth
+  sidebarWidth,
+  calendarWidgetConfig
 }: Props) {
 
   const handleLayoutChange = (newLayout: Layout) => {
@@ -94,7 +96,7 @@ export default function DashboardGrid({
             }}
           >
             <Component
-              config={{}}
+              config={widgetType === "calendar" ? (calendarWidgetConfig ?? {}) : {}}
               onConfigChange={() => {}}
               widgetId={widgetId}
               onClose={() => onCloseWidget(widgetId)}

@@ -2,7 +2,9 @@ import type { FC } from "react";
 
 import ClockWidget from "../builtins/ClockWidget/ClockWidget";
 import NotesWidget from "../builtins/NotesWidget/NotesWidgetUI";
-import CalendarWidget from "../builtins/CalendarWidget/CalendarWidget";
+import CalendarWidget, {
+  type CalendarWidgetProps,
+} from "../builtins/CalendarWidget/CalendarWidget";
 import SearchWidgetUI from "../builtins/searchWidget/SearchWidgetUI";
 import WeatherWidget from "../builtins/WeatherWidget/WeatherWidgetUI";
 import NewsWidget from "../builtins/NewsWidget/NewsWidget";
@@ -44,7 +46,12 @@ const ClockWidgetAdapter: FC<WidgetComponentProps> = () => <ClockWidget />;
 const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId, onClose }) => (
   <NotesWidget widgetId={widgetId ?? ""} onClose={onClose} />
 );
-const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => <CalendarWidget />;
+const CalendarWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => (
+  <CalendarWidget
+    {...(config as Partial<CalendarWidgetProps>)}
+    variant="widget"
+  />
+);
 const SearchWidgetAdapter: FC<WidgetComponentProps> = () => <SearchWidgetUI />;
 const WeatherWidgetAdapter: FC<WidgetComponentProps> = () => <WeatherWidget />;
 const NewsWidgetAdapter: FC<WidgetComponentProps> = () => <NewsWidget />;

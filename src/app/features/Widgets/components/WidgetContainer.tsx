@@ -11,6 +11,7 @@ export default function WidgetContainer({ children }: Props) {
         padding: 5,
         boxSizing: "border-box",
         display: "flex",
+        minHeight: 0,
         overflow: "hidden"
       }}
     >
