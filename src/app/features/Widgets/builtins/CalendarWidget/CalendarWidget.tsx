@@ -3,6 +3,8 @@ import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useCalendarLogic } from "./calendarLogic";
 import EventEditModal from "./EventEditModal";
+import CalendarSelector from "./CalendarSelector";
+import { useGoogleCalendars } from "./useGoogleCalendars"; // or ./useGoogleCalendars if you renamed
 import { useFontSize } from "../../../../providers/themeProviders";
 
 export type CalendarWidgetSizeMode = "small" | "medium" | "large" | "xlarge";
@@ -69,6 +71,7 @@ const SIZE_CONFIG: Record<
 
 const WEEK_WHEEL_THRESHOLD = 30;
 const GRID_COLUMN_TIME_WIDTH = 56;
+const MAX_VISIBLE_EVENTS_PER_CELL = 2;
 
 function slotHour(slot: string) {
   return Number(slot.split(":")[0]);
@@ -123,7 +126,7 @@ export default function CalendarWidget({
   calendarConnectionBusy = false,
   calendarRefreshBusy = false,
   sizeMode = "xlarge",
-  onSizeModeChange,
+  onSizeModeChange: _onSizeModeChange,
   variant = "popup",
 }: CalendarWidgetProps) {
   const isPopup = variant === "popup";
@@ -147,6 +150,14 @@ export default function CalendarWidget({
 
     window.alert("Google Calendar connect will be enabled in the next step.");
   };
+    const {
+    calendars,
+    selectedCalendarIds,
+    loading: calendarsLoading,
+    saving: calendarsSaving,
+    toggleCalendar,
+    saveSelection,
+  } = useGoogleCalendars(calendarConnectionStatus === "connected");
 
   const handleRefreshCalendar = () => {
     if (
@@ -189,7 +200,7 @@ export default function CalendarWidget({
     saveEditModal,
     deleteEditModal,
     getCellRenderState,
-  } = useCalendarLogic();
+  } = useCalendarLogic(selectedCalendarIds);
 
   const displayWeekDays = useMemo(
     () => weekDays.slice(0, config.dayCount),
@@ -315,23 +326,23 @@ export default function CalendarWidget({
 
         {displayWeekDays.map((_, dayIdx) => {
           const cellKey = `${dayIdx}-${time}`;
-          const { primaryEvent, isStart, isEnd, isContinuation } =
-            getCellRenderState(dayIdx, time);
+          const { items, hiddenCount } = getCellRenderState(
+            dayIdx,
+            time,
+            MAX_VISIBLE_EVENTS_PER_CELL
+          );
+          const hasEvents = items.length > 0;
 
           return (
             <div
               key={`${timeIdx}-${dayIdx}`}
               style={{
-                backgroundColor: primaryEvent
-                  ? "rgba(59,130,246,0.14)"
+                backgroundColor: hasEvents
+                  ? "rgba(59,130,246,0.08)"
                   : "rgba(255,255,255,0.92)",
-                borderLeft: primaryEvent
-                  ? "3px solid rgba(59,130,246,0.45)"
+                borderLeft: hasEvents
+                  ? "3px solid rgba(59,130,246,0.35)"
                   : "3px solid transparent",
-                borderTopLeftRadius: isStart ? "8px" : "0px",
-                borderTopRightRadius: isStart ? "8px" : "0px",
-                borderBottomLeftRadius: isEnd ? "8px" : "0px",
-                borderBottomRightRadius: isEnd ? "8px" : "0px",
                 minHeight: `${config.cellHeight}px`,
                 padding: "4px",
                 cursor:
@@ -351,52 +362,63 @@ export default function CalendarWidget({
                 e.currentTarget.style.backgroundColor = "rgba(224, 242, 254, 1)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = primaryEvent
-                  ? "rgba(59,130,246,0.14)"
+                e.currentTarget.style.backgroundColor = hasEvents
+                  ? "rgba(59,130,246,0.08)"
                   : "rgba(255,255,255,0.92)";
               }}
               onClick={() => {
                 void handleCellClick(dayIdx, time);
               }}
             >
-              {primaryEvent && isStart && (
+              {items.map((item) => {
+                const laneTone = Math.max(0.16, 0.28 - item.lane * 0.04);
+
+                return (
+                  <div
+                    key={item.event.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(item.event);
+                    }}
+                    style={{
+                      fontSize: item.isStart ? fontSize : fontSize - 2,
+                      lineHeight: 1.15,
+                      padding: item.isContinuation ? "1px 4px" : "2px 5px",
+                      borderRadius: item.isStart
+                        ? "6px 6px 4px 4px"
+                        : item.isEnd
+                          ? "4px 4px 6px 6px"
+                          : "3px",
+                      background: `rgba(59,130,246,${laneTone})`,
+                      borderLeft: "2px solid rgba(59,130,246,0.6)",
+                      color: "rgba(15,23,42,0.95)",
+                      whiteSpace: "nowrap",
+                      textOverflow: "ellipsis",
+                      overflow: "hidden",
+                      cursor: "pointer",
+                    }}
+                    title={item.event.title || "Untitled event"}
+                  >
+                    {item.isStart ? item.event.title || "Untitled" : "…"}
+                  </div>
+                );
+              })}
+
+              {hiddenCount > 0 && (
                 <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    openEditModal(primaryEvent);
-                  }}
                   style={{
-                    fontSize,
-                    lineHeight: 1.2,
+                    alignSelf: "flex-start",
+                    fontSize: "10px",
+                    fontWeight: 600,
+                    lineHeight: 1,
                     padding: "2px 5px",
-                    borderRadius: "5px",
-                    background: "rgba(59,130,246,0.28)",
-                    color: "rgba(15,23,42,0.95)",
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
+                    borderRadius: "9999px",
+                    background: "rgba(15,23,42,0.1)",
+                    color: "rgba(15,23,42,0.9)",
                   }}
-                  title={primaryEvent.title}
+                  title={`${hiddenCount} more events in this slot`}
                 >
-                  {primaryEvent.title}
-                </div>
-              )}
-              {primaryEvent && isContinuation && (
-                <div
-                  style={{
-                    fontSize: fontSize - 2,
-                    lineHeight: 1.2,
-                    padding: "2px 4px",
-                    borderRadius: "4px",
-                    background: "rgba(59,130,246,0.25)",
-                    color: "rgba(15,23,42,0.95)",
-                    whiteSpace: "nowrap",
-                    textOverflow: "ellipsis",
-                    overflow: "hidden",
-                  }}
-                  title="Continuation of event"
-                >
-                  ...
+                  +{hiddenCount}
                 </div>
               )}
             </div>
@@ -466,9 +488,10 @@ export default function CalendarWidget({
               →
             </button>
           </div>
+          
 
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {isPopup && (
+            {/*{isPopup && (
               <select
                 value={sizeMode}
                 onChange={(e) =>
@@ -491,8 +514,18 @@ export default function CalendarWidget({
                 <option value="large">Large</option>
                 <option value="xlarge">XLarge</option>
               </select>
+            )}*/}
+            {isPopup && calendarConnectionStatus === "connected" && (
+              <CalendarSelector
+                calendars={calendars}
+                selectedCalendarIds={selectedCalendarIds}
+                loading={calendarsLoading}
+                saving={calendarsSaving}
+                onToggle={toggleCalendar}
+                onSave={saveSelection}
+              />
             )}
-
+            
             <button
               onClick={handleRefreshCalendar}
               style={{
@@ -524,7 +557,7 @@ export default function CalendarWidget({
             >
               {refreshButtonLabel}
             </button>
-
+            
             <button
               onClick={handleConnectCalendar}
               style={{

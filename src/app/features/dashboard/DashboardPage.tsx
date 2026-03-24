@@ -231,7 +231,6 @@ function DashboardPageContent() {
   }, [
     shouldManageCalendarConnection,
     calendarConnectionStatus,
-    calendarRefreshBusy,
   ]);
 
   const handleConnectCalendar = async () => {

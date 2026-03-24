@@ -10,7 +10,6 @@ README.md
 
 # JS/TS source files (build outputs instead)
 src/
-server/
 
 # Node modules
 npm-debug.log*

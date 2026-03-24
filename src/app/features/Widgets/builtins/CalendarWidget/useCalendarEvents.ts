@@ -17,6 +17,7 @@ type CreateEventInput = {
   endAt: string;
   allDay?: boolean;
   timezone?: string;
+  calendarId?: string;
 };
 
 type SyncResponse = {
@@ -92,7 +93,7 @@ async function callCalendarSyncWithRetry(path: string, body: Record<string, unkn
   return withRetry(() => callCalendarSync(path, body));
 }
 
-export function useCalendarEvents() {
+export function useCalendarEvents(selectedCalendarIds: string[] = ["primary"]) {
   const { user } = useAuth();
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -114,11 +115,16 @@ export function useCalendarEvents() {
 
     return () => unsubscribe();
   }, [user?.uid]);
+  
 
   const createCalendarEvent = useCallback(
     async (input: CreateEventInput) => {
       if (!user?.uid) throw new Error("Not authenticated");
 
+      const targetCalendarId =
+        input.calendarId?.trim() ||
+        selectedCalendarIds[0] ||
+        "primary";
       const now = Date.now();
       const id =
         typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -138,12 +144,15 @@ export function useCalendarEvents() {
         syncStatus: "pending",
         createdAt: now,
         updatedAt: now,
+        calendarId: targetCalendarId,
       };
 
       await createEvent(user.uid, event);
+      
 
       try {
-        const sync = await callCalendarSyncWithRetry("/api/google-calendar/sync/create", { event });
+        
+        const sync = await callCalendarSyncWithRetry("/api/google-calendar/sync/create", { event, calendarId: targetCalendarId });
         await updateEvent(
           user.uid,
           id,
@@ -159,13 +168,13 @@ export function useCalendarEvents() {
 
       return event.id;
     },
-    [user?.uid]
+    [selectedCalendarIds,user?.uid]
   );
 
   const updateCalendarEvent = useCallback(
     async (eventId: string, patch: Partial<CalendarEvent>) => {
       if (!user?.uid) throw new Error("Not authenticated");
-
+      
       const existingEvent = events.find((event) => event.id === eventId);
       if (!existingEvent) {
         throw new Error(`Event not found: ${eventId}`);
@@ -188,19 +197,24 @@ export function useCalendarEvents() {
         ...existingEvent,
         ...patch,
       };
-
+            const targetCalendarId =
+        (typeof patch.calendarId === "string" && patch.calendarId.trim()) ||
+        existingEvent.calendarId ||
+        selectedCalendarIds[0] ||
+        "primary";
       try {
         if (existingEvent.googleEventId) {
           await callCalendarSyncWithRetry("/api/google-calendar/sync/update", {
             googleEventId: existingEvent.googleEventId,
             event: mergedEvent,
+            calendarId:targetCalendarId
           });
 
           await updateEvent(user.uid, eventId, { syncStatus: "synced" }, { markPending: false });
           return;
         }
 
-        const sync = await callCalendarSyncWithRetry("/api/google-calendar/sync/create", { event: mergedEvent });
+        const sync = await callCalendarSyncWithRetry("/api/google-calendar/sync/create", { event: mergedEvent,calendarId: targetCalendarId, });
         await updateEvent(
           user.uid,
           eventId,
@@ -214,7 +228,7 @@ export function useCalendarEvents() {
         await updateEvent(user.uid, eventId, { syncStatus: "failed" }, { markPending: false });
       }
     },
-    [events, user?.uid]
+    [events,selectedCalendarIds, user?.uid]
   );
 
   const deleteCalendarEvent = useCallback(
@@ -222,11 +236,15 @@ export function useCalendarEvents() {
       if (!user?.uid) throw new Error("Not authenticated");
 
       const existingEvent = events.find((event) => event.id === eventId);
-
+        const targetCalendarId =
+        existingEvent?.calendarId ||
+        selectedCalendarIds[0] ||
+        "primary";
       if (existingEvent?.googleEventId) {
         try {
           await callCalendarSyncWithRetry("/api/google-calendar/sync/delete", {
             googleEventId: existingEvent.googleEventId,
+            calendarId: targetCalendarId,
           });
         } catch {
           await updateEvent(user.uid, eventId, { syncStatus: "failed" }, { markPending: false });
@@ -245,7 +263,7 @@ export function useCalendarEvents() {
         throw err;
       }
     },
-    [events, user?.uid]
+    [events,selectedCalendarIds ,user?.uid]
   );
 
   return {
