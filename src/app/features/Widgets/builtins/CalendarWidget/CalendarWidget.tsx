@@ -778,6 +778,8 @@ export default function CalendarWidget({
                   gap: "1px",
                   backgroundColor: "rgba(255,255,255,0.32)",
                   padding: "1px",
+                  position: "relative",
+                  zIndex: 1,
                 }}
               >
                 {renderWeekHeader()}
@@ -790,7 +792,7 @@ export default function CalendarWidget({
                   left: 0,
                   right: 0,
                   transform: "translateY(-1px)",
-                  zIndex: 5,
+                  zIndex: 20,
                   pointerEvents: "auto",
                 }}
               >
@@ -804,7 +806,6 @@ export default function CalendarWidget({
                   gap: "1px",
                   backgroundColor: "rgba(255,255,255,0.32)",
                   padding: "1px",
-                  paddingTop: `${STICKY_ROW_MIN_HEIGHT + 4}px`,
                 }}
               >
                 {renderTimeRows()}
@@ -842,9 +843,12 @@ export default function CalendarWidget({
             >
               <div
                 style={{
-                  position: "sticky",
+                  position: "absolute",
                   top: 0,
-                  zIndex: 6,
+                  left: 0,
+                  right: 0,
+                  zIndex: 20,
+                  pointerEvents: "auto",
                 }}
               >
                 {renderStickyLabels()}
@@ -857,7 +861,8 @@ export default function CalendarWidget({
                   gap: "1px",
                   backgroundColor: "rgba(255,255,255,0.32)",
                   padding: "1px",
-                  paddingTop: `${STICKY_ROW_MIN_HEIGHT + 4}px`,
+                  position: "relative",
+                  zIndex: 1,
                   borderBottomLeftRadius: "12px",
                   borderBottomRightRadius: "12px",
                   overflow: "hidden",
