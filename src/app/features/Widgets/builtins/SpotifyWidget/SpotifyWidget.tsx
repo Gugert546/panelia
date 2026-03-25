@@ -31,7 +31,13 @@ export default function SpotifyWidget() {
   }
 
   if (!player) {
-    return <SpotifyIdleView fontSize={fontSize} />;
+    return (
+      <SpotifyIdleView
+        fontSize={fontSize}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode((previous) => !previous)}
+      />
+    );
   }
 
   return (
