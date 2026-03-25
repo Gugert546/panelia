@@ -459,7 +459,7 @@ export default function CalendarWidget({
                 openEditModal(label.event);
               }}
               style={{
-                fontSize: "10px",
+                fontSize: `${fontSize}px`,
                 lineHeight: 1.15,
                 padding: "1px 4px",
                 borderRadius: "4px",
@@ -516,10 +516,16 @@ export default function CalendarWidget({
               key={`${timeIdx}-${dayIdx}`}
               style={{
                 backgroundColor: hasEvents
-                  ? "rgba(59,130,246,0.08)"
+                  ? hexToRgba(
+                      calendarColorById.get(items[0].event.calendarId || "primary") || "#3b82f6",
+                      0.08
+                    )
                   : "rgba(255,255,255,0.92)",
                 borderLeft: hasEvents
-                  ? "3px solid rgba(59,130,246,0.35)"
+                  ? `3px solid ${hexToRgba(
+                      calendarColorById.get(items[0].event.calendarId || "primary") || "#3b82f6",
+                      0.35
+                    )}`
                   : "3px solid transparent",
                 minHeight: `${CALENDAR_CELL_HEIGHT}px`,
                 padding: "4px",
@@ -541,7 +547,10 @@ export default function CalendarWidget({
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = hasEvents
-                  ? "rgba(59,130,246,0.08)"
+                  ? hexToRgba(
+                      calendarColorById.get(items[0].event.calendarId || "primary") || "#3b82f6",
+                      0.08
+                    )
                   : "rgba(255,255,255,0.92)";
               }}
               onClick={() => {
@@ -815,13 +824,15 @@ export default function CalendarWidget({
                 style={{
                   position: "sticky",
                   top: popupHeaderHeight - 1,
-                  left: 0,
-                  right: 0,
+                  height: 0,
+                  overflow: "visible",
                   zIndex: 20,
-                  pointerEvents: "auto",
+                  pointerEvents: "none",
                 }}
               >
-                {renderStickyLabels()}
+                <div style={{ pointerEvents: "auto" }}>
+                  {renderStickyLabels()}
+                </div>
               </div>
 
               <div
@@ -870,13 +881,15 @@ export default function CalendarWidget({
                 style={{
                   position: "sticky",
                   top: 0,
-                  left: 0,
-                  right: 0,
+                  height: 0,
+                  overflow: "visible",
                   zIndex: 20,
-                  pointerEvents: "auto",
+                  pointerEvents: "none",
                 }}
               >
-                {renderStickyLabels()}
+                <div style={{ pointerEvents: "auto" }}>
+                  {renderStickyLabels()}
+                </div>
               </div>
 
               <div
