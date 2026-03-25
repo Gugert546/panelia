@@ -14,10 +14,10 @@ type NavItem = {
 };
 
 const items: NavItem[] = [
-  { key: "edit", label: "Rediger", icon: "⚙️" },
-  { key: "calendar", label: "Calendar", icon: "📅" },
+  { key: "edit", label: "Rediger", icon: "settings" },
+  { key: "calendar", label: "Calendar", icon: "calendar_month" },
   //{ key: "music", label: "Music", icon: "🎵" },
-  { key: "chat", label: "Chat", icon: "💬" },
+  { key: "chat", label: "Chat", icon: "chat_bubble" },
 ];
 
 export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
@@ -43,6 +43,7 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
       {items.map((item) => (
         <button
           key={item.key}
+          aria-label={item.label}
           onClick={() => {
             setActive(item.key);
 
@@ -58,7 +59,6 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 28,
             background: active === item.key 
               ? "rgba(255,255,255,0.3)" 
               : "rgba(255,255,255,0.15)",
@@ -71,7 +71,9 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
             transition: "all 0.2s ease",
           }}
         >
-          {item.icon}
+          <span className="material-symbols-rounded sidebar-icon" aria-hidden="true">
+            {item.icon}
+          </span>
         </button>
       ))}
     </aside>

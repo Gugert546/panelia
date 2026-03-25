@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import AddCustomButtonModal from "./AddCustomButtonModal";
 import type {
   CustomButtonConfig,
+  DashboardPreset,
   DashboardBackgroundId,
   WidgetSizeMode,
 } from "../features/dashboard/hooks/useWidgetsState";
 import { useFontSize } from '../providers/themeProviders';
 import { useLanguage } from '../providers/languageProvider';
+import { uploadBackgroundMedia, validateFileSize } from "../../lib/firebase/storage";
+import { useAuth } from "../features/auth/useAuth";
 import sol1 from "../../assets/panelia-bg/Sol 1.png";
 import sol2 from "../../assets/panelia-bg/Sol 2.png";
 import sol3 from "../../assets/panelia-bg/Sol 3.png";
@@ -38,6 +41,10 @@ type EditPanelProps = {
   dashboardBackgroundId: DashboardBackgroundId;
   setDashboardBackgroundId: (backgroundId: DashboardBackgroundId) => void;
   setCustomVideoBackgroundUrl: (url: string) => void;
+  dashboardPresets: DashboardPreset[];
+  saveCurrentAsPreset: (name?: string) => string;
+  applyDashboardPreset: (presetId: string) => boolean;
+  deleteDashboardPreset: (presetId: string) => void;
 };
 
 const BACKGROUND_OPTIONS: Array<{
@@ -95,44 +102,58 @@ export default function EditPanel({
   dashboardBackgroundId,
   setDashboardBackgroundId,
   setCustomVideoBackgroundUrl,
+  dashboardPresets,
+  saveCurrentAsPreset,
+  applyDashboardPreset,
+  deleteDashboardPreset,
 }: EditPanelProps) {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"widgets" | "background">("widgets");
+  const [presetName, setPresetName] = useState("");
   const customVideoInputRef = useRef<HTMLInputElement | null>(null);
-  const customVideoObjectUrlRef = useRef<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadVideoError, setUploadVideoError] = useState("");
   const { setFontSizeMode } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
+  const { user } = useAuth();
 
   useEffect(() => {
     setModalOpen(false);
     setViewMode("widgets");
   }, [open]);
 
-  useEffect(() => {
-    return () => {
-      if (customVideoObjectUrlRef.current) {
-        URL.revokeObjectURL(customVideoObjectUrlRef.current);
-      }
-    };
-  }, []);
-
-  const handleCustomVideoUpload = (
+  const handleCustomVideoUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (customVideoObjectUrlRef.current) {
-      URL.revokeObjectURL(customVideoObjectUrlRef.current);
-      customVideoObjectUrlRef.current = null;
+    if (!user) {
+      setUploadVideoError(t('editPanel.uploadNotSignedIn') || "Please sign in first");
+      return;
     }
 
-    const objectUrl = URL.createObjectURL(file);
-    customVideoObjectUrlRef.current = objectUrl;
-    setCustomVideoBackgroundUrl(objectUrl);
-    setDashboardBackgroundId("videoCustom");
+    const validation = validateFileSize(file);
+    if (!validation.valid) {
+      setUploadVideoError(t('editPanel.fileTooLarge') || validation.error || "File is too large");
+      event.target.value = "";
+      return;
+    }
 
-    event.target.value = "";
+    setUploadingVideo(true);
+    setUploadVideoError("");
+
+    try {
+      const downloadUrl = await uploadBackgroundMedia(file, "video");
+      setCustomVideoBackgroundUrl(downloadUrl);
+      setDashboardBackgroundId("videoCustom");
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Upload failed";
+      setUploadVideoError(errorMsg);
+    } finally {
+      setUploadingVideo(false);
+      event.target.value = "";
+    }
   };
 
   const handleResetWidgetStyle = () => {
@@ -141,6 +162,15 @@ export default function EditPanel({
     setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
     setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
     setFontSizeMode("medium");
+  };
+
+  const handleSavePreset = () => {
+    saveCurrentAsPreset(presetName);
+    setPresetName("");
+  };
+
+  const handleApplyPreset = (presetId: string) => {
+    applyDashboardPreset(presetId);
   };
 
   return (
@@ -297,6 +327,115 @@ export default function EditPanel({
               width: "90%",
             }}
           >  
+        <div style={{ marginTop: 1 }}>
+          <h3>{t('editPanel.customPresets')}</h3>
+
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              alignItems: "center",
+              marginBottom: 10,
+            }}
+          >
+            <input
+              value={presetName}
+              onChange={(event) => setPresetName(event.target.value)}
+              placeholder={t('editPanel.presetNamePlaceholder')}
+              style={{
+                flex: 1,
+                minWidth: 0,
+                padding: "8px 10px",
+                borderRadius: 8,
+                border: "1px solid #ddd",
+                background: "#fff",
+              }}
+            />
+
+            <button
+              onClick={handleSavePreset}
+              style={{
+                padding: "8px 10px",
+                borderRadius: 8,
+                border: "1px solid #ddd",
+                background: "#f3f3f3",
+                cursor: "pointer",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {t('editPanel.savePreset')}
+            </button>
+          </div>
+
+          {dashboardPresets.length === 0 && (
+            <div
+              style={{
+                fontSize: 13,
+                color: "#4b5563",
+                background: "#f7f7f7",
+                border: "1px dashed #d1d5db",
+                borderRadius: 8,
+                padding: "8px 10px",
+                marginBottom: 12,
+              }}
+            >
+              {t('editPanel.noPresets')}
+            </div>
+          )}
+
+          {dashboardPresets.map((preset) => (
+            <div
+              key={preset.id}
+              style={{
+                border: "1px solid #ddd",
+                borderRadius: 10,
+                background: "#f7f7f7",
+                padding: 10,
+                marginBottom: 8,
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                {preset.name}
+              </div>
+              <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
+                {new Date(preset.createdAt).toLocaleString()}
+              </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => handleApplyPreset(preset.id)}
+                  style={{
+                    flex: 1,
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: "1px solid #bcd5f7",
+                    background: "#eaf4ff",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  {t('editPanel.applyPreset')}
+                </button>
+
+                <button
+                  onClick={() => deleteDashboardPreset(preset.id)}
+                  style={{
+                    padding: "8px 10px",
+                    borderRadius: 8,
+                    border: "1px solid #e5b4b4",
+                    background: "#fff1f1",
+                    cursor: "pointer",
+                    fontWeight: 600,
+                  }}
+                >
+                  {t('editPanel.deletePreset')}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
         <div style={{ marginTop: 1}}>
         <h3>{t('editPanel.fontSize')}</h3>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -467,20 +606,50 @@ export default function EditPanel({
             />
 
             <button
-              onClick={() => customVideoInputRef.current?.click()}
+              onClick={() => !uploadingVideo && customVideoInputRef.current?.click()}
+              disabled={uploadingVideo}
               style={{
                 width: "100%",
                 padding: "10px 12px",
                 borderRadius: 10,
-                border: "1px solid #ddd",
-                background: "#f3f3f3",
-                cursor: "pointer",
+                border: uploadVideoError ? "1px solid #d97706" : "1px solid #ddd",
+                background: uploadVideoError ? "#fef3c7" : "#f3f3f3",
+                cursor: uploadingVideo ? "not-allowed" : "pointer",
                 textAlign: "left",
                 fontWeight: 600,
+                opacity: uploadingVideo ? 0.6 : 1,
               }}
             >
-              {t('editPanel.uploadCustomVideo')}
+              {uploadingVideo ? t('editPanel.uploading') : t('editPanel.uploadCustomVideo')}
             </button>
+
+            {uploadVideoError && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "#92400e",
+                  background: "#fef3c7",
+                  border: "1px solid #d97706",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                }}
+              >
+                {uploadVideoError}
+              </div>
+            )}
+
+            <div
+              style={{
+                fontSize: 12,
+                color: "#4b5563",
+                background: "#f7f7f7",
+                border: "1px dashed #d1d5db",
+                borderRadius: 8,
+                padding: "8px 10px",
+              }}
+            >
+              {t('editPanel.customVideoSyncNote')}
+            </div>
 
             {BACKGROUND_OPTIONS.map((option) => {
               const selected = dashboardBackgroundId === option.id;

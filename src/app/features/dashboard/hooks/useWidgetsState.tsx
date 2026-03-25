@@ -32,6 +32,21 @@ export type DashboardBackgroundId =
   | "natt3"
   | "videoCustom";
 
+export type DashboardPreset = {
+  id: string;
+  name: string;
+  activeWidgets: string[];
+  layouts: Record<string, LayoutItem>;
+  customButtonConfigs: Record<string, CustomButtonConfig>;
+  widgetSurfaceColor: string;
+  widgetBorderColor: string;
+  widgetBorderWidth: number;
+  widgetSizeMode: WidgetSizeMode;
+  dashboardBackgroundId: DashboardBackgroundId;
+  customVideoBackgroundUrl: string;
+  createdAt: number;
+};
+
 type WidgetLayoutDocument = {
   activeWidgets?: string[];
   layouts?: Record<string, LayoutItem>;
@@ -42,6 +57,7 @@ type WidgetLayoutDocument = {
   widgetSizeMode?: WidgetSizeMode;
   dashboardBackgroundId?: DashboardBackgroundId;
   customVideoBackgroundUrl?: string;
+  dashboardPresets?: DashboardPreset[];
   updatedAt?: unknown;
 };
 
@@ -75,6 +91,150 @@ function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId
     value === "natt3" ||
     value === "videoCustom"
   );
+}
+
+function createDashboardPresetId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `preset:${crypto.randomUUID()}`;
+  }
+  return `preset:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function normalizeLayouts(value: unknown): Record<string, LayoutItem> {
+  if (!value || typeof value !== "object") return {};
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const next: Record<string, LayoutItem> = {};
+
+  for (const [id, rawLayout] of entries) {
+    if (!rawLayout || typeof rawLayout !== "object") continue;
+
+    const layout = rawLayout as Record<string, unknown>;
+    const x = Number(layout.x);
+    const y = Number(layout.y);
+    const w = Number(layout.w);
+    const h = Number(layout.h);
+
+    if (
+      Number.isFinite(x) &&
+      Number.isFinite(y) &&
+      Number.isFinite(w) &&
+      Number.isFinite(h)
+    ) {
+      next[migrateLegacyCustomButtonId(id)] = { x, y, w, h };
+    }
+  }
+
+  return next;
+}
+
+function normalizeCustomButtonConfigs(value: unknown): Record<string, CustomButtonConfig> {
+  if (!value || typeof value !== "object") return {};
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const next: Record<string, CustomButtonConfig> = {};
+
+  for (const [id, rawConfig] of entries) {
+    if (!rawConfig || typeof rawConfig !== "object") continue;
+
+    const config = rawConfig as Record<string, unknown>;
+    if (
+      typeof config.label === "string" &&
+      typeof config.url === "string" &&
+      typeof config.favicon === "string"
+    ) {
+      next[migrateLegacyCustomButtonId(id)] = {
+        label: config.label,
+        url: config.url,
+        favicon: config.favicon,
+      };
+    }
+  }
+
+  return next;
+}
+
+function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
+  if (!Array.isArray(value)) return [];
+
+  const presets: DashboardPreset[] = [];
+
+  for (let index = 0; index < value.length; index += 1) {
+    const rawPreset = value[index];
+    if (!rawPreset || typeof rawPreset !== "object") continue;
+
+    const preset = rawPreset as Record<string, unknown>;
+    const name = typeof preset.name === "string" && preset.name.trim()
+      ? preset.name.trim()
+      : `Preset ${index + 1}`;
+
+    const activeWidgets = Array.isArray(preset.activeWidgets)
+      ? preset.activeWidgets
+        .filter((widgetId): widgetId is string => typeof widgetId === "string")
+        .map(migrateLegacyCustomButtonId)
+      : [];
+
+    const widgetBorderWidth =
+      typeof preset.widgetBorderWidth === "number" && Number.isFinite(preset.widgetBorderWidth)
+        ? Math.min(12, Math.max(0, Math.round(preset.widgetBorderWidth)))
+        : DEFAULT_WIDGET_BORDER_WIDTH;
+
+    presets.push({
+      id:
+        typeof preset.id === "string" && preset.id
+          ? preset.id
+          : createDashboardPresetId(),
+      name,
+      activeWidgets,
+      layouts: normalizeLayouts(preset.layouts),
+      customButtonConfigs: normalizeCustomButtonConfigs(preset.customButtonConfigs),
+      widgetSurfaceColor:
+        typeof preset.widgetSurfaceColor === "string" && preset.widgetSurfaceColor
+          ? preset.widgetSurfaceColor
+          : DEFAULT_WIDGET_SURFACE_COLOR,
+      widgetBorderColor:
+        typeof preset.widgetBorderColor === "string" && preset.widgetBorderColor
+          ? preset.widgetBorderColor
+          : DEFAULT_WIDGET_BORDER_COLOR,
+      widgetBorderWidth,
+      widgetSizeMode:
+        preset.widgetSizeMode === "small" ||
+        preset.widgetSizeMode === "medium" ||
+        preset.widgetSizeMode === "large"
+          ? preset.widgetSizeMode
+          : DEFAULT_WIDGET_SIZE_MODE,
+      dashboardBackgroundId: isDashboardBackgroundId(preset.dashboardBackgroundId)
+        ? preset.dashboardBackgroundId
+        : DEFAULT_DASHBOARD_BACKGROUND_ID,
+      customVideoBackgroundUrl:
+        typeof preset.customVideoBackgroundUrl === "string"
+          ? preset.customVideoBackgroundUrl
+          : "",
+      createdAt:
+        typeof preset.createdAt === "number" && Number.isFinite(preset.createdAt)
+          ? preset.createdAt
+          : Date.now(),
+    });
+  }
+
+  return presets;
+}
+
+function normalizePersistedVideoUrl(url: string) {
+  if (url.startsWith("blob:")) {
+    return "";
+  }
+
+  return url;
+}
+
+function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
+  return {
+    ...preset,
+    customVideoBackgroundUrl: normalizePersistedVideoUrl(
+      preset.customVideoBackgroundUrl
+    ),
+  };
 }
 
 // Default layouts for new widgets (aligned with WidgetRegistry defaultGrid sizes)
@@ -131,6 +291,7 @@ export function useWidgetsState() {
   const [dashboardBackgroundId, setDashboardBackgroundId] =
     useState<DashboardBackgroundId>(DEFAULT_DASHBOARD_BACKGROUND_ID);
   const [customVideoBackgroundUrl, setCustomVideoBackgroundUrl] = useState("");
+  const [dashboardPresets, setDashboardPresets] = useState<DashboardPreset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const hasLoadedRef = useRef(false);
@@ -147,6 +308,7 @@ export function useWidgetsState() {
       setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
       setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
       setCustomVideoBackgroundUrl("");
+      setDashboardPresets([]);
       setIsLoading(false);
       hasLoadedRef.current = false;
       return;
@@ -166,6 +328,7 @@ export function useWidgetsState() {
         setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
         setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
         setCustomVideoBackgroundUrl("");
+        setDashboardPresets([]);
         hasLoadedRef.current = true;
         return;
       }
@@ -211,9 +374,10 @@ export function useWidgetsState() {
       );
       setCustomVideoBackgroundUrl(
         typeof data.customVideoBackgroundUrl === "string"
-          ? data.customVideoBackgroundUrl
+          ? normalizePersistedVideoUrl(data.customVideoBackgroundUrl)
           : ""
       );
+      setDashboardPresets(normalizeDashboardPresets(data.dashboardPresets));
       hasLoadedRef.current = true;
     } catch (error) {
       console.error("Failed to load widget layout:", error);
@@ -242,7 +406,10 @@ export function useWidgetsState() {
           widgetBorderWidth,
           widgetSizeMode,
           dashboardBackgroundId,
-          customVideoBackgroundUrl,
+          customVideoBackgroundUrl: normalizePersistedVideoUrl(
+            customVideoBackgroundUrl
+          ),
+          dashboardPresets: dashboardPresets.map(sanitizePresetForPersistence),
           updatedAt: serverTimestamp(),
         });
       } catch (error) {
@@ -262,8 +429,91 @@ export function useWidgetsState() {
     widgetSizeMode,
     dashboardBackgroundId,
     customVideoBackgroundUrl,
+    dashboardPresets,
     isLoading,
   ]);
+
+  const persistPresetsImmediately = useCallback(
+    async (nextPresets: DashboardPreset[]) => {
+      if (!user || isLoading || !hasLoadedRef.current) return;
+
+      try {
+        const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
+        await setDoc(
+          docRef,
+          {
+            dashboardPresets: nextPresets.map(sanitizePresetForPersistence),
+            updatedAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } catch (error) {
+        console.error("Failed to save dashboard presets:", error);
+      }
+    },
+    [isLoading, user]
+  );
+
+  const saveCurrentAsPreset = useCallback((name?: string) => {
+    const trimmedName = name?.trim() ?? "";
+
+    const newPreset: DashboardPreset = {
+      id: createDashboardPresetId(),
+      name: trimmedName || `Preset ${dashboardPresets.length + 1}`,
+      activeWidgets: [...activeWidgets],
+      layouts: { ...layouts },
+      customButtonConfigs: { ...customButtonConfigs },
+      widgetSurfaceColor,
+      widgetBorderColor,
+      widgetBorderWidth,
+      widgetSizeMode,
+      dashboardBackgroundId,
+      customVideoBackgroundUrl: normalizePersistedVideoUrl(customVideoBackgroundUrl),
+      createdAt: Date.now(),
+    };
+
+    const nextPresets = [newPreset, ...dashboardPresets].slice(0, 30);
+    setDashboardPresets(nextPresets);
+    void persistPresetsImmediately(nextPresets);
+
+    return newPreset.id;
+  }, [
+    activeWidgets,
+    customButtonConfigs,
+    customVideoBackgroundUrl,
+    dashboardBackgroundId,
+    dashboardPresets.length,
+    dashboardPresets,
+    layouts,
+    persistPresetsImmediately,
+    widgetBorderColor,
+    widgetBorderWidth,
+    widgetSizeMode,
+    widgetSurfaceColor,
+  ]);
+
+  const applyDashboardPreset = useCallback((presetId: string) => {
+    const preset = dashboardPresets.find((item) => item.id === presetId);
+    if (!preset) return false;
+
+    setActiveWidgets([...preset.activeWidgets]);
+    setLayouts({ ...preset.layouts });
+    setCustomButtonConfigs({ ...preset.customButtonConfigs });
+    setWidgetSurfaceColor(preset.widgetSurfaceColor);
+    setWidgetBorderColor(preset.widgetBorderColor);
+    setWidgetBorderWidth(preset.widgetBorderWidth);
+    setWidgetSizeMode(preset.widgetSizeMode);
+    setDashboardBackgroundId(preset.dashboardBackgroundId);
+    setCustomVideoBackgroundUrl(preset.customVideoBackgroundUrl);
+
+    return true;
+  }, [dashboardPresets]);
+
+  const deleteDashboardPreset = useCallback((presetId: string) => {
+    const nextPresets = dashboardPresets.filter((preset) => preset.id !== presetId);
+    setDashboardPresets(nextPresets);
+    void persistPresetsImmediately(nextPresets);
+  }, [dashboardPresets, persistPresetsImmediately]);
 
   // Toggle a widget on/off
   const toggleWidget = useCallback((id: string) => {
@@ -320,6 +570,7 @@ export function useWidgetsState() {
     widgetSizeMode,
     dashboardBackgroundId,
     customVideoBackgroundUrl,
+    dashboardPresets,
     isLoading,
     toggleWidget,
     updateLayout,
@@ -331,5 +582,8 @@ export function useWidgetsState() {
     setWidgetSizeMode,
     setDashboardBackgroundId,
     setCustomVideoBackgroundUrl,
+    saveCurrentAsPreset,
+    applyDashboardPreset,
+    deleteDashboardPreset,
   };
 }

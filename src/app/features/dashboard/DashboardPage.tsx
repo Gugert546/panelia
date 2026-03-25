@@ -82,6 +82,7 @@ function DashboardPageContent() {
     widgetSizeMode,
     dashboardBackgroundId,
     customVideoBackgroundUrl,
+    dashboardPresets,
     updateLayout,
     toggleWidget,
     removeCustomButton,
@@ -91,6 +92,9 @@ function DashboardPageContent() {
     setWidgetSizeMode,
     setDashboardBackgroundId,
     setCustomVideoBackgroundUrl,
+    saveCurrentAsPreset,
+    applyDashboardPreset,
+    deleteDashboardPreset,
   } = useWidgets();
 
   const translatedAvailableWidgets = AVAILABLE_WIDGETS.map(widget => ({
@@ -400,6 +404,10 @@ function DashboardPageContent() {
         dashboardBackgroundId={dashboardBackgroundId}
         setDashboardBackgroundId={setDashboardBackgroundId}
         setCustomVideoBackgroundUrl={setCustomVideoBackgroundUrl}
+        dashboardPresets={dashboardPresets}
+        saveCurrentAsPreset={saveCurrentAsPreset}
+        applyDashboardPreset={applyDashboardPreset}
+        deleteDashboardPreset={deleteDashboardPreset}
       />
 
       <main
