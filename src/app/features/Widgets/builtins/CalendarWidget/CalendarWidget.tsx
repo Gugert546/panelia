@@ -691,9 +691,9 @@ export default function CalendarWidget({
             </button>
           </div>
           
-
+          {/* sub-kalender velger*/}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {isPopup && calendarConnectionStatus === "connected" && (
+            {calendarConnectionStatus === "connected" && (
               <CalendarSelector
                 calendars={calendars}
                 selectedCalendarIds={selectedCalendarIds}
