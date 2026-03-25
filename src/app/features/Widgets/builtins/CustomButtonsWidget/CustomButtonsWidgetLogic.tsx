@@ -1,17 +1,9 @@
 import { useState } from "react";
 import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
-
-function normalizeUrl(url: string) {
-  const trimmed = url.trim();
-
-  if (!trimmed) return "";
-
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
-
-  return `https://${trimmed}`;
-}
+import {
+  getPreferredFavicon,
+  normalizeUrl,
+} from "../../../../../lib/utils/favicon";
 
 export function useCustomButtonsWidget() {
   const [label, setLabel] = useState("");
@@ -34,7 +26,9 @@ export function useCustomButtonsWidget() {
 
       if (res.ok) {
         const data = (await res.json()) as { favicon?: string };
-        favicon = data.favicon || "";
+        favicon = getPreferredFavicon(normalizedUrl, data.favicon);
+      } else {
+        favicon = getPreferredFavicon(normalizedUrl);
       }
 
       addCustomButton({
@@ -51,7 +45,7 @@ export function useCustomButtonsWidget() {
       addCustomButton({
         label: trimmedLabel,
         url: normalizedUrl,
-        favicon: "",
+        favicon: getPreferredFavicon(normalizedUrl),
       });
 
       setLabel("");

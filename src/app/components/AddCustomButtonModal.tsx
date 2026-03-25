@@ -2,18 +2,10 @@ import { useState } from "react";
 import { useWidgets } from "../features/dashboard/hooks/WidgetsContext";
 import type { CustomButtonConfig } from "../features/dashboard/hooks/useWidgetsState";
 import { useLanguage } from "../providers/languageProvider";
-
-function normalizeUrl(url: string) {
-  const trimmed = url.trim();
-
-  if (!trimmed) return "";
-
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
-    return trimmed;
-  }
-
-  return `https://${trimmed}`;
-}
+import {
+  getPreferredFavicon,
+  normalizeUrl,
+} from "../../lib/utils/favicon";
 
 type AddCustomButtonModalProps = {
   open: boolean;
@@ -47,7 +39,9 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
 
       if (res.ok) {
         const data = (await res.json()) as { favicon?: string };
-        favicon = data.favicon || "";
+        favicon = getPreferredFavicon(normalizedUrl, data.favicon);
+      } else {
+        favicon = getPreferredFavicon(normalizedUrl);
       }
 
       addCustomButton({
@@ -61,6 +55,16 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
       onClose(); // Lukk modalen når knapp er lagt til
     } catch (err) {
       console.error(t('addCustomButtonModal.fetchPreviewError'), err);
+
+      addCustomButton({
+        label: trimmedLabel,
+        url: normalizedUrl,
+        favicon: getPreferredFavicon(normalizedUrl),
+      });
+
+      setLabel("");
+      setUrl("");
+      onClose();
     } finally {
       setLoading(false);
     }

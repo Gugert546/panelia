@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 //import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
 
 type Props = {
@@ -17,6 +18,17 @@ export default function CustomButtonItemWidget({
   //const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
+  const faviconCandidates = useMemo(
+    () => getFaviconCandidates(url, favicon),
+    [url, favicon]
+  );
+  const [faviconIndex, setFaviconIndex] = useState(0);
+
+  useEffect(() => {
+    setFaviconIndex(0);
+  }, [faviconCandidates.length, url, favicon]);
+
+  const currentFavicon = faviconCandidates[faviconIndex] ?? "";
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(false);
@@ -64,10 +76,18 @@ export default function CustomButtonItemWidget({
             e.currentTarget.style.opacity = "1";
           }}
         >
-          {favicon ? (
+          {currentFavicon ? (
             <img
-              src={favicon}
+              src={currentFavicon}
               alt=""
+              onError={() => {
+                setFaviconIndex((prev) => {
+                  if (prev >= faviconCandidates.length - 1) {
+                    return prev;
+                  }
+                  return prev + 1;
+                });
+              }}
               style={{
                 width: 20,
                 height: 20,
@@ -75,7 +95,25 @@ export default function CustomButtonItemWidget({
                 flexShrink: 0,
               }}
             />
-          ) : null}
+          ) : (
+            <span
+              aria-hidden="true"
+              style={{
+                width: 20,
+                height: 20,
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                borderRadius: 999,
+                background: "rgba(0,0,0,0.08)",
+                fontSize: 12,
+                fontWeight: 700,
+                flexShrink: 0,
+              }}
+            >
+              {label.slice(0, 1).toUpperCase()}
+            </span>
+          )}
 
           <span
             style={{
