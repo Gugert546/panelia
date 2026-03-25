@@ -141,6 +141,8 @@ export default function CalendarWidget({
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerWheelDeltaRef = useRef(0);
   const [topVisibleTime, setTopVisibleTime] = useState<string | null>(null);
+  const popupHeaderRef = useRef<HTMLDivElement | null>(null);
+  const [popupHeaderHeight, setPopupHeaderHeight] = useState(0);
 
   const handleConnectCalendar = () => {
     if (calendarConnectionBusy) return;
@@ -255,6 +257,21 @@ export default function CalendarWidget({
     setTopVisibleTime((prev) => (prev === active ? prev : active));
   }, []);
 
+    useLayoutEffect(() => {
+    if (!isPopup || !popupHeaderRef.current) return;
+  
+    const updateHeaderHeight = () => {
+      setPopupHeaderHeight(popupHeaderRef.current?.offsetHeight ?? 0);
+    };
+  
+    updateHeaderHeight();
+  
+    const observer = new ResizeObserver(updateHeaderHeight);
+    observer.observe(popupHeaderRef.current);
+  
+    return () => observer.disconnect();
+  }, [isPopup, rangeLabel]);
+
   useLayoutEffect(() => {
     if (isPopup || !initialVisibleSlot || !scrollContainerRef.current) {
       requestAnimationFrame(updateTopVisibleTime);
@@ -326,36 +343,43 @@ export default function CalendarWidget({
 
   const gridTemplateColumns = `${GRID_COLUMN_TIME_WIDTH}px repeat(${displayWeekDays.length}, minmax(0, 1fr))`;
 
-  const stickyReferenceTime = topVisibleTime ?? displayTimeSlots[0] ?? null;
-
+    const stickyReferenceTime = topVisibleTime ?? displayTimeSlots[0] ?? null;
+  
   const stickyLabelsByDay = useMemo(() => {
     return displayWeekDays.map((_, dayIdx) => {
       if (!stickyReferenceTime) return [];
-
+  
       const { items, hiddenCount } = getCellRenderState(
         dayIdx,
         stickyReferenceTime,
         STICKY_LABEL_EVENT_LIMIT
       );
-
-      const labels: StickyDayLabel[] = items
+  
+      const continuingItems = items.filter((item) => item.isContinuation);
+  
+      const labels: StickyDayLabel[] = continuingItems
         .slice(0, STICKY_LABEL_RENDER_LIMIT)
         .map((item) => ({
-        key: item.event.id,
-        title: item.event.title || "Untitled",
-        timeRange: formatEventTimeRange(item.event.startAt, item.event.endAt),
-        event: item.event,
-      }));
-
-      if (hiddenCount > 0) {
+          key: item.event.id,
+          title: item.event.title || "Untitled",
+          timeRange: formatEventTimeRange(item.event.startAt, item.event.endAt),
+          event: item.event,
+        }));
+  
+      const continuingHiddenCount = Math.max(
+        0,
+        continuingItems.length - STICKY_LABEL_RENDER_LIMIT
+      );
+  
+      if (continuingHiddenCount > 0 || hiddenCount > 0) {
         labels.push({
           key: `overflow-${dayIdx}`,
-          title: `+${hiddenCount} more`,
+          title: `+${continuingHiddenCount + hiddenCount} more`,
           timeRange: "",
           event: null,
         });
       }
-
+  
       return labels;
     });
   }, [displayWeekDays, stickyReferenceTime, getCellRenderState]);
@@ -772,14 +796,16 @@ export default function CalendarWidget({
               }}
             >
               <div
+                ref={popupHeaderRef}
                 style={{
                   display: "grid",
                   gridTemplateColumns,
                   gap: "1px",
                   backgroundColor: "rgba(255,255,255,0.32)",
                   padding: "1px",
-                  position: "relative",
-                  zIndex: 1,
+                  position: "sticky",
+                  top: 0,
+                  zIndex: 30,
                 }}
               >
                 {renderWeekHeader()}
@@ -787,11 +813,10 @@ export default function CalendarWidget({
 
               <div
                 style={{
-                  position: "absolute",
-                  top: "100%",
+                  position: "sticky",
+                  top: popupHeaderHeight - 1,
                   left: 0,
                   right: 0,
-                  transform: "translateY(-1px)",
                   zIndex: 20,
                   pointerEvents: "auto",
                 }}
@@ -843,7 +868,7 @@ export default function CalendarWidget({
             >
               <div
                 style={{
-                  position: "absolute",
+                  position: "sticky",
                   top: 0,
                   left: 0,
                   right: 0,
