@@ -7,6 +7,8 @@ import CalendarSelector from "./CalendarSelector";
 import { useGoogleCalendars } from "./useGoogleCalendars"; // or ./useGoogleCalendars if you renamed
 import type { CalendarEvent } from "../../../../../types/firestore";
 import { useFontSize } from "../../../../providers/themeProviders";
+import { useLanguage } from "../../../../providers/languageProvider";
+
 
 export type CalendarWidgetVariant = "popup" | "widget";
 
@@ -39,6 +41,8 @@ const GRID_COLUMN_TIME_WIDTH = 56;
 const STICKY_LABEL_EVENT_LIMIT = 6;
 const STICKY_LABEL_RENDER_LIMIT = 3;
 const STICKY_ROW_MIN_HEIGHT = 26;
+
+
 
 function slotHour(slot: string) {
   return Number(slot.split(":")[0]);
@@ -159,7 +163,7 @@ export default function CalendarWidget({
 
     window.alert("Google Calendar connect will be enabled in the next step.");
   };
-
+  const { t } = useLanguage();
   const {
     calendars,
     selectedCalendarIds,
@@ -180,18 +184,24 @@ export default function CalendarWidget({
 
     onRefreshCalendar?.();
   };
+  const checking = t("widgets.calendarWidget.checking")
+  const connected = t("widgets.calendarWidget.connected")
+  const connectCalendar = t("widgets.calendarWidget.connectCalendar")
 
   const connectButtonLabel = calendarConnectionBusy
     ? "Working..."
     : calendarConnectionStatus === "loading"
-      ? "Checking..."
+      ? checking
       : calendarConnectionStatus === "connected"
-        ? "Connected"
-        : "Connect Calendar";
+        ? connected
+        : connectCalendar;
+
+  const refreshing = t("widgets.calendarWidget.refreshing")
+  const refreshFromGoogle = t("widgets.calendarWidget.refreshFromGoogle")
 
   const refreshButtonLabel = calendarRefreshBusy
-    ? "Refreshing..."
-    : "Refresh from Google";
+    ? refreshing
+    : refreshFromGoogle;
 
   const {
     weekDays,
@@ -395,7 +405,7 @@ export default function CalendarWidget({
           textAlign: "center",
         }}
       >
-        Time
+        {t("widgets.calendarWidget.time")}
       </div>
 
       {displayWeekDays.map((date, idx) => {

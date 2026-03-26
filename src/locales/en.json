@@ -97,6 +97,15 @@
     "notesWidget": {
       "closeNote": "Close note",
       "placeholder": "Write notes here..."
+    },
+    "calendarWidget": {
+      "connected": "Connected",
+      "connectCalendar": "Connect Calendar",
+      "checking": "Checking...",
+      "refreshing": "Refreshing...",
+      "refreshFromGoogle": "Refresh from Google",
+      "time": "Time"
+
     }
   }
 }
