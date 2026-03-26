@@ -70,7 +70,9 @@
       "noBookmarks": "No bookmarks in this category",
       "addBookmark": "Add bookmark",
       "to": "to",
-      "delete": "Delete"
+      "delete": "Delete",
+      "Categori": "Category",
+      "deleteCategory": "Delete category"
     },
     "newsWidget": {
       "title": "World News",

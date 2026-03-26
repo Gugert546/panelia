@@ -70,7 +70,9 @@
       "noBookmarks": "Ingen bokmerker i denne kategorien",
       "addBookmark": "Legg til bokmerke",
       "to": "til",
-      "delete": "Slett"
+      "delete": "Slett",
+      "Categori": "Kategori",
+      "deleteCategory": "Slett kategori"
     },
     "newsWidget": {
       "title": "Verdensnyheter",
