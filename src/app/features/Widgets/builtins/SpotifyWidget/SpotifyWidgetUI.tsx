@@ -25,7 +25,7 @@ export function SpotifyConnectView({ onConnect }: ConnectViewProps) {
           <img
             src={spotifyLogo}
             alt="Spotify"
-            width="50%"
+            width="40%"
             style={{ objectFit: "contain", display: "block" }}
           />
           <button
@@ -52,33 +52,84 @@ export function SpotifyConnectView({ onConnect }: ConnectViewProps) {
 
 type IdleViewProps = {
   fontSize: number;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
 };
 
-export function SpotifyIdleView({ fontSize }: IdleViewProps) {
+export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: IdleViewProps) {
+  const paneContentStyle = isDarkMode
+    ? {
+      width: "calc(100% + 40px)",
+      height: "calc(100% + 40px)",
+      margin: -20,
+      padding: 20,
+      boxSizing: "border-box" as const,
+      background: "#121212",
+      borderRadius: 20,
+      color: "#FFFFFF"
+    }
+    : {
+      width: "100%",
+      height: "100%"
+    };
+
+  const darkModeSwitchStyle = {
+    width: 38,
+    height: 20,
+    borderRadius: 999,
+    border: "none",
+    padding: 2,
+    cursor: "pointer",
+    background: isDarkMode ? "#1DB954" : "#A0A0A0",
+    display: "flex",
+    justifyContent: isDarkMode ? "flex-end" : "flex-start",
+    alignItems: "center"
+  };
+
   return (
     <WidgetContainer>
       <WidgetPane title="">
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 10,
-            width: "100%",
-            minHeight: 180,
-            textAlign: "center"
-          }}
-        >
-          <img
-            src={spotifyLogo}
-            alt="Spotify"
-            width={75}
-            height={75}
-            style={{ objectFit: "contain" }}
-          />
-          <div style={{ fontSize, opacity: 0.8 }}>
-            Start playing Spotify on a device
+        <div style={paneContentStyle}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 10,
+              width: "100%",
+              minHeight: 180,
+              textAlign: "center"
+            }}
+          >
+            <img
+              src={spotifyLogo}
+              alt="Spotify"
+              width="50%"
+              style={{ objectFit: "contain", display: "block" }}
+            />
+            <div style={{ fontSize, opacity: 0.8 }}>
+              Start playing Spotify on a device
+            </div>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-start", marginTop: 8 }}>
+            <button
+              onClick={onToggleDarkMode}
+              style={darkModeSwitchStyle}
+              aria-label={isDarkMode ? "Disable dark mode" : "Enable dark mode"}
+              title={isDarkMode ? "Dark mode on" : "Dark mode off"}
+            >
+              <span
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: "#FFFFFF",
+                  display: "block"
+                }}
+              />
+            </button>
           </div>
         </div>
       </WidgetPane>
@@ -126,8 +177,23 @@ export function SpotifyPlayingView({
   const duration = track.duration_ms;
 
   const panelStyle = isDarkMode
-    ? { background: "#121212", color: "#FFFFFF", borderRadius: 10, padding: 12 }
-    : { background: "transparent", color: "inherit", borderRadius: 10, padding: 0 };
+    ? { color: "#FFFFFF" }
+    : { color: "inherit" };
+
+  const paneContentStyle = isDarkMode
+    ? {
+      width: "calc(100% + 40px)",
+      height: "calc(100% + 40px)",
+      margin: -20,
+      padding: 20,
+      boxSizing: "border-box" as const,
+      background: "#121212",
+      borderRadius: 20
+    }
+    : {
+      width: "100%",
+      height: "100%"
+    };
 
   const controlButtonStyle = isDarkMode
     ? {
@@ -145,9 +211,6 @@ export function SpotifyPlayingView({
     };
 
   const darkModeSwitchStyle = {
-    position: "absolute" as const,
-    left: 8,
-    bottom: 8,
     width: 38,
     height: 20,
     borderRadius: 999,
@@ -162,16 +225,27 @@ export function SpotifyPlayingView({
 
   return (
     <WidgetContainer>
-      <WidgetPane title="Now Playing">
-        <div style={{ position: "relative", width: "100%" }}>
+      <WidgetPane title={isDarkMode ? "" : "Now Playing"}>
+        <div style={paneContentStyle}>
           {isMinimized ? (
-            <img
-              src={track.album.images[0]?.url}
-              width="100%"
-              style={{ borderRadius: 8, cursor: "pointer" }}
-              onClick={onExpandFromCover}
-              aria-label="Expand player"
-            />
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <img
+                src={track.album.images[0]?.url}
+                width="100%"
+                style={{ borderRadius: 8, cursor: "pointer" }}
+                onClick={onExpandFromCover}
+                aria-label="Expand player"
+              />
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={onExpandFromCover}
+                  style={controlButtonStyle}
+                  aria-label="Expand player"
+                >
+                  🗖
+                </button>
+              </div>
+            </div>
           ) : (
             <div
               style={{
@@ -186,10 +260,20 @@ export function SpotifyPlayingView({
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "flex-end",
+                  justifyContent: "space-between",
                   alignItems: "center"
                 }}
               >
+                <div
+                  style={{
+                    fontWeight: 500,
+                    letterSpacing: 0.4,
+                    opacity: isDarkMode ? 1 : 0,
+                    visibility: isDarkMode ? "visible" : "hidden"
+                  }}
+                >
+                  Now Playing
+                </div>
                 <button
                   onClick={onToggleMinimized}
                   style={controlButtonStyle}
@@ -268,22 +352,24 @@ export function SpotifyPlayingView({
             </div>
           )}
 
-          <button
-            onClick={onToggleDarkMode}
-            style={darkModeSwitchStyle}
-            aria-label={isDarkMode ? "Disable dark mode" : "Enable dark mode"}
-            title={isDarkMode ? "Dark mode on" : "Dark mode off"}
-          >
-            <span
-              style={{
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                background: "#FFFFFF",
-                display: "block"
-              }}
-            />
-          </button>
+          <div style={{ display: "flex", justifyContent: "flex-start", marginTop: 8 }}>
+            <button
+              onClick={onToggleDarkMode}
+              style={darkModeSwitchStyle}
+              aria-label={isDarkMode ? "Disable dark mode" : "Enable dark mode"}
+              title={isDarkMode ? "Dark mode on" : "Dark mode off"}
+            >
+              <span
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  background: "#FFFFFF",
+                  display: "block"
+                }}
+              />
+            </button>
+          </div>
         </div>
       </WidgetPane>
     </WidgetContainer>
