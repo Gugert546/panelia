@@ -25,7 +25,7 @@ async function getPosition(): Promise<GeolocationPosition> {
     }
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: false,
-      timeout: 10_000,
+      timeout: 25_000,
     });
   });
 }
