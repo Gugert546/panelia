@@ -668,7 +668,8 @@ router.post("/sync/pull", async (req, res) => {
     console.log("[sync/pull] DEBUG - final calendarIds to fetch:", calendarIds);
 
      const syncNow = Date.now();
-  const syncNowIso = new Date(syncNow).toISOString();
+  const syncTwoWeeksBackIso = new Date(syncNow-14*24*60*1000).toISOString();
+  const syncTwoYearsAheadIso = new Date(syncNow + 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
 
   const items: Array<Record<string, unknown> & { __calendarId: string }> = [];
   const failedCalendarIds: string[] = [];
@@ -682,8 +683,8 @@ router.post("/sync/pull", async (req, res) => {
       );
       listUrl.searchParams.set("singleEvents", "true");
       listUrl.searchParams.set("orderBy", "startTime");
-      listUrl.searchParams.set("timeMin", syncNowIso);
-      listUrl.searchParams.set("timeMax", new Date(syncNow + 2 * 365 * 24 * 60 * 60 * 1000).toISOString());
+      listUrl.searchParams.set("timeMin", syncTwoWeeksBackIso); //henter kun events som er mindre en to uker gamle
+      listUrl.searchParams.set("timeMax", syncTwoYearsAheadIso); //henter kun events som er mindre enn to år frem i tid
       listUrl.searchParams.set("maxResults", String(maxResults));
 
       try {
