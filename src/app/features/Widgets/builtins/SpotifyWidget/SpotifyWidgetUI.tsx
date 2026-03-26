@@ -245,7 +245,7 @@ export function SpotifyPlayingView({
 
   return (
     <WidgetContainer>
-      <WidgetPane title={isDarkMode ? "" : "Now Playing"}>
+      <WidgetPane title={isDarkMode ? "" : t("widgets.spotifyWidget.nowPlaying")}>
         <div style={paneContentStyle}>
           {isMinimized ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
