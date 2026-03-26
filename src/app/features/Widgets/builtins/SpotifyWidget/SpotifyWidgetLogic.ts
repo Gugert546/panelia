@@ -32,7 +32,11 @@ function getStoredBool(key: string, defaultValue: boolean) {
   return value === "true";
 }
 
-export function useSpotifyWidgetLogic() {
+type SpotifyWidgetLogicOptions = {
+  noDeviceAlertText?: string;
+};
+
+export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
   const [token, setToken] = useState<string | null>(null);
   const [player, setPlayer] = useState<SpotifyPlayerState | null>(null);
   const [devices, setDevices] = useState<SpotifyDevice[]>([]);
@@ -136,7 +140,7 @@ export function useSpotifyWidgetLogic() {
     const device = getDevice();
 
     if (!device) {
-      alert("Open Spotify on a device first");
+      alert(options.noDeviceAlertText || "Open Spotify on a device first");
       return;
     }
 

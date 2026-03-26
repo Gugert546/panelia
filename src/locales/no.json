@@ -95,6 +95,18 @@
     "notesWidget": {
       "closeNote": "Lukk notat",
       "placeholder": "Skriv notater her..."
+    },
+    "spotifyWidget": {
+      "connect": "Koble til Spotify",
+      "startPlaying": "Start avspilling på en Spotify-enhet",
+      "nowPlaying": "Spilles nå",
+      "expandPlayer": "Utvid spiller",
+      "minimizePlayer": "Minimer spiller",
+      "enableDarkMode": "Aktiver mørk modus",
+      "disableDarkMode": "Deaktiver mørk modus",
+      "darkModeOn": "Mørk modus på",
+      "darkModeOff": "Mørk modus av",
+      "openSpotifyDeviceFirst": "Åpne Spotify på en enhet først"
     }
   }
 }

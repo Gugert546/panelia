@@ -1,4 +1,5 @@
 import { useFontSize } from "../../../../providers/themeProviders";
+import { useLanguage } from "../../../../providers/languageProvider";
 import { useSpotifyWidgetLogic } from "./SpotifyWidgetLogic";
 import {
   SpotifyConnectView,
@@ -8,6 +9,7 @@ import {
 
 export default function SpotifyWidget() {
   const { fontSize } = useFontSize();
+  const { t } = useLanguage();
   const {
     token,
     player,
@@ -24,7 +26,9 @@ export default function SpotifyWidget() {
     changeVolume,
     seek,
     changeDevice
-  } = useSpotifyWidgetLogic();
+  } = useSpotifyWidgetLogic({
+    noDeviceAlertText: t("widgets.spotifyWidget.openSpotifyDeviceFirst")
+  });
 
   if (!token) {
     return <SpotifyConnectView onConnect={connectSpotify} />;
