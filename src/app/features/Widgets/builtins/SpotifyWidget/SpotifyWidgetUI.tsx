@@ -1,6 +1,7 @@
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import spotifyLogo from "../../../../../assets/spotify-logo.png";
+import { useLanguage } from "../../../../providers/languageProvider";
 import type { SpotifyDevice, SpotifyPlayerState } from "./SpotifyWidgetLogic";
 
 type ConnectViewProps = {
@@ -8,6 +9,8 @@ type ConnectViewProps = {
 };
 
 export function SpotifyConnectView({ onConnect }: ConnectViewProps) {
+  const { t } = useLanguage();
+
   return (
     <WidgetContainer>
       <WidgetPane title="">
@@ -42,7 +45,7 @@ export function SpotifyConnectView({ onConnect }: ConnectViewProps) {
               fontWeight: 600
             }}
           >
-            Connect Spotify
+            {t("widgets.spotifyWidget.connect")}
           </button>
         </div>
       </WidgetPane>
@@ -57,18 +60,26 @@ type IdleViewProps = {
 };
 
 export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: IdleViewProps) {
+  const { t } = useLanguage();
+
   const paneContentStyle = isDarkMode
     ? {
       width: "calc(100% + 40px)",
       height: "calc(100% + 40px)",
       margin: -20,
       padding: 20,
+      display: "flex",
+      flexDirection: "column" as const,
+      minHeight: 0,
       boxSizing: "border-box" as const,
       background: "#121212",
       borderRadius: 20,
       color: "#FFFFFF"
     }
     : {
+      display: "flex",
+      flexDirection: "column" as const,
+      minHeight: 0,
       width: "100%",
       height: "100%"
     };
@@ -96,9 +107,10 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
+              flex: 1,
               gap: 10,
               width: "100%",
-              minHeight: 180,
+              minHeight: 0,
               textAlign: "center"
             }}
           >
@@ -109,16 +121,16 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
               style={{ objectFit: "contain", display: "block" }}
             />
             <div style={{ fontSize, opacity: 0.8 }}>
-              Start playing Spotify on a device
+              {t("widgets.spotifyWidget.startPlaying")}
             </div>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "flex-start", marginTop: 8 }}>
+          <div style={{ display: "flex", justifyContent: "flex-start", paddingTop: 8, flexShrink: 0 }}>
             <button
               onClick={onToggleDarkMode}
               style={darkModeSwitchStyle}
-              aria-label={isDarkMode ? "Disable dark mode" : "Enable dark mode"}
-              title={isDarkMode ? "Dark mode on" : "Dark mode off"}
+              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
             >
               <span
                 style={{
@@ -172,6 +184,8 @@ export function SpotifyPlayingView({
   onChangeVolume,
   onChangeDevice
 }: PlayingViewProps) {
+  const { t } = useLanguage();
+
   const track = player.item;
   const progress = player.progress_ms;
   const duration = track.duration_ms;
@@ -186,11 +200,17 @@ export function SpotifyPlayingView({
       height: "calc(100% + 40px)",
       margin: -20,
       padding: 20,
+      display: "flex",
+      flexDirection: "column" as const,
+      minHeight: 0,
       boxSizing: "border-box" as const,
       background: "#121212",
       borderRadius: 20
     }
     : {
+      display: "flex",
+      flexDirection: "column" as const,
+      minHeight: 0,
       width: "100%",
       height: "100%"
     };
@@ -225,7 +245,7 @@ export function SpotifyPlayingView({
 
   return (
     <WidgetContainer>
-      <WidgetPane title={isDarkMode ? "" : "Now Playing"}>
+      <WidgetPane title={isDarkMode ? "" : t("widgets.spotifyWidget.nowPlaying")}>
         <div style={paneContentStyle}>
           {isMinimized ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -251,9 +271,10 @@ export function SpotifyPlayingView({
               style={{
                 display: "flex",
                 flexDirection: "column",
+                flex: 1,
                 gap: 12,
                 width: "100%",
-                paddingBottom: 30,
+                minHeight: 0,
                 ...panelStyle
               }}
             >
@@ -272,12 +293,12 @@ export function SpotifyPlayingView({
                     visibility: isDarkMode ? "visible" : "hidden"
                   }}
                 >
-                  Now Playing
+                  {t("widgets.spotifyWidget.nowPlaying")}
                 </div>
                 <button
                   onClick={onToggleMinimized}
                   style={controlButtonStyle}
-                  aria-label={isMinimized ? "Expand player" : "Minimize player"}
+                  aria-label={isMinimized ? t("widgets.spotifyWidget.expandPlayer") : t("widgets.spotifyWidget.minimizePlayer")}
                 >
                   {isMinimized ? "🗖" : "🗕"}
                 </button>
@@ -352,12 +373,12 @@ export function SpotifyPlayingView({
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "flex-start", marginTop: 8 }}>
+          <div style={{ display: "flex", justifyContent: "flex-start", paddingTop: 8, flexShrink: 0 }}>
             <button
               onClick={onToggleDarkMode}
               style={darkModeSwitchStyle}
-              aria-label={isDarkMode ? "Disable dark mode" : "Enable dark mode"}
-              title={isDarkMode ? "Dark mode on" : "Dark mode off"}
+              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
             >
               <span
                 style={{

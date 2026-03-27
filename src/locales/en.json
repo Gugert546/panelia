@@ -98,6 +98,18 @@
       "closeNote": "Close note",
       "placeholder": "Write notes here..."
     },
+    "spotifyWidget": {
+      "connect": "Connect Spotify",
+      "startPlaying": "Start playing Spotify on a device",
+      "nowPlaying": "Now Playing",
+      "expandPlayer": "Expand player",
+      "minimizePlayer": "Minimize player",
+      "enableDarkMode": "Enable dark mode",
+      "disableDarkMode": "Disable dark mode",
+      "darkModeOn": "Dark mode on",
+      "darkModeOff": "Dark mode off",
+      "openSpotifyDeviceFirst": "Open Spotify on a device first"
+    },
     "calendarWidget": {
       "connected": "Connected",
       "connectCalendar": "Connect Calendar",

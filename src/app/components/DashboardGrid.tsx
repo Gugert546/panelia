@@ -55,6 +55,7 @@ export default function DashboardGrid({
       width={window.innerWidth - sidebarWidth}
       isDraggable
       isResizable
+      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true']"
       compactType={null}
       preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
       margin={[0, 0]}    
