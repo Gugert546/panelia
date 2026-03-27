@@ -70,7 +70,9 @@
       "noBookmarks": "Ingen bokmerker i denne kategorien",
       "addBookmark": "Legg til bokmerke",
       "to": "til",
-      "delete": "Slett"
+      "delete": "Slett",
+      "Categori": "Kategori",
+      "deleteCategory": "Slett kategori"
     },
     "newsWidget": {
       "title": "Verdensnyheter",
@@ -95,6 +97,14 @@
     "notesWidget": {
       "closeNote": "Lukk notat",
       "placeholder": "Skriv notater her..."
+    },
+    "calendarWidget": {
+      "connected": "Tilkoblet",
+      "connectCalendar": "Koble til kalender",
+      "checking": "Sjekker...",
+      "refreshing": "Oppdaterer...",
+      "refreshFromGoogle": "Oppdater fra Google",
+      "time": "Tid"
     }
   }
 }

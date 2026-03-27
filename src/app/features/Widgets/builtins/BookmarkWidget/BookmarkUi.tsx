@@ -6,6 +6,7 @@ import BookmarkForm from "./BookmarkForm";
 import CategoryForm from "./CategoryForm";
 import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 
 export default function BookmarkUi() {
   const {
@@ -48,6 +49,26 @@ export default function BookmarkUi() {
     setSelectedCategoryId(categories[nextIndex].id);
     setSelectedCategoryForBookmark(null);
   };
+
+    function BookmarkIcon({ url, favicon, title }: { url: string; favicon?: string; title: string }) {
+    const candidates = useMemo(() => getFaviconCandidates(url, favicon), [url, favicon]);
+    const [index, setIndex] = useState(0);
+    useEffect(() => setIndex(0), [url, favicon, candidates.length]);
+    const current = candidates[index] ?? "";
+  
+    if (current) {
+      return (
+        <img
+          src={current}
+          alt=""
+          onError={() => setIndex((prev) => Math.min(prev + 1, candidates.length - 1))}
+          style={{ width: 18, height: 18, objectFit: "contain" }}
+        />
+      );
+    }
+  
+    return <span>{title.slice(0, 1).toUpperCase()}</span>;
+  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -192,7 +213,7 @@ export default function BookmarkUi() {
                     fontWeight: 500,
                   }}
                 >
-                  <span style={{ opacity: 0.75 }}>Kategori:</span>
+                  <span style={{ opacity: 0.75 }}>{t("widgets.bookmarkWidget.Categori")}:</span>
                   <div
                     ref={categorySelectorRef}
                     style={{
@@ -358,7 +379,7 @@ export default function BookmarkUi() {
                               width: 28,
                               height: 28,
                               borderRadius: 7,
-                              border: "1px solid rgba(17,24,39,0.28)",
+                              //border: "1px solid rgba(17,24,39,0.28)",
                               display: "inline-flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -369,7 +390,7 @@ export default function BookmarkUi() {
                             }}
                             aria-label={bookmark.title}
                           >
-                            ↗
+                            <BookmarkIcon url={bookmark.url} favicon={bookmark.favicon} title={bookmark.title} />
                           </a>
 
                           <a
@@ -473,7 +494,7 @@ export default function BookmarkUi() {
               opacity: activeCategory ? 1 : 0.6,
             }}
           >
-            Delete category
+            {t("widgets.bookmarkWidget.deleteCategory")}
           </button>
         </div>
       </WidgetPane>

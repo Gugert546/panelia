@@ -33,6 +33,7 @@ export type Bookmark = {
   categoryId: string;
   title: string;
   url: string;
+  favicon?: string;
   createdAt: number;  // server epoch ms
   updatedAt: number;  // server epoch ms
 };
