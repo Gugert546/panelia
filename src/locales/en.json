@@ -72,7 +72,8 @@
       "to": "to",
       "delete": "Delete",
       "Categori": "Category",
-      "deleteCategory": "Delete category"
+      "deleteCategory": "Delete category",
+      "categoryHover": "Click to choose category, or hover and scroll"
     },
     "newsWidget": {
       "title": "World News",

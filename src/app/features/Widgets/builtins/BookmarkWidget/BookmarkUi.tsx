@@ -231,7 +231,7 @@ export default function BookmarkUi() {
                         if (event.deltaY > 0) changeCategoryByOffset(1);
                         if (event.deltaY < 0) changeCategoryByOffset(-1);
                       }}
-                      title={categories.length > 1 ? "Click to choose category, or hover and scroll" : "Category"}
+                      title={categories.length > 1 ? t("widgets.bookmarkWidget.categoryHover") : t("widgets.bookmarkWidget.categori")}
                       style={{
                         border: "none",
                         background: "transparent",

@@ -72,7 +72,8 @@
       "to": "til",
       "delete": "Slett",
       "Categori": "Kategori",
-      "deleteCategory": "Slett kategori"
+      "deleteCategory": "Slett kategori",
+      "categoryHover": "Klikk for å velge kategori, eller hold over og scroll"
     },
     "newsWidget": {
       "title": "Verdensnyheter",
