@@ -70,7 +70,9 @@
       "noBookmarks": "Ingen bokmerker i denne kategorien",
       "addBookmark": "Legg til bokmerke",
       "to": "til",
-      "delete": "Slett"
+      "delete": "Slett",
+      "Categori": "Kategori",
+      "deleteCategory": "Slett kategori"
     },
     "newsWidget": {
       "title": "Verdensnyheter",
@@ -107,6 +109,14 @@
       "darkModeOn": "Mørk modus på",
       "darkModeOff": "Mørk modus av",
       "openSpotifyDeviceFirst": "Åpne Spotify på en enhet først"
+    },
+    "calendarWidget": {
+      "connected": "Tilkoblet",
+      "connectCalendar": "Koble til kalender",
+      "checking": "Sjekker...",
+      "refreshing": "Oppdaterer...",
+      "refreshFromGoogle": "Oppdater fra Google",
+      "time": "Tid"
     }
   }
 }

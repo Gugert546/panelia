@@ -70,7 +70,9 @@
       "noBookmarks": "No bookmarks in this category",
       "addBookmark": "Add bookmark",
       "to": "to",
-      "delete": "Delete"
+      "delete": "Delete",
+      "Categori": "Category",
+      "deleteCategory": "Delete category"
     },
     "newsWidget": {
       "title": "World News",
@@ -107,6 +109,15 @@
       "darkModeOn": "Dark mode on",
       "darkModeOff": "Dark mode off",
       "openSpotifyDeviceFirst": "Open Spotify on a device first"
+    },
+    "calendarWidget": {
+      "connected": "Connected",
+      "connectCalendar": "Connect Calendar",
+      "checking": "Checking...",
+      "refreshing": "Refreshing...",
+      "refreshFromGoogle": "Refresh from Google",
+      "time": "Time"
+
     }
   }
 }

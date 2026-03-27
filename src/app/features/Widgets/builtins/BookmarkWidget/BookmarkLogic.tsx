@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../../auth/useAuth";
+import { getPreferredFavicon, normalizeUrl } from "../../../../../lib/utils/favicon";
 import {
   subscribeToCategories,
   subscribeToBookmarks,
@@ -84,24 +85,32 @@ export function useBookmark() {
       return;
     }
 
-    try {
-      const newBookmark: Bookmark = {
-        id: `bookmark_${Date.now()}`,
-        userId: user.uid,
-        categoryId,
-        title,
-        url,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      };
+  const normalizedUrl = normalizeUrl(url);
+  if (!normalizedUrl) return;
 
-      await createBookmark(user.uid, newBookmark);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to add bookmark";
-      setError(message);
-      console.error("Error adding bookmark:", err);
+  let favicon = getPreferredFavicon(normalizedUrl);
+
+  try {
+    const res = await fetch(`/api/link-preview?url=${encodeURIComponent(normalizedUrl)}`);
+    if (res.ok) {
+      const data = (await res.json()) as { favicon?: string };
+      favicon = getPreferredFavicon(normalizedUrl, data.favicon);
     }
+  } catch {}
+
+  const newBookmark: Bookmark = {
+    id: `bookmark_${Date.now()}`,
+    userId: user.uid,
+    categoryId,
+    title,
+    url: normalizedUrl,
+    favicon,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
+
+  await createBookmark(user.uid, newBookmark);
+};
 
   // Delete a bookmark
   const handleDeleteBookmark = async (bookmarkId: string) => {
