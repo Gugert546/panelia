@@ -73,7 +73,6 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
       minHeight: 0,
       boxSizing: "border-box" as const,
       background: "#121212",
-      borderRadius: 20,
       color: "#FFFFFF"
     }
     : {
@@ -204,8 +203,7 @@ export function SpotifyPlayingView({
       flexDirection: "column" as const,
       minHeight: 0,
       boxSizing: "border-box" as const,
-      background: "#121212",
-      borderRadius: 20
+      background: "#121212"
     }
     : {
       display: "flex",
