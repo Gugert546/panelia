@@ -17,6 +17,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         height: "100%",
         padding: 20,
         borderRadius: 20,
+        overflow: "hidden",
 
         background: widgetSurfaceColor,
         border: `${widgetBorderWidth}px solid ${widgetBorderColor}`,

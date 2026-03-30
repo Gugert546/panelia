@@ -73,7 +73,6 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
       minHeight: 0,
       boxSizing: "border-box" as const,
       background: "#121212",
-      borderRadius: 20,
       color: "#FFFFFF"
     }
     : {
@@ -204,8 +203,7 @@ export function SpotifyPlayingView({
       flexDirection: "column" as const,
       minHeight: 0,
       boxSizing: "border-box" as const,
-      background: "#121212",
-      borderRadius: 20
+      background: "#121212"
     }
     : {
       display: "flex",
@@ -245,7 +243,7 @@ export function SpotifyPlayingView({
 
   return (
     <WidgetContainer>
-      <WidgetPane title={isDarkMode ? "" : t("widgets.spotifyWidget.nowPlaying")}>
+      <WidgetPane title="">
         <div style={paneContentStyle}>
           {isMinimized ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -288,9 +286,7 @@ export function SpotifyPlayingView({
                 <div
                   style={{
                     fontWeight: 500,
-                    letterSpacing: 0.4,
-                    opacity: isDarkMode ? 1 : 0,
-                    visibility: isDarkMode ? "visible" : "hidden"
+                    letterSpacing: 0.4
                   }}
                 >
                   {t("widgets.spotifyWidget.nowPlaying")}

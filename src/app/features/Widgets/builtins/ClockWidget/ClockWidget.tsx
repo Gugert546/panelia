@@ -7,7 +7,6 @@ function pad(n: number) {
 }
 
 export default function ClockWidget() {
-
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {
@@ -24,17 +23,23 @@ export default function ClockWidget() {
       <WidgetPane title="">
         <div
           style={{
+            containerType: "inline-size",
             width: "100%",
             height: "100%",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            fontWeight: 700,
-            fontSize: 28,
-            fontVariantNumeric: "tabular-nums"
+            justifyContent: "center"
           }}
         >
-          {h}:{m}:{s}
+          <span
+            style={{
+              fontWeight: 700,
+              fontSize: "20cqw",
+              fontVariantNumeric: "tabular-nums"
+            }}
+          >
+            {h}:{m}:{s}
+          </span>
         </div>
       </WidgetPane>
     </WidgetContainer>
