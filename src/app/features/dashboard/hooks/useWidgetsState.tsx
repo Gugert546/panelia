@@ -40,6 +40,8 @@ export type DashboardPreset = {
   customButtonConfigs: Record<string, CustomButtonConfig>;
   widgetSurfaceColor: string;
   widgetBorderColor: string;
+  widgetTextColor: string;
+  widgetOpacity: number;
   widgetBorderWidth: number;
   widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
@@ -53,6 +55,8 @@ type WidgetLayoutDocument = {
   customButtonConfigs?: Record<string, CustomButtonConfig>;
   widgetSurfaceColor?: string;
   widgetBorderColor?: string;
+  widgetTextColor?: string;
+  widgetOpacity?: number;
   widgetBorderWidth?: number;
   widgetSizeMode?: WidgetSizeMode;
   dashboardBackgroundId?: DashboardBackgroundId;
@@ -77,6 +81,8 @@ export const AVAILABLE_WIDGETS = [
 const SAVE_DEBOUNCE_MS = 5000;
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
+const DEFAULT_WIDGET_TEXT_COLOR = "#ffffff";
+const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
 const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "sol1";
@@ -98,6 +104,14 @@ function createDashboardPresetId() {
     return `preset:${crypto.randomUUID()}`;
   }
   return `preset:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function createNotesWidgetId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return `notes:${crypto.randomUUID()}`;
+  }
+
+  return `notes:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 function normalizeLayouts(value: unknown): Record<string, LayoutItem> {
@@ -179,6 +193,11 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         ? Math.min(12, Math.max(0, Math.round(preset.widgetBorderWidth)))
         : DEFAULT_WIDGET_BORDER_WIDTH;
 
+    const widgetOpacity =
+      typeof preset.widgetOpacity === "number" && Number.isFinite(preset.widgetOpacity)
+        ? Math.min(1, Math.max(0.2, Number(preset.widgetOpacity.toFixed(2))))
+        : DEFAULT_WIDGET_OPACITY;
+
     presets.push({
       id:
         typeof preset.id === "string" && preset.id
@@ -196,6 +215,11 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         typeof preset.widgetBorderColor === "string" && preset.widgetBorderColor
           ? preset.widgetBorderColor
           : DEFAULT_WIDGET_BORDER_COLOR,
+      widgetTextColor:
+        typeof preset.widgetTextColor === "string" && preset.widgetTextColor
+          ? preset.widgetTextColor
+          : DEFAULT_WIDGET_TEXT_COLOR,
+      widgetOpacity,
       widgetBorderWidth,
       widgetSizeMode:
         preset.widgetSizeMode === "small" ||
@@ -282,6 +306,12 @@ export function useWidgetsState() {
   const [widgetBorderColor, setWidgetBorderColor] = useState(
     DEFAULT_WIDGET_BORDER_COLOR
   );
+  const [widgetTextColor, setWidgetTextColor] = useState(
+    DEFAULT_WIDGET_TEXT_COLOR
+  );
+  const [widgetOpacity, setWidgetOpacity] = useState(
+    DEFAULT_WIDGET_OPACITY
+  );
   const [widgetBorderWidth, setWidgetBorderWidth] = useState(
     DEFAULT_WIDGET_BORDER_WIDTH
   );
@@ -304,6 +334,8 @@ export function useWidgetsState() {
       setLayouts({});
       setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
       setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
+      setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
+      setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
       setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
       setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
       setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
@@ -324,6 +356,8 @@ export function useWidgetsState() {
         setLayouts({});
         setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
         setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
+        setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
+        setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
         setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
         setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
         setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
@@ -354,6 +388,16 @@ export function useWidgetsState() {
         typeof data.widgetBorderColor === "string" && data.widgetBorderColor
           ? data.widgetBorderColor
           : DEFAULT_WIDGET_BORDER_COLOR
+      );
+      setWidgetTextColor(
+        typeof data.widgetTextColor === "string" && data.widgetTextColor
+          ? data.widgetTextColor
+          : DEFAULT_WIDGET_TEXT_COLOR
+      );
+      setWidgetOpacity(
+        typeof data.widgetOpacity === "number" && Number.isFinite(data.widgetOpacity)
+          ? Math.min(1, Math.max(0.2, Number(data.widgetOpacity.toFixed(2))))
+          : DEFAULT_WIDGET_OPACITY
       );
       setWidgetBorderWidth(
         typeof data.widgetBorderWidth === "number" && Number.isFinite(data.widgetBorderWidth)
@@ -403,6 +447,8 @@ export function useWidgetsState() {
           layouts,
           widgetSurfaceColor,
           widgetBorderColor,
+          widgetTextColor,
+          widgetOpacity,
           widgetBorderWidth,
           widgetSizeMode,
           dashboardBackgroundId,
@@ -425,6 +471,8 @@ export function useWidgetsState() {
     layouts,
     widgetSurfaceColor,
     widgetBorderColor,
+    widgetTextColor,
+    widgetOpacity,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -465,6 +513,8 @@ export function useWidgetsState() {
       customButtonConfigs: { ...customButtonConfigs },
       widgetSurfaceColor,
       widgetBorderColor,
+      widgetTextColor,
+      widgetOpacity,
       widgetBorderWidth,
       widgetSizeMode,
       dashboardBackgroundId,
@@ -487,6 +537,8 @@ export function useWidgetsState() {
     layouts,
     persistPresetsImmediately,
     widgetBorderColor,
+    widgetTextColor,
+    widgetOpacity,
     widgetBorderWidth,
     widgetSizeMode,
     widgetSurfaceColor,
@@ -501,6 +553,8 @@ export function useWidgetsState() {
     setCustomButtonConfigs({ ...preset.customButtonConfigs });
     setWidgetSurfaceColor(preset.widgetSurfaceColor);
     setWidgetBorderColor(preset.widgetBorderColor);
+    setWidgetTextColor(preset.widgetTextColor);
+    setWidgetOpacity(preset.widgetOpacity);
     setWidgetBorderWidth(preset.widgetBorderWidth);
     setWidgetSizeMode(preset.widgetSizeMode);
     setDashboardBackgroundId(preset.dashboardBackgroundId);
@@ -517,6 +571,14 @@ export function useWidgetsState() {
 
   // Toggle a widget on/off
   const toggleWidget = useCallback((id: string) => {
+    if (id === "notes") {
+      const noteId = createNotesWidgetId();
+
+      setActiveWidgets((prev) => [...prev, noteId]);
+      setLayouts((prev) => ({ ...prev, [noteId]: DEFAULT_LAYOUTS.notes }));
+      return;
+    }
+
     setActiveWidgets((prev) => {
       const exists = prev.includes(id);
       return exists ? prev.filter((widgetId) => widgetId !== id) : [...prev, id];
@@ -566,6 +628,8 @@ export function useWidgetsState() {
     layouts,
     widgetSurfaceColor,
     widgetBorderColor,
+    widgetTextColor,
+    widgetOpacity,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -578,6 +642,8 @@ export function useWidgetsState() {
     removeCustomButton,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
+    setWidgetTextColor,
+    setWidgetOpacity,
     setWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,

@@ -34,6 +34,10 @@ type EditPanelProps = {
   setWidgetSurfaceColor: (color: string) => void;
   widgetBorderColor: string;
   setWidgetBorderColor: (color: string) => void;
+  widgetTextColor: string;
+  setWidgetTextColor: (color: string) => void;
+  widgetOpacity: number;
+  setWidgetOpacity: (opacity: number) => void;
   widgetBorderWidth: number;
   setWidgetBorderWidth: (width: number) => void;
   widgetSizeMode: WidgetSizeMode;
@@ -63,6 +67,8 @@ const BACKGROUND_OPTIONS: Array<{
 
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
+const DEFAULT_WIDGET_TEXT_COLOR = "#ffffff";
+const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
 
@@ -95,6 +101,10 @@ export default function EditPanel({
   setWidgetSurfaceColor,
   widgetBorderColor,
   setWidgetBorderColor,
+  widgetTextColor,
+  setWidgetTextColor,
+  widgetOpacity,
+  setWidgetOpacity,
   widgetBorderWidth,
   setWidgetBorderWidth,
 
@@ -159,6 +169,8 @@ export default function EditPanel({
   const handleResetWidgetStyle = () => {
     setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
     setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
+    setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
+    setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
     setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
     setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
     setFontSizeMode("medium");
@@ -277,7 +289,10 @@ export default function EditPanel({
         {viewMode === "widgets" &&
           availableWidgets.map(widget => {
 
-            const isActive = activeWidgets.includes(widget.id);
+            const isActive =
+              widget.id === "notes"
+                ? activeWidgets.some((activeWidgetId) => activeWidgetId === "notes" || activeWidgetId.startsWith("notes:"))
+                : activeWidgets.includes(widget.id);
 
             return (
               <div
@@ -579,6 +594,65 @@ export default function EditPanel({
               aria-label={t('editPanel.widgetBorderWidth')}
               style={{ width: "100%" }}
             />
+
+            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+              {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
+            </label>
+
+            <input
+              type="range"
+              min={0.2}
+              max={1}
+              step={0.05}
+              value={widgetOpacity}
+              onChange={(event) => setWidgetOpacity(Number(event.target.value))}
+              aria-label={t('editPanel.widgetOpacity')}
+              style={{ width: "100%" }}
+            />
+
+            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+              {t('editPanel.widgetTextColor')}
+            </label>
+
+            <label
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                width: "fit-content",
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#f6f6f6",
+                cursor: "pointer",
+              }}
+            >
+              <input
+                type="color"
+                value={toColorInputValue(widgetTextColor)}
+                onChange={(event) => setWidgetTextColor(event.target.value)}
+                aria-label={t('editPanel.widgetTextColor')}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  cursor: "pointer",
+                }}
+              />
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 999,
+                  border: "1px solid rgba(0,0,0,0.3)",
+                  background: widgetTextColor,
+                }}
+              />
+              <span style={{ fontSize: 13, fontWeight: 500 }}>
+                {t('editPanel.widgetTextColor')}
+              </span>
+            </label>
 
             <button
               onClick={handleResetWidgetStyle}

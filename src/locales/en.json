@@ -25,6 +25,8 @@
     "widgetColor": "Widget color",
     "widgetColorHelp": "Use hex (for example #cde8ff) or rgba (for example rgba(255,255,255,0.15)).",
     "widgetBorderColor": "Border color",
+    "widgetTextColor": "Text color",
+    "widgetOpacity": "Widget opacity",
     "widgetBorderWidth": "Border thickness",
     "widgetSize": "Widget size",
     "resetWidgetStyle": "Reset widget style",
