@@ -78,6 +78,8 @@ function DashboardPageContent() {
     layouts,
     widgetSurfaceColor,
     widgetBorderColor,
+    widgetTextColor,
+    widgetOpacity,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -88,6 +90,8 @@ function DashboardPageContent() {
     removeCustomButton,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
+    setWidgetTextColor,
+    setWidgetOpacity,
     setWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,
@@ -397,6 +401,10 @@ function DashboardPageContent() {
         setWidgetSurfaceColor={setWidgetSurfaceColor}
         widgetBorderColor={widgetBorderColor}
         setWidgetBorderColor={setWidgetBorderColor}
+        widgetTextColor={widgetTextColor}
+        setWidgetTextColor={setWidgetTextColor}
+        widgetOpacity={widgetOpacity}
+        setWidgetOpacity={setWidgetOpacity}
         widgetBorderWidth={widgetBorderWidth}
         setWidgetBorderWidth={setWidgetBorderWidth}
         widgetSizeMode={widgetSizeMode}

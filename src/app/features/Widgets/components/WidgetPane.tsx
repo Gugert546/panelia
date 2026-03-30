@@ -8,7 +8,7 @@ type WidgetPaneProps = {
 };
 
 export default function WidgetPane({ title, children }: WidgetPaneProps) {
-  const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
+  const { widgetSurfaceColor, widgetBorderColor, widgetTextColor, widgetOpacity, widgetBorderWidth } = useWidgets();
 
   return (
     <div
@@ -21,6 +21,8 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
 
         background: widgetSurfaceColor,
         border: `${widgetBorderWidth}px solid ${widgetBorderColor}`,
+        color: widgetTextColor,
+        opacity: widgetOpacity,
         backdropFilter: "blur(14px)",
 
         display: "flex",
