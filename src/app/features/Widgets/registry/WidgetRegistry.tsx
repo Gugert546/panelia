@@ -108,12 +108,12 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
   spotify: {
     title: "Spotify",
     Component: SpotifyWidgetAdapter,
-    defaultGrid: { w: 8, h: 6 },
+    defaultGrid: { w: 8, h: 13},
   },
   bookmark: {
     title: "Bokmerker",
     Component: BookmarkWidgetAdapter,
-    defaultGrid: { w: 8, h: 8 },
+    defaultGrid: { w: 8, h: 16 },
   },
   customButton: {
     title: "Egendefinert knapp",

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useBookmark } from "./BookmarkLogic";
@@ -24,6 +25,8 @@ export default function BookmarkUi() {
   const [showCategoryForm, setShowCategoryForm] = useState(false);
   const [selectedCategoryForBookmark, setSelectedCategoryForBookmark] = useState<string | null>(null);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [isDeleteCategoryModalOpen, setIsDeleteCategoryModalOpen] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   const categorySelectorRef = useRef<HTMLDivElement | null>(null);
 
@@ -89,8 +92,39 @@ export default function BookmarkUi() {
     if (categories.length === 0) {
       setIsCategoryMenuOpen(false);
       setSelectedCategoryForBookmark(null);
+      setIsDeleteCategoryModalOpen(false);
     }
   }, [categories.length]);
+
+  useEffect(() => {
+    if (!isDeleteCategoryModalOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !isDeletingCategory) {
+        setIsDeleteCategoryModalOpen(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isDeleteCategoryModalOpen, isDeletingCategory]);
+
+  const confirmDeleteCategory = async () => {
+    if (!activeCategory) return;
+
+    try {
+      setIsDeletingCategory(true);
+      await handleDeleteCategory(activeCategory.id);
+      setSelectedCategoryForBookmark(null);
+      setIsCategoryMenuOpen(false);
+      setSelectedCategoryId(null);
+      setIsDeleteCategoryModalOpen(false);
+    } finally {
+      setIsDeletingCategory(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -333,6 +367,42 @@ export default function BookmarkUi() {
                   </button>
                 </div>
 
+                {selectedCategoryForBookmark === activeCategory?.id ? (
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.2)",
+                      padding: 10,
+                      borderRadius: 12,
+                      marginTop: 2,
+                    }}
+                  >
+                    <BookmarkForm
+                      onSubmit={async (title, url) => {
+                        if (!activeCategory) return;
+                        await handleAddBookmark(activeCategory.id, title, url);
+                        setSelectedCategoryForBookmark(null);
+                      }}
+                    />
+                    <button
+                      onClick={() => setSelectedCategoryForBookmark(null)}
+                      style={{
+                        marginTop: 8,
+                        padding: "6px 8px",
+                        fontSize: 12,
+                        background: "rgba(17,24,39,0.16)",
+                        color: "#0b1320",
+                        border: "none",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        width: "100%",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {t("widgets.bookmarkWidget.cancel")}
+                    </button>
+                  </div>
+                ) : null}
+
                 {activeCategoryBookmarks.length === 0 ? (
                   <div
                     style={{
@@ -431,54 +501,12 @@ export default function BookmarkUi() {
                     ))}
                   </ul>
                 )}
-
-                {selectedCategoryForBookmark === activeCategory?.id ? (
-                  <div
-                    style={{
-                      background: "rgba(255,255,255,0.2)",
-                      padding: 10,
-                      borderRadius: 12,
-                      marginTop: 2,
-                    }}
-                  >
-                    <BookmarkForm
-                      onSubmit={async (title, url) => {
-                        if (!activeCategory) return;
-                        await handleAddBookmark(activeCategory.id, title, url);
-                        setSelectedCategoryForBookmark(null);
-                      }}
-                    />
-                    <button
-                      onClick={() => setSelectedCategoryForBookmark(null)}
-                      style={{
-                        marginTop: 8,
-                        padding: "6px 8px",
-                        fontSize: 12,
-                        background: "rgba(17,24,39,0.16)",
-                        color: "#0b1320",
-                        border: "none",
-                        borderRadius: 8,
-                        cursor: "pointer",
-                        width: "100%",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {t("widgets.bookmarkWidget.cancel")}
-                    </button>
-                  </div>
-                ) : null}
               </>
             )}
           </div>
 
           <button
-            onClick={async () => {
-              if (!activeCategory) return;
-              await handleDeleteCategory(activeCategory.id);
-              setSelectedCategoryForBookmark(null);
-              setIsCategoryMenuOpen(false);
-              setSelectedCategoryId(null);
-            }}
+            onClick={() => setIsDeleteCategoryModalOpen(true)}
             disabled={!activeCategory}
             style={{
               marginTop: 8,
@@ -496,6 +524,114 @@ export default function BookmarkUi() {
           >
             {t("widgets.bookmarkWidget.deleteCategory")}
           </button>
+
+          {isDeleteCategoryModalOpen && activeCategory && typeof document !== "undefined"
+            ? createPortal(
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="delete-category-title"
+                  aria-describedby="delete-category-description"
+                  style={{
+                    position: "fixed",
+                    inset: 0,
+                    background: "rgba(10, 15, 25, 0.22)",
+                    backdropFilter: "blur(8px)",
+                    WebkitBackdropFilter: "blur(8px)",
+                    display: "grid",
+                    placeItems: "center",
+                    zIndex: 999999,
+                    padding: 16,
+                  }}
+                  onClick={() => {
+                    if (!isDeletingCategory) {
+                      setIsDeleteCategoryModalOpen(false);
+                    }
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 340,
+                      maxWidth: "100%",
+                      borderRadius: 16,
+                      padding: 16,
+                      background: "rgba(255,255,255,0.94)",
+                      backdropFilter: "blur(12px)",
+                      boxShadow: "0 10px 28px rgba(0,0,0,0.2)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 12,
+                      color: "#0b1320",
+                    }}
+                    onClick={(event) => event.stopPropagation()}
+                  >
+                    <h3 id="delete-category-title" style={{ margin: 0, fontSize: 18 }}>
+                      {t("widgets.bookmarkWidget.deleteCategoryTitle")}
+                    </h3>
+
+                    <p
+                      id="delete-category-description"
+                      style={{
+                        margin: 0,
+                        fontSize: 13,
+                        lineHeight: 1.5,
+                        color: "rgba(11, 19, 32, 0.82)",
+                      }}
+                    >
+                      {t("widgets.bookmarkWidget.deleteCategoryConfirm")} <strong>{activeCategory.name}</strong>?{" "}
+                      {t("widgets.bookmarkWidget.deleteCategoryWarning")}
+                    </p>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        gap: 8,
+                      }}
+                    >
+                      <button
+                        onClick={() => setIsDeleteCategoryModalOpen(false)}
+                        disabled={isDeletingCategory}
+                        style={{
+                          border: "none",
+                          borderRadius: 8,
+                          background: "rgba(17,24,39,0.12)",
+                          color: "#0b1320",
+                          padding: "7px 12px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: isDeletingCategory ? "not-allowed" : "pointer",
+                          opacity: isDeletingCategory ? 0.6 : 1,
+                        }}
+                      >
+                        {t("widgets.bookmarkWidget.cancel")}
+                      </button>
+
+                      <button
+                        onClick={confirmDeleteCategory}
+                        disabled={isDeletingCategory}
+                        style={{
+                          border: "none",
+                          borderRadius: 8,
+                          background: "#b91c1c",
+                          color: "#ffffff",
+                          padding: "7px 12px",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: isDeletingCategory ? "not-allowed" : "pointer",
+                          opacity: isDeletingCategory ? 0.7 : 1,
+                        }}
+                      >
+                        {isDeletingCategory
+                          ? t("widgets.bookmarkWidget.deletingCategory")
+                          : t("widgets.bookmarkWidget.confirmDeleteCategory")}
+                      </button>
+                    </div>
+                  </div>
+                </div>,
+                document.body
+              )
+            : null}
         </div>
       </WidgetPane>
     </WidgetContainer>

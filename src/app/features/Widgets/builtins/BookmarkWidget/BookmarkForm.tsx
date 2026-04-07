@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 type BookmarkFormProps = {
   onSubmit: (title: string, url: string) => Promise<void>;
@@ -42,7 +43,7 @@ export default function BookmarkForm({
       setError(err instanceof Error ? err.message : "Failed to add bookmark");
     }
   };
-
+  const { t } = useLanguage();
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {error && (
@@ -61,7 +62,7 @@ export default function BookmarkForm({
 
       <input
         type="text"
-        placeholder="Bookmark title"
+        placeholder= {t("widgets.bookmarkWidget.bookmarkTitle")}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         disabled={isLoading}
@@ -78,7 +79,7 @@ export default function BookmarkForm({
 
       <input
         type="url"
-        placeholder="https://example.com"
+        placeholder={t("widgets.bookmarkWidget.bookmarkURL")}
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         disabled={isLoading}
@@ -108,7 +109,7 @@ export default function BookmarkForm({
           fontWeight: 600,
         }}
       >
-        {isLoading ? "Adding..." : "Add Bookmark"}
+        {isLoading ? t("widgets.bookmarkWidgets.adding") : t("widgets.bookmarkWidget.addBookmark")}
       </button>
     </form>
   );
