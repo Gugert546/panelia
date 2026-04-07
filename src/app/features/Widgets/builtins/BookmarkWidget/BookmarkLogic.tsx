@@ -96,7 +96,9 @@ export function useBookmark() {
       const data = (await res.json()) as { favicon?: string };
       favicon = getPreferredFavicon(normalizedUrl, data.favicon);
     }
-  } catch {}
+  } catch {
+    // Keep the generated favicon fallback if the preview request fails.
+  }
 
   const newBookmark: Bookmark = {
     id: `bookmark_${Date.now()}`,
@@ -131,8 +133,9 @@ export function useBookmark() {
   // Delete a category
   const handleDeleteCategory = async (categoryId: string) => {
     if (!user?.uid) {
-      setError("User not authenticated");
-      return;
+      const message = "User not authenticated";
+      setError(message);
+      throw new Error(message);
     }
 
     try {
@@ -148,6 +151,7 @@ export function useBookmark() {
       const message = err instanceof Error ? err.message : "Failed to delete category";
       setError(message);
       console.error("Error deleting category:", err);
+      throw err instanceof Error ? err : new Error(message);
     }
   };
 
