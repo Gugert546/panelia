@@ -113,7 +113,7 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
   bookmark: {
     title: "Bokmerker",
     Component: BookmarkWidgetAdapter,
-    defaultGrid: { w: 8, h: 8 },
+    defaultGrid: { w: 8, h: 16 },
   },
   customButton: {
     title: "Egendefinert knapp",
