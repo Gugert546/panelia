@@ -333,6 +333,42 @@ export default function BookmarkUi() {
                   </button>
                 </div>
 
+                {selectedCategoryForBookmark === activeCategory?.id ? (
+                  <div
+                    style={{
+                      background: "rgba(255,255,255,0.2)",
+                      padding: 10,
+                      borderRadius: 12,
+                      marginTop: 2,
+                    }}
+                  >
+                    <BookmarkForm
+                      onSubmit={async (title, url) => {
+                        if (!activeCategory) return;
+                        await handleAddBookmark(activeCategory.id, title, url);
+                        setSelectedCategoryForBookmark(null);
+                      }}
+                    />
+                    <button
+                      onClick={() => setSelectedCategoryForBookmark(null)}
+                      style={{
+                        marginTop: 8,
+                        padding: "6px 8px",
+                        fontSize: 12,
+                        background: "rgba(17,24,39,0.16)",
+                        color: "#0b1320",
+                        border: "none",
+                        borderRadius: 8,
+                        cursor: "pointer",
+                        width: "100%",
+                        fontWeight: 500,
+                      }}
+                    >
+                      {t("widgets.bookmarkWidget.cancel")}
+                    </button>
+                  </div>
+                ) : null}
+
                 {activeCategoryBookmarks.length === 0 ? (
                   <div
                     style={{
@@ -431,42 +467,6 @@ export default function BookmarkUi() {
                     ))}
                   </ul>
                 )}
-
-                {selectedCategoryForBookmark === activeCategory?.id ? (
-                  <div
-                    style={{
-                      background: "rgba(255,255,255,0.2)",
-                      padding: 10,
-                      borderRadius: 12,
-                      marginTop: 2,
-                    }}
-                  >
-                    <BookmarkForm
-                      onSubmit={async (title, url) => {
-                        if (!activeCategory) return;
-                        await handleAddBookmark(activeCategory.id, title, url);
-                        setSelectedCategoryForBookmark(null);
-                      }}
-                    />
-                    <button
-                      onClick={() => setSelectedCategoryForBookmark(null)}
-                      style={{
-                        marginTop: 8,
-                        padding: "6px 8px",
-                        fontSize: 12,
-                        background: "rgba(17,24,39,0.16)",
-                        color: "#0b1320",
-                        border: "none",
-                        borderRadius: 8,
-                        cursor: "pointer",
-                        width: "100%",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {t("widgets.bookmarkWidget.cancel")}
-                    </button>
-                  </div>
-                ) : null}
               </>
             )}
           </div>
