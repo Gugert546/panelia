@@ -71,11 +71,14 @@
       "noCategories": "Ingen kategorier ennå. Opprett en for å komme i gang!",
       "noBookmarks": "Ingen bokmerker i denne kategorien",
       "addBookmark": "Legg til bokmerke",
+      "adding":"legger til...",
       "to": "til",
       "delete": "Slett",
       "Categori": "Kategori",
       "deleteCategory": "Slett kategori",
-      "categoryHover": "Klikk for å velge kategori, eller hold over og scroll"
+      "categoryHover": "Klikk for å velge kategori, eller hold over og scroll",
+      "bookmarkTitle":"Tittel på bokmerket",
+      "bookmarkURL": "Lenke til bokmerket" 
     },
     "newsWidget": {
       "title": "Verdensnyheter",

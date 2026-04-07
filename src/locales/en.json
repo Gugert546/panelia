@@ -75,7 +75,9 @@
       "delete": "Delete",
       "Categori": "Category",
       "deleteCategory": "Delete category",
-      "categoryHover": "Click to choose category, or hover and scroll"
+      "categoryHover": "Click to choose category, or hover and scroll",
+      "bookmarkTitle":"Bookmark title",
+      "bookmarkURL": "Bookmark URL"
     },
     "newsWidget": {
       "title": "World News",
