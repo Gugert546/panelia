@@ -76,6 +76,7 @@ function DashboardPageContent() {
     activeWidgets,
     customButtonConfigs,
     layouts,
+    widgetLocks,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
@@ -88,6 +89,7 @@ function DashboardPageContent() {
     updateLayout,
     toggleWidget,
     removeCustomButton,
+    toggleWidgetLock,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
     setWidgetTextColor,
@@ -429,8 +431,10 @@ function DashboardPageContent() {
         <DashboardGrid
           activeWidgets={activeWidgets}
           layouts={layouts}
+          widgetLocks={widgetLocks}
           onLayoutChange={updateLayout}
           onCloseWidget={removeCustomButton}
+          onToggleWidgetLock={toggleWidgetLock}
           sidebarWidth={SIDEBAR_WIDTH}
           calendarWidgetConfig={{
             calendarConnectionStatus,
