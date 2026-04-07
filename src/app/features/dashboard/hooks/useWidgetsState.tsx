@@ -10,6 +10,9 @@ type LayoutItem = {
   h: number;
 };
 
+const GRID_COLUMNS = 40; // Brukes for å plassere widget ved spawn
+const GRID_ROWS = 20;
+
 export type CustomButtonConfig = {
   label: string;
   url: string;
@@ -37,6 +40,7 @@ export type DashboardPreset = {
   name: string;
   activeWidgets: string[];
   layouts: Record<string, LayoutItem>;
+  widgetLocks: Record<string, boolean>;
   customButtonConfigs: Record<string, CustomButtonConfig>;
   widgetSurfaceColor: string;
   widgetBorderColor: string;
@@ -52,6 +56,7 @@ export type DashboardPreset = {
 type WidgetLayoutDocument = {
   activeWidgets?: string[];
   layouts?: Record<string, LayoutItem>;
+  widgetLocks?: Record<string, boolean>;
   customButtonConfigs?: Record<string, CustomButtonConfig>;
   widgetSurfaceColor?: string;
   widgetBorderColor?: string;
@@ -168,6 +173,19 @@ function normalizeCustomButtonConfigs(value: unknown): Record<string, CustomButt
   return next;
 }
 
+function normalizeWidgetLocks(value: unknown): Record<string, boolean> {
+  if (!value || typeof value !== "object") return {};
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const next: Record<string, boolean> = {};
+
+  for (const [id, rawValue] of entries) {
+    next[migrateLegacyCustomButtonId(id)] = Boolean(rawValue);
+  }
+
+  return next;
+}
+
 function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
   if (!Array.isArray(value)) return [];
 
@@ -206,6 +224,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
       name,
       activeWidgets,
       layouts: normalizeLayouts(preset.layouts),
+      widgetLocks: normalizeWidgetLocks(preset.widgetLocks),
       customButtonConfigs: normalizeCustomButtonConfigs(preset.customButtonConfigs),
       widgetSurfaceColor:
         typeof preset.widgetSurfaceColor === "string" && preset.widgetSurfaceColor
@@ -274,6 +293,50 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
 
+function rectsOverlap(a: LayoutItem, b: LayoutItem) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+function createCenteredLayout(
+  widgetType: string,
+  existingLayouts: Record<string, LayoutItem>
+): LayoutItem {
+  const baseLayout = DEFAULT_LAYOUTS[widgetType] ?? DEFAULT_LAYOUTS.notes;
+  const centeredX = Math.max(0, Math.floor((GRID_COLUMNS - baseLayout.w) / 2));
+  const centeredY = Math.max(0, Math.floor((GRID_ROWS - baseLayout.h) / 2));
+
+  const candidate: LayoutItem = {
+    x: centeredX,
+    y: centeredY,
+    w: baseLayout.w,
+    h: baseLayout.h,
+  };
+
+  const occupiedLayouts = Object.values(existingLayouts);
+
+  if (!occupiedLayouts.some((layout) => rectsOverlap(candidate, layout))) {
+    return candidate;
+  }
+
+  for (let offset = 1; offset < GRID_ROWS; offset += 1) {
+    const staggeredCandidate: LayoutItem = {
+      ...candidate,
+      y: Math.min(GRID_ROWS - baseLayout.h, centeredY + offset),
+    };
+
+    if (!occupiedLayouts.some((layout) => rectsOverlap(staggeredCandidate, layout))) {
+      return staggeredCandidate;
+    }
+  }
+
+  return candidate;
+}
+
 // Generate a unique ID for custom buttons
 function createCustomButtonId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -300,6 +363,7 @@ export function useWidgetsState() {
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
+  const [widgetLocks, setWidgetLocks] = useState<Record<string, boolean>>({});
   const [widgetSurfaceColor, setWidgetSurfaceColor] = useState(
     DEFAULT_WIDGET_SURFACE_COLOR
   );
@@ -332,6 +396,7 @@ export function useWidgetsState() {
       setActiveWidgets([]);
       setCustomButtonConfigs({});
       setLayouts({});
+      setWidgetLocks({});
       setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
       setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
       setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
@@ -354,6 +419,7 @@ export function useWidgetsState() {
         setActiveWidgets([]);
         setCustomButtonConfigs({});
         setLayouts({});
+        setWidgetLocks({});
         setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
         setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
         setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
@@ -375,10 +441,12 @@ export function useWidgetsState() {
         : [];
       const migratedCustomButtonConfigs = migrateLegacyMap(data.customButtonConfigs ?? {});
       const migratedLayouts = migrateLegacyMap(data.layouts ?? {});
+      const migratedWidgetLocks = migrateLegacyMap(normalizeWidgetLocks(data.widgetLocks));
 
       setActiveWidgets(migratedActiveWidgets);
       setCustomButtonConfigs(migratedCustomButtonConfigs);
       setLayouts(migratedLayouts);
+      setWidgetLocks(migratedWidgetLocks);
       setWidgetSurfaceColor(
         typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
           ? data.widgetSurfaceColor
@@ -445,6 +513,7 @@ export function useWidgetsState() {
           activeWidgets,
           customButtonConfigs,
           layouts,
+          widgetLocks,
           widgetSurfaceColor,
           widgetBorderColor,
           widgetTextColor,
@@ -469,6 +538,7 @@ export function useWidgetsState() {
     activeWidgets,
     customButtonConfigs,
     layouts,
+    widgetLocks,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
@@ -510,6 +580,7 @@ export function useWidgetsState() {
       name: trimmedName || `Preset ${dashboardPresets.length + 1}`,
       activeWidgets: [...activeWidgets],
       layouts: { ...layouts },
+      widgetLocks: { ...widgetLocks },
       customButtonConfigs: { ...customButtonConfigs },
       widgetSurfaceColor,
       widgetBorderColor,
@@ -535,6 +606,7 @@ export function useWidgetsState() {
     dashboardPresets.length,
     dashboardPresets,
     layouts,
+    widgetLocks,
     persistPresetsImmediately,
     widgetBorderColor,
     widgetTextColor,
@@ -550,6 +622,7 @@ export function useWidgetsState() {
 
     setActiveWidgets([...preset.activeWidgets]);
     setLayouts({ ...preset.layouts });
+    setWidgetLocks({ ...preset.widgetLocks });
     setCustomButtonConfigs({ ...preset.customButtonConfigs });
     setWidgetSurfaceColor(preset.widgetSurfaceColor);
     setWidgetBorderColor(preset.widgetBorderColor);
@@ -575,7 +648,11 @@ export function useWidgetsState() {
       const noteId = createNotesWidgetId();
 
       setActiveWidgets((prev) => [...prev, noteId]);
-      setLayouts((prev) => ({ ...prev, [noteId]: DEFAULT_LAYOUTS.notes }));
+      setLayouts((prev) => ({
+        ...prev,
+        [noteId]: createCenteredLayout("notes", prev),
+      }));
+      setWidgetLocks((prev) => ({ ...prev, [noteId]: false }));
       return;
     }
 
@@ -586,7 +663,9 @@ export function useWidgetsState() {
 
     setLayouts((prev) => {
       if (prev[id]) return prev;
-      const defaultLayout = DEFAULT_LAYOUTS[id];
+      const defaultLayout = DEFAULT_LAYOUTS[id]
+        ? createCenteredLayout(id, prev)
+        : undefined;
       return defaultLayout ? { ...prev, [id]: defaultLayout } : prev;
     });
   }, []);
@@ -602,7 +681,11 @@ export function useWidgetsState() {
 
     setActiveWidgets((prev) => [...prev, id]);
     setCustomButtonConfigs((prev) => ({ ...prev, [id]: config }));
-    setLayouts((prev) => ({ ...prev, [id]: DEFAULT_LAYOUTS.customButton }));
+    setLayouts((prev) => ({
+      ...prev,
+      [id]: createCenteredLayout("customButton", prev),
+    }));
+    setWidgetLocks((prev) => ({ ...prev, [id]: false }));
 
     return id;
   }, []);
@@ -620,12 +703,25 @@ export function useWidgetsState() {
       delete next[id];
       return next;
     });
+    setWidgetLocks((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  const toggleWidgetLock = useCallback((widgetId: string) => {
+    setWidgetLocks((prev) => ({
+      ...prev,
+      [widgetId]: !prev[widgetId],
+    }));
   }, []);
 
   return {
     activeWidgets,
     customButtonConfigs,
     layouts,
+    widgetLocks,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
@@ -640,6 +736,7 @@ export function useWidgetsState() {
     updateLayout,
     addCustomButton,
     removeCustomButton,
+    toggleWidgetLock,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
     setWidgetTextColor,
