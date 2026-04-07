@@ -10,6 +10,9 @@ type LayoutItem = {
   h: number;
 };
 
+const GRID_COLUMNS = 40;
+const GRID_ROWS = 25;
+
 export type CustomButtonConfig = {
   label: string;
   url: string;
@@ -289,6 +292,50 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   bookmark: { x: 0, y: 0, w: 4, h: 4 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
+
+function rectsOverlap(a: LayoutItem, b: LayoutItem) {
+  return (
+    a.x < b.x + b.w &&
+    a.x + a.w > b.x &&
+    a.y < b.y + b.h &&
+    a.y + a.h > b.y
+  );
+}
+
+function createCenteredLayout(
+  widgetType: string,
+  existingLayouts: Record<string, LayoutItem>
+): LayoutItem {
+  const baseLayout = DEFAULT_LAYOUTS[widgetType] ?? DEFAULT_LAYOUTS.notes;
+  const centeredX = Math.max(0, Math.floor((GRID_COLUMNS - baseLayout.w) / 2));
+  const centeredY = Math.max(0, Math.floor((GRID_ROWS - baseLayout.h) / 2));
+
+  const candidate: LayoutItem = {
+    x: centeredX,
+    y: centeredY,
+    w: baseLayout.w,
+    h: baseLayout.h,
+  };
+
+  const occupiedLayouts = Object.values(existingLayouts);
+
+  if (!occupiedLayouts.some((layout) => rectsOverlap(candidate, layout))) {
+    return candidate;
+  }
+
+  for (let offset = 1; offset < GRID_ROWS; offset += 1) {
+    const staggeredCandidate: LayoutItem = {
+      ...candidate,
+      y: Math.min(GRID_ROWS - baseLayout.h, centeredY + offset),
+    };
+
+    if (!occupiedLayouts.some((layout) => rectsOverlap(staggeredCandidate, layout))) {
+      return staggeredCandidate;
+    }
+  }
+
+  return candidate;
+}
 
 // Generate a unique ID for custom buttons
 function createCustomButtonId() {
@@ -601,7 +648,10 @@ export function useWidgetsState() {
       const noteId = createNotesWidgetId();
 
       setActiveWidgets((prev) => [...prev, noteId]);
-      setLayouts((prev) => ({ ...prev, [noteId]: DEFAULT_LAYOUTS.notes }));
+      setLayouts((prev) => ({
+        ...prev,
+        [noteId]: createCenteredLayout("notes", prev),
+      }));
       setWidgetLocks((prev) => ({ ...prev, [noteId]: false }));
       return;
     }
@@ -613,7 +663,9 @@ export function useWidgetsState() {
 
     setLayouts((prev) => {
       if (prev[id]) return prev;
-      const defaultLayout = DEFAULT_LAYOUTS[id];
+      const defaultLayout = DEFAULT_LAYOUTS[id]
+        ? createCenteredLayout(id, prev)
+        : undefined;
       return defaultLayout ? { ...prev, [id]: defaultLayout } : prev;
     });
   }, []);
@@ -629,7 +681,10 @@ export function useWidgetsState() {
 
     setActiveWidgets((prev) => [...prev, id]);
     setCustomButtonConfigs((prev) => ({ ...prev, [id]: config }));
-    setLayouts((prev) => ({ ...prev, [id]: DEFAULT_LAYOUTS.customButton }));
+    setLayouts((prev) => ({
+      ...prev,
+      [id]: createCenteredLayout("customButton", prev),
+    }));
     setWidgetLocks((prev) => ({ ...prev, [id]: false }));
 
     return id;
