@@ -1,369 +1,65 @@
+// Hoved-hook som orkestrerer dashboardets widget-state, lagring og brukerhandlinger.
+
 import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../lib/firebase/client";
 import { useAuth } from "../../auth/useAuth";
+import {
+  DEFAULT_DASHBOARD_BACKGROUND_ID,
+  DEFAULT_LAYOUTS,
+  DEFAULT_WIDGET_BORDER_COLOR,
+  DEFAULT_WIDGET_BORDER_WIDTH,
+  DEFAULT_WIDGET_OPACITY,
+  DEFAULT_WIDGET_SIZE_MODE,
+  DEFAULT_WIDGET_SURFACE_COLOR,
+  DEFAULT_WIDGET_TEXT_COLOR,
+  SAVE_DEBOUNCE_MS,
+  AVAILABLE_WIDGETS,
+} from "./widgets/constants";
+import {
+  createCustomButtonId,
+  createDashboardPresetId,
+  createNotesWidgetId,
+  migrateLegacyCustomButtonId,
+  migrateLegacyMap,
+} from "./widgets/idUtils";
+import { createCenteredLayout } from "./widgets/layoutUtils";
+import {
+  normalizeDashboardPresets,
+  normalizePersistedVideoUrl,
+  normalizeWidgetLocks,
+  sanitizePresetForPersistence,
+} from "./widgets/normalize";
+import type {
+  CustomButtonConfig,
+  DashboardBackgroundId,
+  DashboardPreset,
+  LayoutItem,
+  WidgetLayoutDocument,
+  WidgetSizeMode,
+  WidgetInstance,
+} from "./widgets/types";
 
-type LayoutItem = {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+export { AVAILABLE_WIDGETS };
+export type {
+  CustomButtonConfig,
+  DashboardBackgroundId,
+  DashboardPreset,
+  LayoutItem,
+  WidgetSizeMode,
+  WidgetInstance,
 };
-
-const GRID_COLUMNS = 40; // Brukes for å plassere widget ved spawn
-const GRID_ROWS = 20;
-
-export type CustomButtonConfig = {
-  label: string;
-  url: string;
-  favicon: string;
-};
-
-export type WidgetInstance = {
-  id: string;
-  type: string;
-  config: Record<string, unknown>;
-};
-
-export type WidgetSizeMode = "small" | "medium" | "large";
-export type DashboardBackgroundId =
-  | "sol1"
-  | "sol2"
-  | "sol3"
-  | "natt1"
-  | "natt2"
-  | "natt3"
-  | "videoCustom";
-
-export type DashboardPreset = {
-  id: string;
-  name: string;
-  activeWidgets: string[];
-  layouts: Record<string, LayoutItem>;
-  widgetLocks: Record<string, boolean>;
-  customButtonConfigs: Record<string, CustomButtonConfig>;
-  widgetSurfaceColor: string;
-  widgetBorderColor: string;
-  widgetTextColor: string;
-  widgetOpacity: number;
-  widgetBorderWidth: number;
-  widgetSizeMode: WidgetSizeMode;
-  dashboardBackgroundId: DashboardBackgroundId;
-  customVideoBackgroundUrl: string;
-  createdAt: number;
-};
-
-type WidgetLayoutDocument = {
-  activeWidgets?: string[];
-  layouts?: Record<string, LayoutItem>;
-  widgetLocks?: Record<string, boolean>;
-  customButtonConfigs?: Record<string, CustomButtonConfig>;
-  widgetSurfaceColor?: string;
-  widgetBorderColor?: string;
-  widgetTextColor?: string;
-  widgetOpacity?: number;
-  widgetBorderWidth?: number;
-  widgetSizeMode?: WidgetSizeMode;
-  dashboardBackgroundId?: DashboardBackgroundId;
-  customVideoBackgroundUrl?: string;
-  dashboardPresets?: DashboardPreset[];
-  updatedAt?: unknown;
-};
-
-// Available widgets for the dashboard
-export const AVAILABLE_WIDGETS = [
-  { id: "clock", label: "Klokke" },
-  { id: "calendar", label: "Kalender" },
-  { id: "google_search", label: "Søk" },
-  { id: "news", label: "Nyheter" },
-  { id: "weather", label: "Vær" },
-  { id: "bookmark", label: "Bokmerke" },
-  { id: "notes", label: "Notater" },
-  { id: "spotify", label: "Spotify" },
-] as const;
-
-// Debounce delay for saving to Firestore (5 seconds)
-const SAVE_DEBOUNCE_MS = 5000;
-const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
-const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
-const DEFAULT_WIDGET_TEXT_COLOR = "#ffffff";
-const DEFAULT_WIDGET_OPACITY = 1;
-const DEFAULT_WIDGET_BORDER_WIDTH = 1;
-const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
-const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "sol1";
-
-function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
-  return (
-    value === "sol1" ||
-    value === "sol2" ||
-    value === "sol3" ||
-    value === "natt1" ||
-    value === "natt2" ||
-    value === "natt3" ||
-    value === "videoCustom"
-  );
-}
-
-function createDashboardPresetId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `preset:${crypto.randomUUID()}`;
-  }
-  return `preset:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function createNotesWidgetId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `notes:${crypto.randomUUID()}`;
-  }
-
-  return `notes:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-function normalizeLayouts(value: unknown): Record<string, LayoutItem> {
-  if (!value || typeof value !== "object") return {};
-
-  const entries = Object.entries(value as Record<string, unknown>);
-  const next: Record<string, LayoutItem> = {};
-
-  for (const [id, rawLayout] of entries) {
-    if (!rawLayout || typeof rawLayout !== "object") continue;
-
-    const layout = rawLayout as Record<string, unknown>;
-    const x = Number(layout.x);
-    const y = Number(layout.y);
-    const w = Number(layout.w);
-    const h = Number(layout.h);
-
-    if (
-      Number.isFinite(x) &&
-      Number.isFinite(y) &&
-      Number.isFinite(w) &&
-      Number.isFinite(h)
-    ) {
-      next[migrateLegacyCustomButtonId(id)] = { x, y, w, h };
-    }
-  }
-
-  return next;
-}
-
-function normalizeCustomButtonConfigs(value: unknown): Record<string, CustomButtonConfig> {
-  if (!value || typeof value !== "object") return {};
-
-  const entries = Object.entries(value as Record<string, unknown>);
-  const next: Record<string, CustomButtonConfig> = {};
-
-  for (const [id, rawConfig] of entries) {
-    if (!rawConfig || typeof rawConfig !== "object") continue;
-
-    const config = rawConfig as Record<string, unknown>;
-    if (
-      typeof config.label === "string" &&
-      typeof config.url === "string" &&
-      typeof config.favicon === "string"
-    ) {
-      next[migrateLegacyCustomButtonId(id)] = {
-        label: config.label,
-        url: config.url,
-        favicon: config.favicon,
-      };
-    }
-  }
-
-  return next;
-}
-
-function normalizeWidgetLocks(value: unknown): Record<string, boolean> {
-  if (!value || typeof value !== "object") return {};
-
-  const entries = Object.entries(value as Record<string, unknown>);
-  const next: Record<string, boolean> = {};
-
-  for (const [id, rawValue] of entries) {
-    next[migrateLegacyCustomButtonId(id)] = Boolean(rawValue);
-  }
-
-  return next;
-}
-
-function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
-  if (!Array.isArray(value)) return [];
-
-  const presets: DashboardPreset[] = [];
-
-  for (let index = 0; index < value.length; index += 1) {
-    const rawPreset = value[index];
-    if (!rawPreset || typeof rawPreset !== "object") continue;
-
-    const preset = rawPreset as Record<string, unknown>;
-    const name = typeof preset.name === "string" && preset.name.trim()
-      ? preset.name.trim()
-      : `Preset ${index + 1}`;
-
-    const activeWidgets = Array.isArray(preset.activeWidgets)
-      ? preset.activeWidgets
-        .filter((widgetId): widgetId is string => typeof widgetId === "string")
-        .map(migrateLegacyCustomButtonId)
-      : [];
-
-    const widgetBorderWidth =
-      typeof preset.widgetBorderWidth === "number" && Number.isFinite(preset.widgetBorderWidth)
-        ? Math.min(12, Math.max(0, Math.round(preset.widgetBorderWidth)))
-        : DEFAULT_WIDGET_BORDER_WIDTH;
-
-    const widgetOpacity =
-      typeof preset.widgetOpacity === "number" && Number.isFinite(preset.widgetOpacity)
-        ? Math.min(1, Math.max(0.2, Number(preset.widgetOpacity.toFixed(2))))
-        : DEFAULT_WIDGET_OPACITY;
-
-    presets.push({
-      id:
-        typeof preset.id === "string" && preset.id
-          ? preset.id
-          : createDashboardPresetId(),
-      name,
-      activeWidgets,
-      layouts: normalizeLayouts(preset.layouts),
-      widgetLocks: normalizeWidgetLocks(preset.widgetLocks),
-      customButtonConfigs: normalizeCustomButtonConfigs(preset.customButtonConfigs),
-      widgetSurfaceColor:
-        typeof preset.widgetSurfaceColor === "string" && preset.widgetSurfaceColor
-          ? preset.widgetSurfaceColor
-          : DEFAULT_WIDGET_SURFACE_COLOR,
-      widgetBorderColor:
-        typeof preset.widgetBorderColor === "string" && preset.widgetBorderColor
-          ? preset.widgetBorderColor
-          : DEFAULT_WIDGET_BORDER_COLOR,
-      widgetTextColor:
-        typeof preset.widgetTextColor === "string" && preset.widgetTextColor
-          ? preset.widgetTextColor
-          : DEFAULT_WIDGET_TEXT_COLOR,
-      widgetOpacity,
-      widgetBorderWidth,
-      widgetSizeMode:
-        preset.widgetSizeMode === "small" ||
-        preset.widgetSizeMode === "medium" ||
-        preset.widgetSizeMode === "large"
-          ? preset.widgetSizeMode
-          : DEFAULT_WIDGET_SIZE_MODE,
-      dashboardBackgroundId: isDashboardBackgroundId(preset.dashboardBackgroundId)
-        ? preset.dashboardBackgroundId
-        : DEFAULT_DASHBOARD_BACKGROUND_ID,
-      customVideoBackgroundUrl:
-        typeof preset.customVideoBackgroundUrl === "string"
-          ? preset.customVideoBackgroundUrl
-          : "",
-      createdAt:
-        typeof preset.createdAt === "number" && Number.isFinite(preset.createdAt)
-          ? preset.createdAt
-          : Date.now(),
-    });
-  }
-
-  return presets;
-}
-
-function normalizePersistedVideoUrl(url: string) {
-  if (url.startsWith("blob:")) {
-    return "";
-  }
-
-  return url;
-}
-
-function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
-  return {
-    ...preset,
-    customVideoBackgroundUrl: normalizePersistedVideoUrl(
-      preset.customVideoBackgroundUrl
-    ),
-  };
-}
-
-// Default layouts for new widgets (aligned with WidgetRegistry defaultGrid sizes)
-const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
-  clock: { x: 0, y: 0, w: 5, h: 3 },
-  notes: { x: 0, y: 0, w: 8, h: 8 },
-  calendar: { x: 0, y: 0, w: 16, h: 12 },
-  google_search: { x: 0, y: 0, w: 14, h: 3 },
-  weather: { x: 0, y: 0, w: 5, h: 4 },
-  news: { x: 0, y: 0, w: 10, h: 10 },
-  spotify: { x: 0, y: 0, w: 4, h: 3 },
-  bookmark: { x: 0, y: 0, w: 4, h: 4 },
-  customButton: { x: 0, y: 0, w: 2, h: 2 },
-};
-
-function rectsOverlap(a: LayoutItem, b: LayoutItem) {
-  return (
-    a.x < b.x + b.w &&
-    a.x + a.w > b.x &&
-    a.y < b.y + b.h &&
-    a.y + a.h > b.y
-  );
-}
-
-function createCenteredLayout(
-  widgetType: string,
-  existingLayouts: Record<string, LayoutItem>
-): LayoutItem {
-  const baseLayout = DEFAULT_LAYOUTS[widgetType] ?? DEFAULT_LAYOUTS.notes;
-  const centeredX = Math.max(0, Math.floor((GRID_COLUMNS - baseLayout.w) / 2));
-  const centeredY = Math.max(0, Math.floor((GRID_ROWS - baseLayout.h) / 2));
-
-  const candidate: LayoutItem = {
-    x: centeredX,
-    y: centeredY,
-    w: baseLayout.w,
-    h: baseLayout.h,
-  };
-
-  const occupiedLayouts = Object.values(existingLayouts);
-
-  if (!occupiedLayouts.some((layout) => rectsOverlap(candidate, layout))) {
-    return candidate;
-  }
-
-  for (let offset = 1; offset < GRID_ROWS; offset += 1) {
-    const staggeredCandidate: LayoutItem = {
-      ...candidate,
-      y: Math.min(GRID_ROWS - baseLayout.h, centeredY + offset),
-    };
-
-    if (!occupiedLayouts.some((layout) => rectsOverlap(staggeredCandidate, layout))) {
-      return staggeredCandidate;
-    }
-  }
-
-  return candidate;
-}
-
-// Generate a unique ID for custom buttons
-function createCustomButtonId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `customButton:${crypto.randomUUID()}`;
-  }
-  return `customButton:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-// Legacy migration functions (for backward compatibility)
-function migrateLegacyCustomButtonId(id: string) {
-  if (!id.startsWith("customButton__")) return id;
-  return `customButton:${id.slice("customButton__".length)}`;
-}
-
-function migrateLegacyMap<T>(input: Record<string, T>) {
-  return Object.fromEntries(
-    Object.entries(input).map(([id, value]) => [migrateLegacyCustomButtonId(id), value])
-  );
-}
 
 export function useWidgetsState() {
   const { user } = useAuth();
 
+  // Kjerne-state for hva som vises og hvor det vises.
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
   const [widgetLocks, setWidgetLocks] = useState<Record<string, boolean>>({});
+
+  // Stil/state for dashboardets utseende.
   const [widgetSurfaceColor, setWidgetSurfaceColor] = useState(
     DEFAULT_WIDGET_SURFACE_COLOR
   );
@@ -388,10 +84,12 @@ export function useWidgetsState() {
   const [dashboardPresets, setDashboardPresets] = useState<DashboardPreset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Hindrer autosave før første load er ferdig.
   const hasLoadedRef = useRef(false);
 
   // Load widget layout from Firestore
   const loadLayout = useCallback(async () => {
+    // Når bruker logger ut, nullstiller vi dashboard-state lokalt.
     if (!user) {
       setActiveWidgets([]);
       setCustomButtonConfigs({});
@@ -415,6 +113,7 @@ export function useWidgetsState() {
       const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
       const docSnap = await getDoc(docRef);
 
+      // Ny bruker uten lagret dokument: start med defaults.
       if (!docSnap.exists()) {
         setActiveWidgets([]);
         setCustomButtonConfigs({});
@@ -435,7 +134,7 @@ export function useWidgetsState() {
 
       const data = docSnap.data() as WidgetLayoutDocument;
 
-      // Apply legacy migrations
+      // Migrerer gamle ID-formater og normaliserer data før state settes.
       const migratedActiveWidgets = Array.isArray(data.activeWidgets)
         ? data.activeWidgets.map(migrateLegacyCustomButtonId)
         : [];
@@ -480,7 +179,13 @@ export function useWidgetsState() {
           : DEFAULT_WIDGET_SIZE_MODE
       );
       setDashboardBackgroundId(
-        isDashboardBackgroundId(data.dashboardBackgroundId)
+        data.dashboardBackgroundId === "sol1" ||
+        data.dashboardBackgroundId === "sol2" ||
+        data.dashboardBackgroundId === "sol3" ||
+        data.dashboardBackgroundId === "natt1" ||
+        data.dashboardBackgroundId === "natt2" ||
+        data.dashboardBackgroundId === "natt3" ||
+        data.dashboardBackgroundId === "videoCustom"
           ? data.dashboardBackgroundId
           : DEFAULT_DASHBOARD_BACKGROUND_ID
       );
@@ -502,8 +207,9 @@ export function useWidgetsState() {
     void loadLayout();
   }, [loadLayout]);
 
-  // Auto-save changes to Firestore with debouncing
+  // Autosave av hele dashboardet med debounce for å redusere write-frekvens.
   useEffect(() => {
+    // Ikke lagre før bruker finnes, load er ferdig og initial state er satt.
     if (!user || isLoading || !hasLoadedRef.current) return;
 
     const timeout = setTimeout(async () => {
@@ -553,6 +259,7 @@ export function useWidgetsState() {
 
   const persistPresetsImmediately = useCallback(
     async (nextPresets: DashboardPreset[]) => {
+      // Presets lagres direkte (merge) for rask respons i preset-UI.
       if (!user || isLoading || !hasLoadedRef.current) return;
 
       try {
@@ -575,6 +282,7 @@ export function useWidgetsState() {
   const saveCurrentAsPreset = useCallback((name?: string) => {
     const trimmedName = name?.trim() ?? "";
 
+    // Snapshot av hele dashboard-state på lagringstidspunktet.
     const newPreset: DashboardPreset = {
       id: createDashboardPresetId(),
       name: trimmedName || `Preset ${dashboardPresets.length + 1}`,
@@ -620,6 +328,7 @@ export function useWidgetsState() {
     const preset = dashboardPresets.find((item) => item.id === presetId);
     if (!preset) return false;
 
+    // Rehydrerer dashboard-state fra valgt preset.
     setActiveWidgets([...preset.activeWidgets]);
     setLayouts({ ...preset.layouts });
     setWidgetLocks({ ...preset.widgetLocks });
@@ -644,6 +353,7 @@ export function useWidgetsState() {
 
   // Toggle a widget on/off
   const toggleWidget = useCallback((id: string) => {
+    // Notater er instansbaserte, derfor opprettes alltid ny unik widget-ID.
     if (id === "notes") {
       const noteId = createNotesWidgetId();
 
@@ -662,6 +372,7 @@ export function useWidgetsState() {
     });
 
     setLayouts((prev) => {
+      // Eksisterende widget-posisjon beholdes ved toggle on/off.
       if (prev[id]) return prev;
       const defaultLayout = DEFAULT_LAYOUTS[id]
         ? createCenteredLayout(id, prev)
@@ -679,6 +390,7 @@ export function useWidgetsState() {
   const addCustomButton = useCallback((config: CustomButtonConfig) => {
     const id = createCustomButtonId();
 
+    // Nye custom knapper spawner sentrert og starter ulåst.
     setActiveWidgets((prev) => [...prev, id]);
     setCustomButtonConfigs((prev) => ({ ...prev, [id]: config }));
     setLayouts((prev) => ({
@@ -692,6 +404,7 @@ export function useWidgetsState() {
 
   // Remove a custom button
   const removeCustomButton = useCallback((id: string) => {
+    // Rydder opp alle referanser til widgeten i alle relevante state-map-er.
     setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
     setCustomButtonConfigs((prev) => {
       const next = { ...prev };
@@ -711,6 +424,7 @@ export function useWidgetsState() {
   }, []);
 
   const toggleWidgetLock = useCallback((widgetId: string) => {
+    // Lås toggles per widget-ID.
     setWidgetLocks((prev) => ({
       ...prev,
       [widgetId]: !prev[widgetId],
