@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 type CategoryFormProps = {
   onSubmit: (categoryName: string) => Promise<void>;
@@ -8,7 +9,7 @@ type CategoryFormProps = {
 export default function CategoryForm({ onSubmit, isLoading = false }: CategoryFormProps) {
   const [categoryName, setCategoryName] = useState("");
   const [error, setError] = useState<string | null>(null);
-
+  const { t } = useLanguage();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -44,7 +45,7 @@ export default function CategoryForm({ onSubmit, isLoading = false }: CategoryFo
 
       <input
         type="text"
-        placeholder="New category name"
+        placeholder={t("widgets.bookmarkWidget.newCategoryName")}
         value={categoryName}
         onChange={(e) => setCategoryName(e.target.value)}
         disabled={isLoading}
@@ -76,7 +77,7 @@ export default function CategoryForm({ onSubmit, isLoading = false }: CategoryFo
           fontWeight: 600,
         }}
       >
-        {isLoading ? "Adding..." : "Add Category"}
+        {isLoading ? t("widgets.bookmarkWidget.adding") : t("widgets.bookmarkWidget.addCategory")}
       </button>
     </form>
   );

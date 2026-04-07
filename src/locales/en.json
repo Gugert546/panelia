@@ -76,6 +76,7 @@
       "Categori": "Category",
       "deleteCategory": "Delete category",
       "categoryHover": "Click to choose category, or hover and scroll",
+      "newCategoryName":"New category name",
       "bookmarkTitle":"Bookmark title",
       "bookmarkURL": "Bookmark URL"
     },
