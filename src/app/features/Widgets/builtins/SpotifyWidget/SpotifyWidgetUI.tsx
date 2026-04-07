@@ -241,6 +241,93 @@ export function SpotifyPlayingView({
     alignItems: "center"
   };
 
+  const playbackBarStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 18,
+    marginTop: 1,
+    padding: "10px 14px",
+    borderRadius: 14,
+    background: isDarkMode ? "#242424" : "#e8e8e800"
+  };
+
+  const sidePlaybackButtonStyle = {
+    border: "none",
+    background: "transparent",
+    color: isDarkMode ? "#B9B9B9" : "#4A4A4A",
+    fontSize: 22,
+    lineHeight: 1,
+    padding: 0,
+    width: 28,
+    height: 28,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer"
+  };
+
+  const primaryPlaybackButtonStyle = {
+    width: 46,
+    height: 46,
+    borderRadius: "50%",
+    border: isDarkMode ? "1px solid #9B9B9B" : "1px solid #8A8A8A",
+    background: isDarkMode ? "#2E2E2E" : "#F6F6F6",
+    color: isDarkMode ? "#D8D8D8" : "#3D3D3D",
+    fontSize: 24,
+    lineHeight: 1,
+    padding: 0,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer"
+  };
+
+  const playbackIconStyle = {
+    fontFamily: "\"Material Symbols Rounded\"",
+    fontWeight: 400,
+    fontStyle: "normal",
+    fontSize: 24,
+    lineHeight: 1,
+    display: "block",
+    fontVariationSettings: "\"FILL\" 1, \"wght\" 400, \"GRAD\" 0, \"opsz\" 24"
+  };
+
+  const primaryPlaybackIconStyle = {
+    ...playbackIconStyle,
+    fontSize: 28,
+    fontVariationSettings: "\"FILL\" 1, \"wght\" 500, \"GRAD\" 0, \"opsz\" 24"
+  };
+
+  const utilityIconStyle = {
+    ...playbackIconStyle,
+    fontSize: 20,
+    color: isDarkMode ? "#C4C4C4" : "#4A4A4A",
+    flexShrink: 0
+  };
+
+  const utilityRowStyle = {
+    marginTop: 5,
+    display: "flex",
+    alignItems: "center",
+    gap: 10
+  };
+
+  const selectStyle = isDarkMode
+    ? {
+      flex: 1,
+      background: "#1F1F1F",
+      color: "#FFFFFF",
+      border: "1px solid #2A2A2A",
+      borderRadius: 6,
+      padding: "6px 8px"
+    }
+    : {
+      flex: 1,
+      borderRadius: 6,
+      padding: "6px 8px"
+    };
+
   return (
     <WidgetContainer>
       <WidgetPane title="">
@@ -254,13 +341,39 @@ export function SpotifyPlayingView({
                 onClick={onExpandFromCover}
                 aria-label="Expand player"
               />
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <div style={{ 
+                display: "flex", 
+                justifyContent: "flex-end",
+                gap: 6,
+                alignItems: "center",
+                }}>
+                <button
+                    onClick={onToggleDarkMode}
+                    style={darkModeSwitchStyle}
+                    aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+                    title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
+                  >
+                    <span
+                      style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: "50%",
+                          background: "#FFFFFF",
+                          display: "block",
+                          marginLeft: 20
+                        }}
+                    />
+                  </button>
+
                 <button
                   onClick={onExpandFromCover}
                   style={controlButtonStyle}
                   aria-label="Expand player"
+                  title="Expand player"
                 >
-                  🗖
+                  <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
+                    open_in_full
+                  </span>
                 </button>
               </div>
             </div>
@@ -270,7 +383,7 @@ export function SpotifyPlayingView({
                 display: "flex",
                 flexDirection: "column",
                 flex: 1,
-                gap: 12,
+                gap: 4,
                 width: "100%",
                 minHeight: 0,
                 ...panelStyle
@@ -291,13 +404,42 @@ export function SpotifyPlayingView({
                 >
                   {t("widgets.spotifyWidget.nowPlaying")}
                 </div>
+                <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 6,
+
+                }}>
+                  <button
+                    onClick={onToggleDarkMode}
+                    style={darkModeSwitchStyle}
+                    aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+                    title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
+                  >
+                    <span
+                      style={{
+                          width: 16,
+                          height: 16,
+                          borderRadius: "50%",
+                          background: "#FFFFFF",
+                          display: "block",
+                          marginLeft: 20
+                        }}
+                    />
+                  </button>
                 <button
                   onClick={onToggleMinimized}
                   style={controlButtonStyle}
                   aria-label={isMinimized ? t("widgets.spotifyWidget.expandPlayer") : t("widgets.spotifyWidget.minimizePlayer")}
+                  title={isMinimized ? t("widgets.spotifyWidget.expandPlayer") : t("widgets.spotifyWidget.minimizePlayer")}
                 >
-                  {isMinimized ? "🗖" : "🗕"}
+                  <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
+                    {isMinimized ? "open_in_full" : "close_fullscreen"}
+                  </span>
                 </button>
+                </div>
               </div>
 
               <img
@@ -306,7 +448,7 @@ export function SpotifyPlayingView({
                 style={{ borderRadius: 8 }}
               />
 
-              <div style={{ marginTop: 10, fontWeight: 600 }}>
+              <div style={{ marginTop: 5, fontWeight: 600 }}>
                 {track.name}
               </div>
 
@@ -327,37 +469,60 @@ export function SpotifyPlayingView({
                 }}
               />
 
-              <div style={{ marginTop: 10 }}>
-                <button onClick={onPrevTrack}>⏮</button>
-                <button onClick={onPlayPause}>
-                  {player.is_playing ? "⏸" : "▶"}
+              <div style={playbackBarStyle}>
+                <button
+                  onClick={onPrevTrack}
+                  style={sidePlaybackButtonStyle}
+                  aria-label="Previous track"
+                  title="Previous track"
+                >
+                  <span className="material-symbols-rounded" aria-hidden="true" style={playbackIconStyle}>
+                    skip_previous
+                  </span>
                 </button>
-                <button onClick={onNextTrack}>⏭</button>
+                <button
+                  onClick={onPlayPause}
+                  style={primaryPlaybackButtonStyle}
+                  aria-label={player.is_playing ? "Pause" : "Play"}
+                  title={player.is_playing ? "Pause" : "Play"}
+                >
+                  <span className="material-symbols-rounded" aria-hidden="true" style={primaryPlaybackIconStyle}>
+                    {player.is_playing ? "pause" : "play_arrow"}
+                  </span>
+                </button>
+                <button
+                  onClick={onNextTrack}
+                  style={sidePlaybackButtonStyle}
+                  aria-label="Next track"
+                  title="Next track"
+                >
+                  <span className="material-symbols-rounded" aria-hidden="true" style={playbackIconStyle}>
+                    skip_next
+                  </span>
+                </button>
               </div>
 
-              <div style={{ marginTop: 10 }}>
-                🔊
+              <div style={utilityRowStyle}>
+                <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
+                  volume_up
+                </span>
                 <input
                   type="range"
                   min={0}
                   max={100}
                   value={volume}
                   onChange={(event) => onChangeVolume(Number(event.target.value))}
+                  style={{ flex: 1, accentColor: "#1DB954" }}
                 />
               </div>
 
-              <div style={{ marginTop: 10 }}>
-                🎧
+              <div style={utilityRowStyle}>
+                <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
+                  speaker
+                </span>
                 <select
                   onChange={(event) => onChangeDevice(event.target.value)}
-                  style={isDarkMode
-                    ? {
-                      background: "#1F1F1F",
-                      color: "#FFFFFF",
-                      border: "1px solid #2A2A2A",
-                      borderRadius: 6
-                    }
-                    : undefined}
+                  style={selectStyle}
                 >
                   {devices.map((device) => (
                     <option key={device.id} value={device.id}>
@@ -368,25 +533,6 @@ export function SpotifyPlayingView({
               </div>
             </div>
           )}
-
-          <div style={{ display: "flex", justifyContent: "flex-start", paddingTop: 8, flexShrink: 0 }}>
-            <button
-              onClick={onToggleDarkMode}
-              style={darkModeSwitchStyle}
-              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
-              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
-            >
-              <span
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  background: "#FFFFFF",
-                  display: "block"
-                }}
-              />
-            </button>
-          </div>
         </div>
       </WidgetPane>
     </WidgetContainer>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export type SpotifyArtist = { name: string };
 export type SpotifyImage = { url: string };
@@ -43,6 +43,10 @@ export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
   const [volume, setVolume] = useState(50);
   const [isDarkMode, setIsDarkMode] = useState(() => getStoredBool("spotify_widget_dark_mode", true));
   const [isMinimized, setIsMinimized] = useState(() => getStoredBool("spotify_widget_minimized", false));
+  const playerRetryAtRef = useRef(0);
+  const devicesRetryAtRef = useRef(0);
+  const isFetchingPlayerRef = useRef(false);
+  const isFetchingDevicesRef = useRef(false);
 
   useEffect(() => {
     localStorage.setItem("spotify_widget_dark_mode", String(isDarkMode));
@@ -74,45 +78,105 @@ export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
     return () => clearInterval(interval);
   }, []);
 
+  const parseSpotifyResponse = async (res: Response) => {
+    const text = await res.text();
+
+    if (!text) return null;
+
+    try {
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch (error) {
+      console.warn("Spotify returned a non-JSON response", res.status, text);
+      return null;
+    }
+  };
+
+  const getRetryDelayMs = (res: Response) => {
+    const retryAfterSeconds = Number(res.headers.get("Retry-After"));
+
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return retryAfterSeconds * 1000;
+    }
+
+    return 30_000;
+  };
+
   const fetchPlayer = async () => {
-    if (!token) return;
+    if (!token || isFetchingPlayerRef.current || Date.now() < playerRetryAtRef.current) return;
 
-    const res = await fetch("https://api.spotify.com/v1/me/player", {
-      headers: {
-        Authorization: `Bearer ${token}`
+    isFetchingPlayerRef.current = true;
+
+    try {
+      const res = await fetch("https://api.spotify.com/v1/me/player", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 204) {
+        setPlayer(null);
+        playerRetryAtRef.current = 0;
+        return;
       }
-    });
 
-    if (res.status === 204) {
-      setPlayer(null);
-      return;
-    }
+      if (res.status === 429) {
+        playerRetryAtRef.current = Date.now() + getRetryDelayMs(res);
+        return;
+      }
 
-    const data = await res.json();
+      if (!res.ok) {
+        return;
+      }
 
-    if (!data || !data.item) {
-      setPlayer(null);
-      return;
-    }
+      const data = await parseSpotifyResponse(res);
 
-    setPlayer(data);
+      if (!data || !("item" in data) || !data.item) {
+        setPlayer(null);
+        return;
+      }
 
-    if (data.device?.volume_percent !== undefined) {
-      setVolume(data.device.volume_percent);
+      const nextPlayer = data as unknown as SpotifyPlayerState;
+
+      setPlayer(nextPlayer);
+      playerRetryAtRef.current = 0;
+
+      if (nextPlayer.device?.volume_percent !== undefined) {
+        setVolume(nextPlayer.device.volume_percent);
+      }
+    } finally {
+      isFetchingPlayerRef.current = false;
     }
   };
 
   const fetchDevices = async () => {
-    if (!token) return;
+    if (!token || isFetchingDevicesRef.current || Date.now() < devicesRetryAtRef.current) return;
 
-    const res = await fetch("https://api.spotify.com/v1/me/player/devices", {
-      headers: {
-        Authorization: `Bearer ${token}`
+    isFetchingDevicesRef.current = true;
+
+    try {
+      const res = await fetch("https://api.spotify.com/v1/me/player/devices", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (res.status === 429) {
+        devicesRetryAtRef.current = Date.now() + getRetryDelayMs(res);
+        return;
       }
-    });
 
-    const data = await res.json();
-    setDevices(data.devices || []);
+      if (!res.ok) {
+        return;
+      }
+
+      const data = await parseSpotifyResponse(res);
+      const nextDevices = Array.isArray(data?.devices) ? (data.devices as SpotifyDevice[]) : [];
+
+      setDevices(nextDevices);
+      devicesRetryAtRef.current = 0;
+    } finally {
+      isFetchingDevicesRef.current = false;
+    }
   };
 
   useEffect(() => {
@@ -121,12 +185,18 @@ export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
     fetchPlayer();
     fetchDevices();
 
-    const interval = setInterval(() => {
+    const playerInterval = setInterval(() => {
       fetchPlayer();
-      fetchDevices();
-    }, 4000);
+    }, 10_000);
 
-    return () => clearInterval(interval);
+    const devicesInterval = setInterval(() => {
+      fetchDevices();
+    }, 30_000);
+
+    return () => {
+      clearInterval(playerInterval);
+      clearInterval(devicesInterval);
+    };
   }, [token]);
 
   const getDevice = () => {

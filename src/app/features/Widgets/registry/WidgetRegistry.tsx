@@ -108,7 +108,7 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
   spotify: {
     title: "Spotify",
     Component: SpotifyWidgetAdapter,
-    defaultGrid: { w: 8, h: 6 },
+    defaultGrid: { w: 8, h: 13},
   },
   bookmark: {
     title: "Bokmerker",
