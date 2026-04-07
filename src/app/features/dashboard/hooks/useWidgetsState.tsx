@@ -10,8 +10,8 @@ type LayoutItem = {
   h: number;
 };
 
-const GRID_COLUMNS = 40;
-const GRID_ROWS = 25;
+const GRID_COLUMNS = 40; // Brukes for å plassere widget ved spawn
+const GRID_ROWS = 20;
 
 export type CustomButtonConfig = {
   label: string;
