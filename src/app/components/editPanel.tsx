@@ -390,8 +390,17 @@ export default function EditPanel({
            borderRadius:borderRadiusThemeElements,
            padding: themeElementsPadding,
            }}>
-          <h3 style={{fontSize:titleTextSize,}}>{t('editPanel.fontSize')}</h3>
-            <div style={{ display: 'flex', gap: 8 }}>
+          <h3 style={{
+            fontSize:titleTextSize,
+            margin:"auto",
+
+          }}>{t('editPanel.fontSize')}</h3>
+            <div style={{ 
+                display: 'flex',
+                gap: 8,
+                marginTop:5,
+               
+              }}>
               <button
                 onClick={() => setFontSizeMode('small')}
                 style={{
@@ -455,6 +464,7 @@ export default function EditPanel({
                 border: "1px solid #ddd",
                 background: "#f6f6f6",
                 cursor: "pointer",
+                marginTop:5,
               }}
             >
               <input
@@ -506,6 +516,7 @@ export default function EditPanel({
                   border: "1px solid #ddd",
                   background: "#f6f6f6",
                   cursor: "pointer",
+                  marginTop: 5,
                 }}
               >
                 <input
@@ -553,7 +564,10 @@ export default function EditPanel({
                 value={widgetBorderWidth}
                 onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
                 aria-label={t('editPanel.widgetBorderWidth')}
-                style={{ width: "100%" }}
+                style={{ 
+                  width: "100%",
+                  marginTop: 5,
+                 }}
               />
             </div>
             <div style={{
@@ -574,7 +588,10 @@ export default function EditPanel({
                 value={widgetOpacity}
                 onChange={(event) => setWidgetOpacity(Number(event.target.value))}
                 aria-label={t('editPanel.widgetOpacity')}
-                style={{ width: "100%" }}
+                style={{ 
+                  width: "100%",
+                  marginTop: 5,
+                 }}
               />
             </div>
             <div style={{
@@ -599,6 +616,7 @@ export default function EditPanel({
                   border: "1px solid #ddd",
                   background: "#f6f6f6",
                   cursor: "pointer",
+                  marginTop: 5,
                 }}
               >
                 <input
