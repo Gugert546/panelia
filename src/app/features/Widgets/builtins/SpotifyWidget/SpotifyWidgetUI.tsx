@@ -249,7 +249,7 @@ export function SpotifyPlayingView({
     marginTop: 1,
     padding: "10px 14px",
     borderRadius: 14,
-    background: isDarkMode ? "#242424" : "#e8e8e800"
+    //background: isDarkMode ? "#242424" : "#e8e8e800"
   };
 
   const sidePlaybackButtonStyle = {
@@ -271,7 +271,7 @@ export function SpotifyPlayingView({
     width: 46,
     height: 46,
     borderRadius: "50%",
-    border: isDarkMode ? "1px solid #9B9B9B" : "1px solid #8A8A8A",
+    border: isDarkMode ? "2px solid #9B9B9B" : "2px solid #8A8A8A",
     background: isDarkMode ? "#2E2E2E" : "#F6F6F6",
     color: isDarkMode ? "#D8D8D8" : "#3D3D3D",
     fontSize: 24,

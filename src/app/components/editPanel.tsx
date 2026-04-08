@@ -20,6 +20,7 @@ import natt3 from "../../assets/panelia-bg/Natt 3.png";
 type Widget = {
   id: string;
   label: string;
+  icon?: string;
 };
 
 type EditPanelProps = {
@@ -131,7 +132,7 @@ export default function EditPanel({
     setModalOpen(false);
     setViewMode("widgets");
   }, [open]);
-
+  const { fontSize } = useFontSize();
   const handleCustomVideoUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -213,7 +214,7 @@ export default function EditPanel({
               border: language === 'no' ? '2px solid #4da3ff' : '1px solid #ddd',
               background: language === 'no' ? '#cde8ff' : '#f3f3f3',
               cursor: 'pointer',
-              fontSize: 12
+              fontSize,
             }}
             title="Norsk"
           >
@@ -227,14 +228,14 @@ export default function EditPanel({
               border: language === 'en' ? '2px solid #4da3ff' : '1px solid #ddd',
               background: language === 'en' ? '#cde8ff' : '#f3f3f3',
               cursor: 'pointer',
-              fontSize: 12
+              fontSize,
             }}
             title="English"
           >
             English
           </button>
         </div>
-        <button onClick={onClose}>{t('editPanel.close')}</button>
+        <button style={{ fontSize,}}onClick={onClose}>{t('editPanel.close')}</button>
       </div>
 
       <h2>
@@ -259,6 +260,7 @@ export default function EditPanel({
             border: viewMode === "widgets" ? "2px solid #4da3ff" : "1px solid #ddd",
             background: viewMode === "widgets" ? "#cde8ff" : "#f3f3f3",
             cursor: "pointer",
+            fontSize,
           }}
         >
           {t('editPanel.modeWidgets')}
@@ -271,6 +273,7 @@ export default function EditPanel({
             border: viewMode === "background" ? "2px solid #4da3ff" : "1px solid #ddd",
             background: viewMode === "background" ? "#cde8ff" : "#f3f3f3",
             cursor: "pointer",
+            fontSize,
           }}
         >
           {t('editPanel.modeBackground')}
@@ -296,6 +299,7 @@ export default function EditPanel({
 
             return (
               <div
+                //alle widgets
                 key={widget.id}
                 onClick={() => toggleWidget(widget.id)}
                 style={{
@@ -304,18 +308,38 @@ export default function EditPanel({
                   marginBottom: 10,
                   borderRadius: 8,
                   cursor: "pointer",
-                  background: isActive ? "#cde8ff" : "#f3f3f3",
+                  background: isActive ? "#fdfdfd80" : "#ffffff60",
                   border: isActive
-                    ? "2px solid #4da3ff"
-                    : "1px solid #ddd"
+                    ? "2px solid #ffffffd0"
+                    : ""
                 }}
               >
-                {widget.label}
-                {isActive && " ✓"}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
+                >
+                  <span>{widget.label}</span>
+                  <span
+                    className="material-symbols-rounded"
+                    aria-hidden="true"
+                    style={{
+                      fontSize,
+                      lineHeight: 1,
+                      opacity: 0.85,
+                    }}
+                  >
+                    {widget.icon ?? "widgets"}
+                  </span>
+                </div>
+                {isActive && ""}
               </div>
             );
           })}
-
+        
         {viewMode === "widgets" && (
           <div
             onClick={() => setModalOpen(true)}
@@ -325,8 +349,8 @@ export default function EditPanel({
               marginBottom: 10,
               borderRadius: 8,
               cursor: "pointer",
-              background: "#f3f3f3",
-              border: "1px solid #ddd"
+              background: "#ffffff57",
+              //border: "1px solid #ddd"
             }}
           >
             {t('editPanel.addCustomButton')}
@@ -343,7 +367,7 @@ export default function EditPanel({
             }}
           >  
         <div style={{ marginTop: 1 }}>
-          <h3>{t('editPanel.customPresets')}</h3>
+          <h3 style={{fontSize, }}>{t('editPanel.customPresets')}</h3>
 
           <div
             style={{
@@ -364,6 +388,7 @@ export default function EditPanel({
                 borderRadius: 8,
                 border: "1px solid #ddd",
                 background: "#fff",
+                fontSize,
               }}
             />
 
@@ -377,6 +402,7 @@ export default function EditPanel({
                 cursor: "pointer",
                 fontWeight: 600,
                 whiteSpace: "nowrap",
+                fontSize,
               }}
             >
               {t('editPanel.savePreset')}
@@ -386,7 +412,7 @@ export default function EditPanel({
           {dashboardPresets.length === 0 && (
             <div
               style={{
-                fontSize: 13,
+                fontSize,
                 color: "#4b5563",
                 background: "#f7f7f7",
                 border: "1px dashed #d1d5db",
@@ -413,7 +439,7 @@ export default function EditPanel({
               <div style={{ fontWeight: 600, marginBottom: 4 }}>
                 {preset.name}
               </div>
-              <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
+              <div style={{ fontSize, color: "#4b5563", marginBottom: 8 }}>
                 {new Date(preset.createdAt).toLocaleString()}
               </div>
 
@@ -452,7 +478,7 @@ export default function EditPanel({
         </div>
 
         <div style={{ marginTop: 1}}>
-        <h3>{t('editPanel.fontSize')}</h3>
+        <h3 style={{fontSize,}}>{t('editPanel.fontSize')}</h3>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
             onClick={() => setFontSizeMode('small')}
@@ -461,7 +487,8 @@ export default function EditPanel({
               borderRadius: 4,
               border: '1px solid #ddd',
               background: '#f3f3f3',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize,
             }}
           >
             {t('editPanel.small')}
@@ -473,7 +500,8 @@ export default function EditPanel({
               borderRadius: 4,
               border: '1px solid #ddd',
               background: '#f3f3f3',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize,
             }}
           >
             {t('editPanel.medium')}
@@ -485,14 +513,15 @@ export default function EditPanel({
               borderRadius: 4,
               border: '1px solid #ddd',
               background: '#f3f3f3',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              fontSize,
             }}
           >
             {t('editPanel.large')}
           </button>
         </div>
       </div>
-            <label style={{ fontSize: 14, fontWeight: 600 }}>
+            <label style={{ fontSize, fontWeight: 600 }}>
               {t('editPanel.widgetColor')}
             </label>
 
@@ -531,12 +560,12 @@ export default function EditPanel({
                   background: widgetSurfaceColor,
                 }}
               />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>
+              <span style={{ fontSize, fontWeight: 500 }}>
                 {t('editPanel.widgetColor')}
               </span>
             </label>
 
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+            <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
               {t('editPanel.widgetBorderColor')}
             </label>
 
@@ -575,12 +604,12 @@ export default function EditPanel({
                   background: widgetBorderColor,
                 }}
               />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>
+              <span style={{ fontSize, fontWeight: 500 }}>
                 {t('editPanel.widgetBorderColor')}
               </span>
             </label>
 
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+            <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
               {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
             </label>
 
@@ -595,7 +624,7 @@ export default function EditPanel({
               style={{ width: "100%" }}
             />
 
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+            <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
               {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
             </label>
 
@@ -610,7 +639,7 @@ export default function EditPanel({
               style={{ width: "100%" }}
             />
 
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
+            <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
               {t('editPanel.widgetTextColor')}
             </label>
 
@@ -649,7 +678,7 @@ export default function EditPanel({
                   background: widgetTextColor,
                 }}
               />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>
+              <span style={{ fontSize, fontWeight: 500 }}>
                 {t('editPanel.widgetTextColor')}
               </span>
             </label>
@@ -666,6 +695,7 @@ export default function EditPanel({
                 cursor: "pointer",
                 fontWeight: 600,
                 textAlign: "left",
+                fontSize,
               }}
             >
               {t('editPanel.resetWidgetStyle')}
@@ -692,6 +722,7 @@ export default function EditPanel({
                 textAlign: "left",
                 fontWeight: 600,
                 opacity: uploadingVideo ? 0.6 : 1,
+                fontSize,
               }}
             >
               {uploadingVideo ? t('editPanel.uploading') : t('editPanel.uploadCustomVideo')}
@@ -700,7 +731,7 @@ export default function EditPanel({
             {uploadVideoError && (
               <div
                 style={{
-                  fontSize: 12,
+                  fontSize,
                   color: "#92400e",
                   background: "#fef3c7",
                   border: "1px solid #d97706",
@@ -714,7 +745,7 @@ export default function EditPanel({
 
             <div
               style={{
-                fontSize: 12,
+                fontSize,
                 color: "#4b5563",
                 background: "#f7f7f7",
                 border: "1px dashed #d1d5db",
@@ -742,6 +773,7 @@ export default function EditPanel({
                       background: selected ? "#eaf4ff" : "#f7f7f7",
                       cursor: "pointer",
                       overflow: "hidden",
+                      fontSize,
                     }}
                   >
                     <img
@@ -786,7 +818,7 @@ export default function EditPanel({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: 10,
+                        fontSize,
                         fontWeight: 700,
                         color: "#eaf4ff",
                         flexShrink: 0,
@@ -806,7 +838,7 @@ export default function EditPanel({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: 11,
+                        fontSize,
                         fontWeight: 600,
                         color: "#1e2d4d",
                         flexShrink: 0,
