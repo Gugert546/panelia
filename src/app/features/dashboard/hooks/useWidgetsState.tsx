@@ -658,6 +658,17 @@ export function useWidgetsState() {
 
     setActiveWidgets((prev) => {
       const exists = prev.includes(id);
+
+      setWidgetLocks((prevLocks) => {
+        if (exists) {
+          const next = { ...prevLocks };
+          delete next[id];
+          return next;
+        }
+
+        return { ...prevLocks, [id]: false };
+      });
+
       return exists ? prev.filter((widgetId) => widgetId !== id) : [...prev, id];
     });
 
