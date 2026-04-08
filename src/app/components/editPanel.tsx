@@ -124,7 +124,7 @@ export default function EditPanel({
   const customVideoInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingVideo, setUploadingVideo] = useState(false);
   const [uploadVideoError, setUploadVideoError] = useState("");
-  const { setFontSizeMode } = useFontSize();
+  const { fontSize, setFontSizeMode } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
 
@@ -132,7 +132,7 @@ export default function EditPanel({
     setModalOpen(false);
     setViewMode("widgets");
   }, [open]);
-  const { fontSize } = useFontSize();
+  
   const handleCustomVideoUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -187,8 +187,16 @@ export default function EditPanel({
   };
   //farge på elementer i tema meny
   const backgroundColor = "#d3d3d36e";
+  //border-radius på elementer i tema menyen
   const borderRadiusThemeElements =8;
+  //padding på elementer i tema-menyen
   const themeElementsPadding ='8px 12px';
+  //størrelser på iconene i widget-menyen
+  const widgetIconSize = Math.max(fontSize + 8, 22);
+  //font størrelse på titler i tema-menyen
+  const titleTextSize= Math.max(fontSize+ 3);
+  //font størrelse på tittelen på sidemenyen
+  const bigTitleFontSize= Math.max(fontSize+7);
   return (
     <div
       style={{
@@ -248,7 +256,7 @@ export default function EditPanel({
         }}onClick={onClose}>{t('editPanel.close')}</button>
       </div>
 
-      <h2>
+      <h2 style={{fontSize:bigTitleFontSize}}>
         {viewMode === "widgets"
           ? t('editPanel.selectWidgets')
           : t('editPanel.modeBackground')}
@@ -332,12 +340,12 @@ export default function EditPanel({
                     gap: 12,
                   }}
                 >
-                  <span>{widget.label}</span>
+                  <span style={{ fontSize }}>{widget.label}</span>
                   <span
                     className="material-symbols-rounded"
                     aria-hidden="true"
                     style={{
-                      fontSize,
+                      fontSize: widgetIconSize,
                       lineHeight: 1,
                       opacity: 0.85,
                     }}
@@ -378,12 +386,11 @@ export default function EditPanel({
           >  
         <div style={{
           //skriftstørrelse
-           marginTop: 1,
            background: backgroundColor,
            borderRadius:borderRadiusThemeElements,
            padding: themeElementsPadding,
            }}>
-          <h3 style={{fontSize,}}>{t('editPanel.fontSize')}</h3>
+          <h3 style={{fontSize:titleTextSize,}}>{t('editPanel.fontSize')}</h3>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => setFontSizeMode('small')}
@@ -432,7 +439,7 @@ export default function EditPanel({
             borderRadius:borderRadiusThemeElements,
             padding: themeElementsPadding,
             }} >
-            <label style={{ fontSize, fontWeight: 600 }}>
+            <label style={{ fontSize:titleTextSize, fontWeight: 600 }}>
               {t('editPanel.widgetColor')}
             </label>
 
@@ -483,7 +490,7 @@ export default function EditPanel({
                 padding: themeElementsPadding,
 
                 }}>  
-              <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
                 {t('editPanel.widgetBorderColor')}
               </label>
 
@@ -534,7 +541,7 @@ export default function EditPanel({
                 padding: themeElementsPadding,
 
             }}>    
-              <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
                 {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
               </label>
 
@@ -555,7 +562,7 @@ export default function EditPanel({
                 borderRadius:borderRadiusThemeElements,
                 padding: themeElementsPadding,
                 }}>
-              <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
                 {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
               </label>
 
@@ -576,7 +583,7 @@ export default function EditPanel({
                 borderRadius:borderRadiusThemeElements,
                 padding: themeElementsPadding,
                 }}>
-              <label style={{ fontSize, fontWeight: 600, marginTop: 8 }}>
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
                 {t('editPanel.widgetTextColor')}
               </label>
 
@@ -710,7 +717,8 @@ export default function EditPanel({
               </div>
           </div>
             
-        <div // egendefinerte presets
+        <div 
+        // egendefinerte presets
           style={{ 
             marginTop: 1,
             background: backgroundColor,
@@ -718,7 +726,7 @@ export default function EditPanel({
             borderRadius: 8,
             
             }}>
-          <h3 style={{fontSize, }}>{t('editPanel.customPresets')}</h3>
+          <h3 style={{fontSize:titleTextSize, }}>{t('editPanel.customPresets')}</h3>
 
           <div
             style={{
