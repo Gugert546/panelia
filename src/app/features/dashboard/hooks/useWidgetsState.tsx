@@ -26,14 +26,16 @@ export type WidgetInstance = {
 };
 
 export type WidgetSizeMode = "small" | "medium" | "large";
+export type CustomBackgroundMediaType = "image" | "video";
 export type DashboardBackgroundId =
+  | "defaultbg"
   | "sol1"
   | "sol2"
   | "sol3"
   | "natt1"
   | "natt2"
   | "natt3"
-  | "videoCustom";
+  | "customMedia";
 
 export type DashboardPreset = {
   id: string;
@@ -49,7 +51,8 @@ export type DashboardPreset = {
   widgetBorderWidth: number;
   widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
-  customVideoBackgroundUrl: string;
+  customBackgroundUrl: string;
+  customBackgroundType: CustomBackgroundMediaType;
   createdAt: number;
 };
 
@@ -64,7 +67,9 @@ type WidgetLayoutDocument = {
   widgetOpacity?: number;
   widgetBorderWidth?: number;
   widgetSizeMode?: WidgetSizeMode;
-  dashboardBackgroundId?: DashboardBackgroundId;
+  dashboardBackgroundId?: DashboardBackgroundId | "videoCustom";
+  customBackgroundUrl?: string;
+  customBackgroundType?: CustomBackgroundMediaType;
   customVideoBackgroundUrl?: string;
   dashboardPresets?: DashboardPreset[];
   updatedAt?: unknown;
@@ -72,14 +77,14 @@ type WidgetLayoutDocument = {
 
 // Available widgets for the dashboard
 export const AVAILABLE_WIDGETS = [
-  { id: "clock", label: "Klokke" },
-  { id: "calendar", label: "Kalender" },
-  { id: "google_search", label: "Søk" },
-  { id: "news", label: "Nyheter" },
-  { id: "weather", label: "Vær" },
-  { id: "bookmark", label: "Bokmerke" },
-  { id: "notes", label: "Notater" },
-  { id: "spotify", label: "Spotify" },
+  { id: "clock", label: "Klokke", icon: "schedule" },
+  { id: "calendar", label: "Kalender", icon: "calendar_month" },
+  { id: "google_search", label: "Søk", icon: "search" },
+  { id: "news", label: "Nyheter", icon: "newsmode" },
+  { id: "weather", label: "Vær", icon: "partly_cloudy_day" },
+  { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
+  { id: "notes", label: "Notater", icon: "sticky_note_2" },
+  { id: "spotify", label: "Spotify", icon: "music_note" },
 ] as const;
 
 // Debounce delay for saving to Firestore (5 seconds)
@@ -90,18 +95,24 @@ const DEFAULT_WIDGET_TEXT_COLOR = "#ffffff";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
-const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "sol1";
+const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "defaultbg";
 
 function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
   return (
+    value === "defaultbg" ||
     value === "sol1" ||
     value === "sol2" ||
     value === "sol3" ||
     value === "natt1" ||
     value === "natt2" ||
     value === "natt3" ||
-    value === "videoCustom"
+    value === "customMedia"
   );
+}
+
+function normalizeDashboardBackgroundId(value: unknown): DashboardBackgroundId {
+  if (value === "videoCustom") return "customMedia";
+  return isDashboardBackgroundId(value) ? value : DEFAULT_DASHBOARD_BACKGROUND_ID;
 }
 
 function createDashboardPresetId() {
@@ -246,13 +257,23 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         preset.widgetSizeMode === "large"
           ? preset.widgetSizeMode
           : DEFAULT_WIDGET_SIZE_MODE,
-      dashboardBackgroundId: isDashboardBackgroundId(preset.dashboardBackgroundId)
-        ? preset.dashboardBackgroundId
-        : DEFAULT_DASHBOARD_BACKGROUND_ID,
-      customVideoBackgroundUrl:
-        typeof preset.customVideoBackgroundUrl === "string"
-          ? preset.customVideoBackgroundUrl
-          : "",
+      dashboardBackgroundId: normalizeDashboardBackgroundId(
+        preset.dashboardBackgroundId
+      ),
+      customBackgroundUrl: normalizeCustomBackgroundUrl(
+        typeof preset.customBackgroundUrl === "string"
+          ? preset.customBackgroundUrl
+          : typeof preset.customVideoBackgroundUrl === "string"
+            ? preset.customVideoBackgroundUrl
+            : ""
+      ),
+      customBackgroundType: normalizeCustomBackgroundType(
+        preset.customBackgroundType,
+        typeof preset.customVideoBackgroundUrl === "string" &&
+          preset.customVideoBackgroundUrl
+          ? "video"
+          : "image"
+      ),
       createdAt:
         typeof preset.createdAt === "number" && Number.isFinite(preset.createdAt)
           ? preset.createdAt
@@ -271,11 +292,24 @@ function normalizePersistedVideoUrl(url: string) {
   return url;
 }
 
+function normalizeCustomBackgroundUrl(url: string) {
+  return normalizePersistedVideoUrl(url);
+}
+
+function normalizeCustomBackgroundType(
+  value: unknown,
+  fallback: CustomBackgroundMediaType = "image"
+): CustomBackgroundMediaType {
+  return value === "image" || value === "video" ? value : fallback;
+}
+
 function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
   return {
     ...preset,
-    customVideoBackgroundUrl: normalizePersistedVideoUrl(
-      preset.customVideoBackgroundUrl
+    customBackgroundUrl: normalizeCustomBackgroundUrl(preset.customBackgroundUrl),
+    customBackgroundType: normalizeCustomBackgroundType(
+      preset.customBackgroundType,
+      "image"
     ),
   };
 }
@@ -384,7 +418,9 @@ export function useWidgetsState() {
   );
   const [dashboardBackgroundId, setDashboardBackgroundId] =
     useState<DashboardBackgroundId>(DEFAULT_DASHBOARD_BACKGROUND_ID);
-  const [customVideoBackgroundUrl, setCustomVideoBackgroundUrl] = useState("");
+  const [customBackgroundUrl, setCustomBackgroundUrl] = useState("");
+  const [customBackgroundType, setCustomBackgroundType] =
+    useState<CustomBackgroundMediaType>("image");
   const [dashboardPresets, setDashboardPresets] = useState<DashboardPreset[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -404,7 +440,8 @@ export function useWidgetsState() {
       setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
       setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
       setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
-      setCustomVideoBackgroundUrl("");
+      setCustomBackgroundUrl("");
+      setCustomBackgroundType("image");
       setDashboardPresets([]);
       setIsLoading(false);
       hasLoadedRef.current = false;
@@ -427,7 +464,8 @@ export function useWidgetsState() {
         setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
         setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
         setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
-        setCustomVideoBackgroundUrl("");
+        setCustomBackgroundUrl("");
+        setCustomBackgroundType("image");
         setDashboardPresets([]);
         hasLoadedRef.current = true;
         return;
@@ -480,14 +518,22 @@ export function useWidgetsState() {
           : DEFAULT_WIDGET_SIZE_MODE
       );
       setDashboardBackgroundId(
-        isDashboardBackgroundId(data.dashboardBackgroundId)
-          ? data.dashboardBackgroundId
-          : DEFAULT_DASHBOARD_BACKGROUND_ID
+        normalizeDashboardBackgroundId(data.dashboardBackgroundId)
       );
-      setCustomVideoBackgroundUrl(
+      const legacyVideoBackgroundUrl =
         typeof data.customVideoBackgroundUrl === "string"
-          ? normalizePersistedVideoUrl(data.customVideoBackgroundUrl)
-          : ""
+          ? normalizeCustomBackgroundUrl(data.customVideoBackgroundUrl)
+          : "";
+      const nextCustomBackgroundUrl =
+        typeof data.customBackgroundUrl === "string"
+          ? normalizeCustomBackgroundUrl(data.customBackgroundUrl)
+          : legacyVideoBackgroundUrl;
+      setCustomBackgroundUrl(nextCustomBackgroundUrl);
+      setCustomBackgroundType(
+        normalizeCustomBackgroundType(
+          data.customBackgroundType,
+          legacyVideoBackgroundUrl ? "video" : "image"
+        )
       );
       setDashboardPresets(normalizeDashboardPresets(data.dashboardPresets));
       hasLoadedRef.current = true;
@@ -521,9 +567,8 @@ export function useWidgetsState() {
           widgetBorderWidth,
           widgetSizeMode,
           dashboardBackgroundId,
-          customVideoBackgroundUrl: normalizePersistedVideoUrl(
-            customVideoBackgroundUrl
-          ),
+          customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
+          customBackgroundType,
           dashboardPresets: dashboardPresets.map(sanitizePresetForPersistence),
           updatedAt: serverTimestamp(),
         });
@@ -546,7 +591,8 @@ export function useWidgetsState() {
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
-    customVideoBackgroundUrl,
+    customBackgroundUrl,
+    customBackgroundType,
     dashboardPresets,
     isLoading,
   ]);
@@ -589,7 +635,8 @@ export function useWidgetsState() {
       widgetBorderWidth,
       widgetSizeMode,
       dashboardBackgroundId,
-      customVideoBackgroundUrl: normalizePersistedVideoUrl(customVideoBackgroundUrl),
+      customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
+      customBackgroundType,
       createdAt: Date.now(),
     };
 
@@ -601,7 +648,8 @@ export function useWidgetsState() {
   }, [
     activeWidgets,
     customButtonConfigs,
-    customVideoBackgroundUrl,
+    customBackgroundUrl,
+    customBackgroundType,
     dashboardBackgroundId,
     dashboardPresets.length,
     dashboardPresets,
@@ -631,7 +679,8 @@ export function useWidgetsState() {
     setWidgetBorderWidth(preset.widgetBorderWidth);
     setWidgetSizeMode(preset.widgetSizeMode);
     setDashboardBackgroundId(preset.dashboardBackgroundId);
-    setCustomVideoBackgroundUrl(preset.customVideoBackgroundUrl);
+    setCustomBackgroundUrl(preset.customBackgroundUrl);
+    setCustomBackgroundType(preset.customBackgroundType);
 
     return true;
   }, [dashboardPresets]);
@@ -740,7 +789,8 @@ export function useWidgetsState() {
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
-    customVideoBackgroundUrl,
+    customBackgroundUrl,
+    customBackgroundType,
     dashboardPresets,
     isLoading,
     toggleWidget,
@@ -755,7 +805,8 @@ export function useWidgetsState() {
     setWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,
-    setCustomVideoBackgroundUrl,
+    setCustomBackgroundUrl,
+    setCustomBackgroundType,
     saveCurrentAsPreset,
     applyDashboardPreset,
     deleteDashboardPreset,

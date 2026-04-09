@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AddCustomButtonModal from "./AddCustomButtonModal";
 import type {
+  CustomBackgroundMediaType,
   CustomButtonConfig,
   DashboardPreset,
   DashboardBackgroundId,
@@ -8,18 +9,19 @@ import type {
 } from "../features/dashboard/hooks/useWidgetsState";
 import { useFontSize } from '../providers/themeProviders';
 import { useLanguage } from '../providers/languageProvider';
-import { uploadBackgroundMedia, validateFileSize } from "../../lib/firebase/storage";
+import {
+  detectBackgroundMediaType,
+  uploadBackgroundMedia,
+  validateFileSize,
+} from "../../lib/firebase/storage";
 import { useAuth } from "../features/auth/useAuth";
-import sol1 from "../../assets/panelia-bg/Sol 1.png";
-import sol2 from "../../assets/panelia-bg/Sol 2.png";
-import sol3 from "../../assets/panelia-bg/Sol 3.png";
-import natt1 from "../../assets/panelia-bg/Natt 1.png";
-import natt2 from "../../assets/panelia-bg/Natt 2.png";
-import natt3 from "../../assets/panelia-bg/Natt 3.png";
+import paneliabgmashup from "../../assets/panelia-bg/paneliabgmashup.png";
+
 
 type Widget = {
   id: string;
   label: string;
+  icon?: string;
 };
 
 type EditPanelProps = {
@@ -44,7 +46,8 @@ type EditPanelProps = {
   setWidgetSizeMode: (mode: WidgetSizeMode) => void;
   dashboardBackgroundId: DashboardBackgroundId;
   setDashboardBackgroundId: (backgroundId: DashboardBackgroundId) => void;
-  setCustomVideoBackgroundUrl: (url: string) => void;
+  setCustomBackgroundUrl: (url: string) => void;
+  setCustomBackgroundType: (type: CustomBackgroundMediaType) => void;
   dashboardPresets: DashboardPreset[];
   saveCurrentAsPreset: (name?: string) => string;
   applyDashboardPreset: (presetId: string) => boolean;
@@ -56,13 +59,8 @@ const BACKGROUND_OPTIONS: Array<{
   labelKey: string;
   preview?: string;
 }> = [
-  { id: "sol1", labelKey: "editPanel.backgroundSol1", preview: sol1 },
-  { id: "sol2", labelKey: "editPanel.backgroundSol2", preview: sol2 },
-  { id: "sol3", labelKey: "editPanel.backgroundSol3", preview: sol3 },
-  { id: "natt1", labelKey: "editPanel.backgroundNatt1", preview: natt1 },
-  { id: "natt2", labelKey: "editPanel.backgroundNatt2", preview: natt2 },
-  { id: "natt3", labelKey: "editPanel.backgroundNatt3", preview: natt3 },
-  { id: "videoCustom", labelKey: "editPanel.backgroundVideoCustom" },
+  { id: "defaultbg", labelKey: "editPanel.paneliabgmashup", preview: paneliabgmashup },
+  
 ];
 
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
@@ -111,7 +109,8 @@ export default function EditPanel({
   setWidgetSizeMode,
   dashboardBackgroundId,
   setDashboardBackgroundId,
-  setCustomVideoBackgroundUrl,
+  setCustomBackgroundUrl,
+  setCustomBackgroundType,
   dashboardPresets,
   saveCurrentAsPreset,
   applyDashboardPreset,
@@ -120,10 +119,10 @@ export default function EditPanel({
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"widgets" | "background">("widgets");
   const [presetName, setPresetName] = useState("");
-  const customVideoInputRef = useRef<HTMLInputElement | null>(null);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [uploadVideoError, setUploadVideoError] = useState("");
-  const { setFontSizeMode } = useFontSize();
+  const customBackgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingBackground, setUploadingBackground] = useState(false);
+  const [uploadBackgroundError, setUploadBackgroundError] = useState("");
+  const { fontSize, setFontSizeMode } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
 
@@ -131,37 +130,49 @@ export default function EditPanel({
     setModalOpen(false);
     setViewMode("widgets");
   }, [open]);
-
-  const handleCustomVideoUpload = async (
+  
+  const handleCustomBackgroundUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!user) {
-      setUploadVideoError(t('editPanel.uploadNotSignedIn') || "Please sign in first");
+      setUploadBackgroundError(t('editPanel.uploadNotSignedIn') || "Please sign in first");
+      return;
+    }
+
+    const mediaType = detectBackgroundMediaType(file) as CustomBackgroundMediaType | null;
+
+    if (!mediaType) {
+      setUploadBackgroundError(
+        t('editPanel.unsupportedBackgroundFile') ||
+          "Unsupported file type. Please upload an image or video."
+      );
+      event.target.value = "";
       return;
     }
 
     const validation = validateFileSize(file);
     if (!validation.valid) {
-      setUploadVideoError(t('editPanel.fileTooLarge') || validation.error || "File is too large");
+      setUploadBackgroundError(t('editPanel.fileTooLarge') || validation.error || "File is too large");
       event.target.value = "";
       return;
     }
 
-    setUploadingVideo(true);
-    setUploadVideoError("");
+    setUploadingBackground(true);
+    setUploadBackgroundError("");
 
     try {
-      const downloadUrl = await uploadBackgroundMedia(file, "video");
-      setCustomVideoBackgroundUrl(downloadUrl);
-      setDashboardBackgroundId("videoCustom");
+      const downloadUrl = await uploadBackgroundMedia(file, mediaType);
+      setCustomBackgroundUrl(downloadUrl);
+      setCustomBackgroundType(mediaType);
+      setDashboardBackgroundId("customMedia");
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Upload failed";
-      setUploadVideoError(errorMsg);
+      setUploadBackgroundError(errorMsg);
     } finally {
-      setUploadingVideo(false);
+      setUploadingBackground(false);
       event.target.value = "";
     }
   };
@@ -184,7 +195,18 @@ export default function EditPanel({
   const handleApplyPreset = (presetId: string) => {
     applyDashboardPreset(presetId);
   };
-
+  //farge på elementer i tema meny
+  const backgroundColor = "#d3d3d36e";
+  //border-radius på elementer i tema menyen
+  const borderRadiusThemeElements =8;
+  //padding på elementer i tema-menyen
+  const themeElementsPadding ='8px 12px';
+  //størrelser på iconene i widget-menyen
+  const widgetIconSize = Math.max(fontSize + 8, 22);
+  //font størrelse på titler i tema-menyen
+  const titleTextSize= Math.max(fontSize+ 3);
+  //font størrelse på tittelen på sidemenyen
+  const bigTitleFontSize= Math.max(fontSize+7);
   return (
     <div
       style={{
@@ -211,9 +233,9 @@ export default function EditPanel({
               padding: '4px 8px',
               borderRadius: 4,
               border: language === 'no' ? '2px solid #4da3ff' : '1px solid #ddd',
-              background: language === 'no' ? '#cde8ff' : '#f3f3f3',
+              background: language === 'no' ? '#ffffffb7' : '#ffffff7a',
               cursor: 'pointer',
-              fontSize: 12
+              fontSize,
             }}
             title="Norsk"
           >
@@ -224,20 +246,27 @@ export default function EditPanel({
             style={{
               padding: '4px 8px',
               borderRadius: 4,
-              border: language === 'en' ? '2px solid #4da3ff' : '1px solid #ddd',
-              background: language === 'en' ? '#cde8ff' : '#f3f3f3',
+              border: language === 'en' ? '2px solid #4da3ff' : '1px solid #ffffff7a',
+              background: language === 'en' ? '#ffffffb7' : '#ffffff7a',
               cursor: 'pointer',
-              fontSize: 12
+              fontSize,
             }}
             title="English"
           >
             English
           </button>
         </div>
-        <button onClick={onClose}>{t('editPanel.close')}</button>
+        <button style={{ 
+          fontSize,
+          background: '#ffffff7a',
+          borderRadius: 4,
+          border: '1px solid #ffffff7a',
+          padding: '4px 8px',
+
+        }}onClick={onClose}>{t('editPanel.close')}</button>
       </div>
 
-      <h2>
+      <h2 style={{fontSize:bigTitleFontSize}}>
         {viewMode === "widgets"
           ? t('editPanel.selectWidgets')
           : t('editPanel.modeBackground')}
@@ -257,8 +286,9 @@ export default function EditPanel({
             padding: "8px 10px",
             borderRadius: 8,
             border: viewMode === "widgets" ? "2px solid #4da3ff" : "1px solid #ddd",
-            background: viewMode === "widgets" ? "#cde8ff" : "#f3f3f3",
+            background: viewMode === "widgets" ? '#ffffffb7' : '#ffffff7a',
             cursor: "pointer",
+            fontSize,
           }}
         >
           {t('editPanel.modeWidgets')}
@@ -269,8 +299,9 @@ export default function EditPanel({
             padding: "8px 10px",
             borderRadius: 8,
             border: viewMode === "background" ? "2px solid #4da3ff" : "1px solid #ddd",
-            background: viewMode === "background" ? "#cde8ff" : "#f3f3f3",
+            background: viewMode === "background" ? '#ffffffb7' : '#ffffff7a',
             cursor: "pointer",
+            fontSize,
           }}
         >
           {t('editPanel.modeBackground')}
@@ -296,6 +327,7 @@ export default function EditPanel({
 
             return (
               <div
+                //alle widgets
                 key={widget.id}
                 onClick={() => toggleWidget(widget.id)}
                 style={{
@@ -304,18 +336,38 @@ export default function EditPanel({
                   marginBottom: 10,
                   borderRadius: 8,
                   cursor: "pointer",
-                  background: isActive ? "#cde8ff" : "#f3f3f3",
+                  background: isActive ? "#fdfdfd80" : "#ffffff60",
                   border: isActive
-                    ? "2px solid #4da3ff"
-                    : "1px solid #ddd"
+                    ? "2px solid #ffffffd0"
+                    : ""
                 }}
               >
-                {widget.label}
-                {isActive && " ✓"}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                  }}
+                >
+                  <span style={{ fontSize }}>{widget.label}</span>
+                  <span
+                    className="material-symbols-rounded"
+                    aria-hidden="true"
+                    style={{
+                      fontSize: widgetIconSize,
+                      lineHeight: 1,
+                      opacity: 0.85,
+                    }}
+                  >
+                    {widget.icon ?? "widgets"}
+                  </span>
+                </div>
+                {isActive && ""}
               </div>
             );
           })}
-
+        
         {viewMode === "widgets" && (
           <div
             onClick={() => setModalOpen(true)}
@@ -325,8 +377,8 @@ export default function EditPanel({
               marginBottom: 10,
               borderRadius: 8,
               cursor: "pointer",
-              background: "#f3f3f3",
-              border: "1px solid #ddd"
+              background: "#ffffff57",
+              //border: "1px solid #ddd"
             }}
           >
             {t('editPanel.addCustomButton')}
@@ -342,8 +394,368 @@ export default function EditPanel({
               width: "90%",
             }}
           >  
-        <div style={{ marginTop: 1 }}>
-          <h3>{t('editPanel.customPresets')}</h3>
+        <div style={{
+          //skriftstørrelse
+           background: backgroundColor,
+           borderRadius:borderRadiusThemeElements,
+           padding: themeElementsPadding,
+           }}>
+          <h3 style={{
+            fontSize:titleTextSize,
+            margin:"auto",
+
+          }}>{t('editPanel.fontSize')}</h3>
+            <div style={{ 
+                display: 'flex',
+                gap: 8,
+                marginTop:5,
+               
+              }}>
+              <button
+                onClick={() => setFontSizeMode('small')}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 4,
+                  border: '1px solid #ddd',
+                  background: '#f3f3f3',
+                  cursor: 'pointer',
+                  fontSize,
+                }}
+              >
+            {t('editPanel.small')}
+          </button>
+          <button
+            onClick={() => setFontSizeMode('medium')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer',
+              fontSize,
+            }}
+          >
+            {t('editPanel.medium')}
+          </button>
+          <button
+            onClick={() => setFontSizeMode('large')}
+            style={{
+              padding: '8px 12px',
+              borderRadius: 4,
+              border: '1px solid #ddd',
+              background: '#f3f3f3',
+              cursor: 'pointer',
+              fontSize,
+            }}
+          >
+            {t('editPanel.large')}
+          </button>
+        </div>
+      </div>
+          <div  style={{
+            //velg Widget farge
+            background: backgroundColor,
+            borderRadius:borderRadiusThemeElements,
+            padding: themeElementsPadding,
+            }} >
+            <label style={{ fontSize:titleTextSize, fontWeight: 600 }}>
+              {t('editPanel.widgetColor')}
+            </label>
+
+            <label
+              style={{
+                position: "relative",
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                width: "fit-content",
+                padding: "8px 12px",
+                borderRadius: 10,
+                border: "1px solid #ddd",
+                background: "#f6f6f6",
+                cursor: "pointer",
+                marginTop:5,
+              }}
+            >
+              <input
+                type="color"
+                value={toColorInputValue(widgetSurfaceColor)}
+                onChange={(event) => setWidgetSurfaceColor(event.target.value)}
+                aria-label={t('editPanel.widgetColor')}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  opacity: 0,
+                  cursor: "pointer",
+                }}
+              />
+              <span
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 999,
+                  border: "1px solid rgba(0,0,0,0.3)",
+                  background: widgetSurfaceColor,
+                }}
+              />
+              <span style={{ fontSize, fontWeight: 500 }}>
+                {t('editPanel.widgetColor')}
+              </span>
+            </label>
+          </div>
+            <div style={{
+                //border farger
+                background: backgroundColor,
+                borderRadius:borderRadiusThemeElements,
+                padding: themeElementsPadding,
+
+                }}>  
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
+                {t('editPanel.widgetBorderColor')}
+              </label>
+
+              <label
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "fit-content",
+                  padding: "8px 12px",
+                  borderRadius: 10,
+                  border: "1px solid #ddd",
+                  background: "#f6f6f6",
+                  cursor: "pointer",
+                  marginTop: 5,
+                }}
+              >
+                <input
+                  type="color"
+                  value={toColorInputValue(widgetBorderColor)}
+                  onChange={(event) => setWidgetBorderColor(event.target.value)}
+                  aria-label={t('editPanel.widgetBorderColor')}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    opacity: 0,
+                    cursor: "pointer",
+                  }}
+                />
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 999,
+                    border: "1px solid rgba(0,0,0,0.3)",
+                    background: widgetBorderColor,
+                  }}
+                />
+                <span style={{ fontSize, fontWeight: 500 }}>
+                  {t('editPanel.widgetBorderColor')}
+                </span>
+              </label>
+            </div>
+            <div style={{
+              //tekstfarge
+                background: backgroundColor,
+                borderRadius:borderRadiusThemeElements,
+                padding: themeElementsPadding,
+                }}>
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
+                {t('editPanel.widgetTextColor')}
+              </label>
+
+              <label
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  width: "fit-content",
+                  padding: "8px 12px",
+                  borderRadius: 10,
+                  border: "1px solid #ddd",
+                  background: "#f6f6f6",
+                  cursor: "pointer",
+                  marginTop: 5,
+                }}
+              >
+                <input
+                  type="color"
+                  value={toColorInputValue(widgetTextColor)}
+                  onChange={(event) => setWidgetTextColor(event.target.value)}
+                  aria-label={t('editPanel.widgetTextColor')}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    opacity: 0,
+                    cursor: "pointer",
+                  }}
+                />
+                <span
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 999,
+                    border: "1px solid rgba(0,0,0,0.3)",
+                    background: widgetTextColor,
+                  }}
+                />
+                <span style={{ fontSize, fontWeight: 500 }}>
+                  {t('editPanel.widgetTextColor')}
+                </span>
+              </label>
+            </div> 
+            <div style={{
+              //border-tykkelse
+                background: backgroundColor,
+                borderRadius:borderRadiusThemeElements,
+                padding: themeElementsPadding,
+
+            }}>    
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
+                {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
+              </label>
+
+              <input
+                type="range"
+                min={0}
+                max={12}
+                step={1}
+                value={widgetBorderWidth}
+                onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
+                aria-label={t('editPanel.widgetBorderWidth')}
+                style={{ 
+                  width: "100%",
+                  marginTop: 5,
+                 }}
+              />
+            </div>
+            <div style={{
+                //widget-opacity
+                background: backgroundColor,
+                borderRadius:borderRadiusThemeElements,
+                padding: themeElementsPadding,
+                }}>
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
+                {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
+              </label>
+
+              <input
+                type="range"
+                min={0.2}
+                max={1}
+                step={0.05}
+                value={widgetOpacity}
+                onChange={(event) => setWidgetOpacity(Number(event.target.value))}
+                aria-label={t('editPanel.widgetOpacity')}
+                style={{ 
+                  width: "100%",
+                  marginTop: 5,
+                 }}
+              />
+            </div>
+            
+            <div style={{
+              //tilbakestill stil
+              background: backgroundColor,
+              borderRadius:borderRadiusThemeElements,
+              padding: themeElementsPadding,
+              alignItems:"center",
+
+              }}>     
+              <button
+                onClick={handleResetWidgetStyle}
+                style={{
+                  marginTop: 8,
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: "1px solid #ddd",
+                  background: "#f3f3f3",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  textAlign: "left",
+                  fontSize,
+                }}
+              >
+                {t('editPanel.resetWidgetStyle')}
+              </button>
+            </div>
+            <div style={{
+
+              background: backgroundColor,
+              borderRadius:borderRadiusThemeElements,
+              padding: themeElementsPadding,
+              }}>    
+              <input
+                ref={customBackgroundInputRef}
+                type="file"
+                accept="image/*,video/mp4,video/webm,video/quicktime"
+                onChange={handleCustomBackgroundUpload}
+                style={{ display: "none" }}
+              />
+
+              <button
+                onClick={() => !uploadingBackground && customBackgroundInputRef.current?.click()}
+                disabled={uploadingBackground}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  borderRadius: 10,
+                  border: uploadBackgroundError ? "1px solid #d97706" : "1px solid #ddd",
+                  background: uploadBackgroundError ? "#fef3c7" : "#f3f3f3",
+                  cursor: uploadingBackground ? "not-allowed" : "pointer",
+                  textAlign: "left",
+                  fontWeight: 600,
+                  opacity: uploadingBackground ? 0.6 : 1,
+                  fontSize,
+                }}
+              >
+                {uploadingBackground ? t('editPanel.uploading') : t('editPanel.uploadCustomBackground')}
+              </button>
+
+              {uploadBackgroundError && (
+                <div
+                  style={{
+                    fontSize,
+                    color: "#92400e",
+                    background: "#fef3c7",
+                    border: "1px solid #d97706",
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                  }}
+                >
+                  {uploadBackgroundError}
+                </div>
+              )}
+
+              <div
+                style={{
+                  fontSize,
+                  color: "#4b5563",
+                  background: "#f7f7f7",
+                  border: "1px dashed #d1d5db",
+                  borderRadius: 8,
+                  padding: "8px 10px",
+                  marginTop:8
+                }}
+              >
+                {t('editPanel.customBackgroundSyncNote')}
+
+              </div>
+          </div>
+            
+        <div 
+        // egendefinerte presets
+          style={{ 
+            marginTop: 1,
+            background: backgroundColor,
+            padding: "8px 10px",
+            borderRadius: 8,
+            
+            }}>
+          <h3 style={{fontSize:titleTextSize, }}>{t('editPanel.customPresets')}</h3>
 
           <div
             style={{
@@ -364,6 +776,7 @@ export default function EditPanel({
                 borderRadius: 8,
                 border: "1px solid #ddd",
                 background: "#fff",
+                fontSize,
               }}
             />
 
@@ -377,6 +790,7 @@ export default function EditPanel({
                 cursor: "pointer",
                 fontWeight: 600,
                 whiteSpace: "nowrap",
+                fontSize,
               }}
             >
               {t('editPanel.savePreset')}
@@ -386,7 +800,7 @@ export default function EditPanel({
           {dashboardPresets.length === 0 && (
             <div
               style={{
-                fontSize: 13,
+                fontSize,
                 color: "#4b5563",
                 background: "#f7f7f7",
                 border: "1px dashed #d1d5db",
@@ -403,9 +817,9 @@ export default function EditPanel({
             <div
               key={preset.id}
               style={{
-                border: "1px solid #ddd",
+                
                 borderRadius: 10,
-                background: "#f7f7f7",
+                background: backgroundColor,
                 padding: 10,
                 marginBottom: 8,
               }}
@@ -413,7 +827,7 @@ export default function EditPanel({
               <div style={{ fontWeight: 600, marginBottom: 4 }}>
                 {preset.name}
               </div>
-              <div style={{ fontSize: 12, color: "#4b5563", marginBottom: 8 }}>
+              <div style={{ fontSize, color: "#4b5563", marginBottom: 8 }}>
                 {new Date(preset.createdAt).toLocaleString()}
               </div>
 
@@ -451,280 +865,6 @@ export default function EditPanel({
           ))}
         </div>
 
-        <div style={{ marginTop: 1}}>
-        <h3>{t('editPanel.fontSize')}</h3>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => setFontSizeMode('small')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: '1px solid #ddd',
-              background: '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.small')}
-          </button>
-          <button
-            onClick={() => setFontSizeMode('medium')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: '1px solid #ddd',
-              background: '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.medium')}
-          </button>
-          <button
-            onClick={() => setFontSizeMode('large')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: '1px solid #ddd',
-              background: '#f3f3f3',
-              cursor: 'pointer'
-            }}
-          >
-            {t('editPanel.large')}
-          </button>
-        </div>
-      </div>
-            <label style={{ fontSize: 14, fontWeight: 600 }}>
-              {t('editPanel.widgetColor')}
-            </label>
-
-            <label
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                width: "fit-content",
-                padding: "8px 12px",
-                borderRadius: 10,
-                border: "1px solid #ddd",
-                background: "#f6f6f6",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="color"
-                value={toColorInputValue(widgetSurfaceColor)}
-                onChange={(event) => setWidgetSurfaceColor(event.target.value)}
-                aria-label={t('editPanel.widgetColor')}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  opacity: 0,
-                  cursor: "pointer",
-                }}
-              />
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 999,
-                  border: "1px solid rgba(0,0,0,0.3)",
-                  background: widgetSurfaceColor,
-                }}
-              />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>
-                {t('editPanel.widgetColor')}
-              </span>
-            </label>
-
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
-              {t('editPanel.widgetBorderColor')}
-            </label>
-
-            <label
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                width: "fit-content",
-                padding: "8px 12px",
-                borderRadius: 10,
-                border: "1px solid #ddd",
-                background: "#f6f6f6",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="color"
-                value={toColorInputValue(widgetBorderColor)}
-                onChange={(event) => setWidgetBorderColor(event.target.value)}
-                aria-label={t('editPanel.widgetBorderColor')}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  opacity: 0,
-                  cursor: "pointer",
-                }}
-              />
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 999,
-                  border: "1px solid rgba(0,0,0,0.3)",
-                  background: widgetBorderColor,
-                }}
-              />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>
-                {t('editPanel.widgetBorderColor')}
-              </span>
-            </label>
-
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
-              {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
-            </label>
-
-            <input
-              type="range"
-              min={0}
-              max={12}
-              step={1}
-              value={widgetBorderWidth}
-              onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
-              aria-label={t('editPanel.widgetBorderWidth')}
-              style={{ width: "100%" }}
-            />
-
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
-              {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
-            </label>
-
-            <input
-              type="range"
-              min={0.2}
-              max={1}
-              step={0.05}
-              value={widgetOpacity}
-              onChange={(event) => setWidgetOpacity(Number(event.target.value))}
-              aria-label={t('editPanel.widgetOpacity')}
-              style={{ width: "100%" }}
-            />
-
-            <label style={{ fontSize: 14, fontWeight: 600, marginTop: 8 }}>
-              {t('editPanel.widgetTextColor')}
-            </label>
-
-            <label
-              style={{
-                position: "relative",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                width: "fit-content",
-                padding: "8px 12px",
-                borderRadius: 10,
-                border: "1px solid #ddd",
-                background: "#f6f6f6",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="color"
-                value={toColorInputValue(widgetTextColor)}
-                onChange={(event) => setWidgetTextColor(event.target.value)}
-                aria-label={t('editPanel.widgetTextColor')}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  opacity: 0,
-                  cursor: "pointer",
-                }}
-              />
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 999,
-                  border: "1px solid rgba(0,0,0,0.3)",
-                  background: widgetTextColor,
-                }}
-              />
-              <span style={{ fontSize: 13, fontWeight: 500 }}>
-                {t('editPanel.widgetTextColor')}
-              </span>
-            </label>
-
-            <button
-              onClick={handleResetWidgetStyle}
-              style={{
-                marginTop: 8,
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "1px solid #ddd",
-                background: "#f3f3f3",
-                cursor: "pointer",
-                fontWeight: 600,
-                textAlign: "left",
-              }}
-            >
-              {t('editPanel.resetWidgetStyle')}
-            </button>
-
-            <input
-              ref={customVideoInputRef}
-              type="file"
-              accept="video/mp4,video/webm"
-              onChange={handleCustomVideoUpload}
-              style={{ display: "none" }}
-            />
-
-            <button
-              onClick={() => !uploadingVideo && customVideoInputRef.current?.click()}
-              disabled={uploadingVideo}
-              style={{
-                width: "100%",
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: uploadVideoError ? "1px solid #d97706" : "1px solid #ddd",
-                background: uploadVideoError ? "#fef3c7" : "#f3f3f3",
-                cursor: uploadingVideo ? "not-allowed" : "pointer",
-                textAlign: "left",
-                fontWeight: 600,
-                opacity: uploadingVideo ? 0.6 : 1,
-              }}
-            >
-              {uploadingVideo ? t('editPanel.uploading') : t('editPanel.uploadCustomVideo')}
-            </button>
-
-            {uploadVideoError && (
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "#92400e",
-                  background: "#fef3c7",
-                  border: "1px solid #d97706",
-                  borderRadius: 8,
-                  padding: "8px 10px",
-                }}
-              >
-                {uploadVideoError}
-              </div>
-            )}
-
-            <div
-              style={{
-                fontSize: 12,
-                color: "#4b5563",
-                background: "#f7f7f7",
-                border: "1px dashed #d1d5db",
-                borderRadius: 8,
-                padding: "8px 10px",
-              }}
-            >
-              {t('editPanel.customVideoSyncNote')}
-            </div>
-
             {BACKGROUND_OPTIONS.map((option) => {
               const selected = dashboardBackgroundId === option.id;
 
@@ -735,13 +875,13 @@ export default function EditPanel({
                     onClick={() => setDashboardBackgroundId(option.id)}
                     aria-label={t(option.labelKey)}
                     style={{
-                      width: "100%",
+                      width: "95%",
                       padding: 0,
                       borderRadius: 10,
-                      border: selected ? "2px solid #4da3ff" : "1px solid #ddd",
-                      background: selected ? "#eaf4ff" : "#f7f7f7",
+                      background: selected ? "#eaf4ff" : backgroundColor,
                       cursor: "pointer",
                       overflow: "hidden",
+                      fontSize,
                     }}
                   >
                     <img
@@ -775,7 +915,7 @@ export default function EditPanel({
                     textAlign: "left",
                   }}
                 >
-                  {option.id.startsWith("video") ? (
+                  {option.id === "customMedia" ? (
                     <div
                       style={{
                         width: 64,
@@ -786,13 +926,13 @@ export default function EditPanel({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: 10,
+                        fontSize,
                         fontWeight: 700,
                         color: "#eaf4ff",
                         flexShrink: 0,
                       }}
                     >
-                      Video
+                      Media
                     </div>
                   ) : (
                     <div
@@ -806,7 +946,7 @@ export default function EditPanel({
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: 11,
+                        fontSize,
                         fontWeight: 600,
                         color: "#1e2d4d",
                         flexShrink: 0,

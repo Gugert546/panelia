@@ -9,15 +9,15 @@ import {
 } from "../../../../lib/firebase/firestore";
 
 export const AVAILABLE_WIDGETS = [
-  { id: "clock", label: "Klokke" },
-  { id: "calendar", label: "Kalender" },
-  { id: "google_search", label: "Søk" },
-  { id: "news", label: "Nyheter" },
-  { id: "weather", label: "Vær" },
-  { id: "bookmark", label: "Bokmerke" },
-  { id: "notes", label: "Notater" },
-  { id: "spotify", label: "Spotify" },
-];
+  { id: "clock", label: "Klokke", icon: "schedule" },
+  { id: "calendar", label: "Kalender", icon: "calendar_month" },
+  { id: "google_search", label: "Søk", icon: "search" },
+  { id: "news", label: "Nyheter", icon: "newsmode" },
+  { id: "weather", label: "Vær", icon: "partly_cloudy_day" },
+  { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
+  { id: "notes", label: "Notater", icon: "sticky_note_2" },
+  { id: "spotify", label: "Spotify", icon: "music_note" },
+] as const;
 
 const SAVE_DEBOUNCE_MS = 10000; // 10 seconds
 
