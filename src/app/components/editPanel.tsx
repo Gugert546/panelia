@@ -84,7 +84,41 @@ function toColorInputValue(value: string) {
     return trimmed;
   }
 
+  const rgbaMatch = trimmed.match(
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    const [, red, green, blue] = rgbaMatch;
+    return `#${[red, green, blue]
+      .map((channel) => Number(channel).toString(16).padStart(2, "0"))
+      .join("")}`;
+  }
+
   return "#ffffff";
+}
+
+function getColorAlpha(value: string) {
+  const trimmed = value.trim();
+  const rgbaMatch = trimmed.match(
+    /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    return Number(rgbaMatch[1]);
+  }
+
+  return 1;
+}
+
+function withAlpha(color: string, alpha: number) {
+  const normalizedColor = toColorInputValue(color);
+  const hex = normalizedColor.slice(1);
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+
+  return `rgba(${red},${green},${blue},${alpha})`;
 }
 
 export default function EditPanel({
@@ -101,7 +135,6 @@ export default function EditPanel({
   setWidgetBorderColor,
   widgetTextColor,
   setWidgetTextColor,
-  widgetOpacity,
   setWidgetOpacity,
   widgetBorderWidth,
   setWidgetBorderWidth,
@@ -125,6 +158,7 @@ export default function EditPanel({
   const { fontSize, setFontSizeMode } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
+  const widgetSurfaceAlpha = getColorAlpha(widgetSurfaceColor);
 
   useEffect(() => {
     setModalOpen(false);
@@ -207,6 +241,9 @@ export default function EditPanel({
   const titleTextSize= Math.max(fontSize+ 3);
   //font størrelse på tittelen på sidemenyen
   const bigTitleFontSize= Math.max(fontSize+7);
+  //farge på knapper
+  const buttonColor = "#d3d3d36e";
+
   return (
     <div
       style={{
@@ -417,7 +454,7 @@ export default function EditPanel({
                   padding: '8px 12px',
                   borderRadius: 4,
                   border: '1px solid #ddd',
-                  background: '#f3f3f3',
+                  background: buttonColor,
                   cursor: 'pointer',
                   fontSize,
                 }}
@@ -430,7 +467,7 @@ export default function EditPanel({
               padding: '8px 12px',
               borderRadius: 4,
               border: '1px solid #ddd',
-              background: '#f3f3f3',
+              background: buttonColor,
               cursor: 'pointer',
               fontSize,
             }}
@@ -443,7 +480,7 @@ export default function EditPanel({
               padding: '8px 12px',
               borderRadius: 4,
               border: '1px solid #ddd',
-              background: '#f3f3f3',
+              background: buttonColor,
               cursor: 'pointer',
               fontSize,
             }}
@@ -459,7 +496,7 @@ export default function EditPanel({
             padding: themeElementsPadding,
             }} >
             <label style={{ fontSize:titleTextSize, fontWeight: 600 }}>
-              {t('editPanel.widgetColor')}
+              {t('editPanel.widgetColorMenu')}
             </label>
 
             <label
@@ -472,7 +509,7 @@ export default function EditPanel({
                 padding: "8px 12px",
                 borderRadius: 10,
                 border: "1px solid #ddd",
-                background: "#f6f6f6",
+                background: buttonColor,
                 cursor: "pointer",
                 marginTop:5,
               }}
@@ -480,8 +517,10 @@ export default function EditPanel({
               <input
                 type="color"
                 value={toColorInputValue(widgetSurfaceColor)}
-                onChange={(event) => setWidgetSurfaceColor(event.target.value)}
-                aria-label={t('editPanel.widgetColor')}
+                onChange={(event) =>
+                  setWidgetSurfaceColor(withAlpha(event.target.value, widgetSurfaceAlpha))
+                }
+                aria-label={t('editPanel.widgetColorButton')}
                 style={{
                   position: "absolute",
                   inset: 0,
@@ -499,9 +538,35 @@ export default function EditPanel({
                 }}
               />
               <span style={{ fontSize, fontWeight: 500 }}>
-                {t('editPanel.widgetColor')}
+                {t('editPanel.widgetColorButton')}
               </span>
             </label>
+
+            <label
+              style={{
+                display: "block",
+                fontSize,
+                fontWeight: 500,
+                marginTop: 10,
+              }}
+            >
+              {t('editPanel.widgetOpacity')}: {Math.round(widgetSurfaceAlpha * 100)}%
+            </label>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={widgetSurfaceAlpha}
+              onChange={(event) =>
+                setWidgetSurfaceColor(withAlpha(widgetSurfaceColor, Number(event.target.value)))
+              }
+              aria-label={t('editPanel.widgetOpacity')}
+              style={{
+                width: "100%",
+                marginTop: 5,
+              }}
+            />
           </div>
             <div style={{
                 //border farger
@@ -511,7 +576,7 @@ export default function EditPanel({
 
                 }}>  
               <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
-                {t('editPanel.widgetBorderColor')}
+                {t('editPanel.widgetBorderColorTitle')}
               </label>
 
               <label
@@ -524,7 +589,7 @@ export default function EditPanel({
                   padding: "8px 12px",
                   borderRadius: 10,
                   border: "1px solid #ddd",
-                  background: "#f6f6f6",
+                  background: buttonColor,
                   cursor: "pointer",
                   marginTop: 5,
                 }}
@@ -546,6 +611,7 @@ export default function EditPanel({
                     width: 18,
                     height: 18,
                     borderRadius: 999,
+                    paddingBottom:10,
                     border: "1px solid rgba(0,0,0,0.3)",
                     background: widgetBorderColor,
                   }}
@@ -554,6 +620,28 @@ export default function EditPanel({
                   {t('editPanel.widgetBorderColor')}
                 </span>
               </label>
+               <label 
+               style={{ 
+                //border-bredde
+                fontSize, 
+                
+                marginTop: 10 }}>
+                {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
+              </label>
+
+              <input
+                type="range"
+                min={0}
+                max={12}
+                step={1}
+                value={widgetBorderWidth}
+                onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
+                aria-label={t('editPanel.widgetBorderWidth')}
+                style={{ 
+                  width: "100%",
+                  marginTop: 5,
+                 }}
+              />
             </div>
             <div style={{
               //tekstfarge
@@ -575,7 +663,7 @@ export default function EditPanel({
                   padding: "8px 12px",
                   borderRadius: 10,
                   border: "1px solid #ddd",
-                  background: "#f6f6f6",
+                  background: buttonColor,
                   cursor: "pointer",
                   marginTop: 5,
                 }}
@@ -606,55 +694,6 @@ export default function EditPanel({
                 </span>
               </label>
             </div> 
-            <div style={{
-              //border-tykkelse
-                background: backgroundColor,
-                borderRadius:borderRadiusThemeElements,
-                padding: themeElementsPadding,
-
-            }}>    
-              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
-                {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
-              </label>
-
-              <input
-                type="range"
-                min={0}
-                max={12}
-                step={1}
-                value={widgetBorderWidth}
-                onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
-                aria-label={t('editPanel.widgetBorderWidth')}
-                style={{ 
-                  width: "100%",
-                  marginTop: 5,
-                 }}
-              />
-            </div>
-            <div style={{
-                //widget-opacity
-                background: backgroundColor,
-                borderRadius:borderRadiusThemeElements,
-                padding: themeElementsPadding,
-                }}>
-              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
-                {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
-              </label>
-
-              <input
-                type="range"
-                min={0.2}
-                max={1}
-                step={0.05}
-                value={widgetOpacity}
-                onChange={(event) => setWidgetOpacity(Number(event.target.value))}
-                aria-label={t('editPanel.widgetOpacity')}
-                style={{ 
-                  width: "100%",
-                  marginTop: 5,
-                 }}
-              />
-            </div>
             
             <div style={{
               //tilbakestill stil
