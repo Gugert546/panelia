@@ -12,7 +12,11 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 import { auth } from "../../../lib/firebase/client";
-import type { DashboardBackgroundId } from "./hooks/useWidgetsState";
+import type {
+  CustomBackgroundMediaType,
+  DashboardBackgroundId,
+} from "./hooks/useWidgetsState";
+import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
 import sol1 from "../../../assets/panelia-bg/Sol 1.png";
 import sol2 from "../../../assets/panelia-bg/Sol 2.png";
 import sol3 from "../../../assets/panelia-bg/Sol 3.png";
@@ -32,6 +36,10 @@ type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 function resolveDashboardBackground(
   backgroundId: DashboardBackgroundId
 ) {
+  if (backgroundId === "defaultbg") {
+    return resolveDashboardBackground(getBackgroundByTime());
+  }
+
   if (backgroundId === "sol1") return sol1;
   if (backgroundId === "sol2") return sol2;
   if (backgroundId === "sol3") return sol3;
@@ -40,7 +48,7 @@ function resolveDashboardBackground(
   if (backgroundId === "natt3") return natt3;
 
   // Animated backgrounds render as CSS overlays, keep an image fallback below.
-  if (backgroundId === "videoCustom") {
+  if (backgroundId === "customMedia") {
     return sol1;
   }
 
@@ -49,12 +57,24 @@ function resolveDashboardBackground(
 
 function getVideoBackgroundSource(
   backgroundId: DashboardBackgroundId,
-  customVideoBackgroundUrl: string
+  customBackgroundUrl: string,
+  customBackgroundType: CustomBackgroundMediaType
 ) {
-  if (backgroundId === "videoCustom") {
-    return customVideoBackgroundUrl || null;
+  if (backgroundId === "customMedia" && customBackgroundType === "video") {
+    return customBackgroundUrl || null;
   }
   return null;
+}
+
+function getImageBackgroundSource(
+  backgroundId: DashboardBackgroundId,
+  customBackgroundUrl: string,
+  customBackgroundType: CustomBackgroundMediaType
+) {
+  if (backgroundId === "customMedia" && customBackgroundType === "image") {
+    return customBackgroundUrl || null;
+  }
+  return resolveDashboardBackground(backgroundId);
 }
 
 function DashboardPageContent() {
@@ -84,7 +104,8 @@ function DashboardPageContent() {
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
-    customVideoBackgroundUrl,
+    customBackgroundUrl,
+    customBackgroundType,
     dashboardPresets,
     updateLayout,
     toggleWidget,
@@ -97,7 +118,8 @@ function DashboardPageContent() {
     setWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,
-    setCustomVideoBackgroundUrl,
+    setCustomBackgroundUrl,
+    setCustomBackgroundType,
     saveCurrentAsPreset,
     applyDashboardPreset,
     deleteDashboardPreset,
@@ -110,10 +132,15 @@ function DashboardPageContent() {
 
   const [, setTime] = useState(new Date());
 
-  const backgroundImageUrl = resolveDashboardBackground(dashboardBackgroundId);
+  const backgroundImageUrl = getImageBackgroundSource(
+    dashboardBackgroundId,
+    customBackgroundUrl,
+    customBackgroundType
+  );
   const videoBackgroundSource = getVideoBackgroundSource(
     dashboardBackgroundId,
-    customVideoBackgroundUrl
+    customBackgroundUrl,
+    customBackgroundType
   );
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
@@ -413,7 +440,8 @@ function DashboardPageContent() {
         setWidgetSizeMode={setWidgetSizeMode}
         dashboardBackgroundId={dashboardBackgroundId}
         setDashboardBackgroundId={setDashboardBackgroundId}
-        setCustomVideoBackgroundUrl={setCustomVideoBackgroundUrl}
+        setCustomBackgroundUrl={setCustomBackgroundUrl}
+        setCustomBackgroundType={setCustomBackgroundType}
         dashboardPresets={dashboardPresets}
         saveCurrentAsPreset={saveCurrentAsPreset}
         applyDashboardPreset={applyDashboardPreset}

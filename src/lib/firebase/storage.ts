@@ -1,4 +1,10 @@
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  type UploadMetadata,
+} from "firebase/storage";
 import { auth } from "./client";
 
 export type BackgroundMediaType = "image" | "video";
@@ -18,6 +24,20 @@ export function validateFileSize(file: File): { valid: boolean; error?: string }
   return { valid: true };
 }
 
+export function detectBackgroundMediaType(
+  file: File
+): BackgroundMediaType | null {
+  if (file.type.startsWith("image/")) return "image";
+  if (file.type.startsWith("video/")) return "video";
+  return null;
+}
+
+function getFileExtension(fileName: string) {
+  const parts = fileName.split(".");
+  if (parts.length < 2) return "";
+  return parts.at(-1)?.trim().toLowerCase() || "";
+}
+
 export async function uploadBackgroundMedia(
   file: File,
   mediaType: BackgroundMediaType
@@ -32,12 +52,17 @@ export async function uploadBackgroundMedia(
 
   const storage = getStorage();
   const timestamp = Date.now();
-  const fileName = `${mediaType}-${timestamp}-${Math.random().toString(36).slice(2, 9)}`;
+  const extension = getFileExtension(file.name);
+  const fileSuffix = extension ? `.${extension}` : "";
+  const fileName = `${mediaType}-${timestamp}-${Math.random().toString(36).slice(2, 9)}${fileSuffix}`;
   const storagePath = `users/${user.uid}/backgrounds/${mediaType}/${fileName}`;
   const storageRef = ref(storage, storagePath);
+  const metadata: UploadMetadata = file.type
+    ? { contentType: file.type }
+    : {};
 
   // Upload the file
-  await uploadBytes(storageRef, file);
+  await uploadBytes(storageRef, file, metadata);
 
   // Get and return the download URL
   const downloadUrl = await getDownloadURL(storageRef);

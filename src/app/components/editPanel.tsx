@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import AddCustomButtonModal from "./AddCustomButtonModal";
 import type {
+  CustomBackgroundMediaType,
   CustomButtonConfig,
   DashboardPreset,
   DashboardBackgroundId,
@@ -8,14 +9,14 @@ import type {
 } from "../features/dashboard/hooks/useWidgetsState";
 import { useFontSize } from '../providers/themeProviders';
 import { useLanguage } from '../providers/languageProvider';
-import { uploadBackgroundMedia, validateFileSize } from "../../lib/firebase/storage";
+import {
+  detectBackgroundMediaType,
+  uploadBackgroundMedia,
+  validateFileSize,
+} from "../../lib/firebase/storage";
 import { useAuth } from "../features/auth/useAuth";
-import sol1 from "../../assets/panelia-bg/Sol 1.png";
-import sol2 from "../../assets/panelia-bg/Sol 2.png";
-import sol3 from "../../assets/panelia-bg/Sol 3.png";
-import natt1 from "../../assets/panelia-bg/Natt 1.png";
-import natt2 from "../../assets/panelia-bg/Natt 2.png";
-import natt3 from "../../assets/panelia-bg/Natt 3.png";
+import paneliabgmashup from "../../assets/panelia-bg/paneliabgmashup.png";
+
 
 type Widget = {
   id: string;
@@ -45,7 +46,8 @@ type EditPanelProps = {
   setWidgetSizeMode: (mode: WidgetSizeMode) => void;
   dashboardBackgroundId: DashboardBackgroundId;
   setDashboardBackgroundId: (backgroundId: DashboardBackgroundId) => void;
-  setCustomVideoBackgroundUrl: (url: string) => void;
+  setCustomBackgroundUrl: (url: string) => void;
+  setCustomBackgroundType: (type: CustomBackgroundMediaType) => void;
   dashboardPresets: DashboardPreset[];
   saveCurrentAsPreset: (name?: string) => string;
   applyDashboardPreset: (presetId: string) => boolean;
@@ -57,13 +59,8 @@ const BACKGROUND_OPTIONS: Array<{
   labelKey: string;
   preview?: string;
 }> = [
-  { id: "sol1", labelKey: "editPanel.backgroundSol1", preview: sol1 },
-  { id: "sol2", labelKey: "editPanel.backgroundSol2", preview: sol2 },
-  { id: "sol3", labelKey: "editPanel.backgroundSol3", preview: sol3 },
-  { id: "natt1", labelKey: "editPanel.backgroundNatt1", preview: natt1 },
-  { id: "natt2", labelKey: "editPanel.backgroundNatt2", preview: natt2 },
-  { id: "natt3", labelKey: "editPanel.backgroundNatt3", preview: natt3 },
-  { id: "videoCustom", labelKey: "editPanel.backgroundVideoCustom" },
+  { id: "defaultbg", labelKey: "editPanel.paneliabgmashup", preview: paneliabgmashup },
+  
 ];
 
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
@@ -112,7 +109,8 @@ export default function EditPanel({
   setWidgetSizeMode,
   dashboardBackgroundId,
   setDashboardBackgroundId,
-  setCustomVideoBackgroundUrl,
+  setCustomBackgroundUrl,
+  setCustomBackgroundType,
   dashboardPresets,
   saveCurrentAsPreset,
   applyDashboardPreset,
@@ -121,9 +119,9 @@ export default function EditPanel({
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"widgets" | "background">("widgets");
   const [presetName, setPresetName] = useState("");
-  const customVideoInputRef = useRef<HTMLInputElement | null>(null);
-  const [uploadingVideo, setUploadingVideo] = useState(false);
-  const [uploadVideoError, setUploadVideoError] = useState("");
+  const customBackgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingBackground, setUploadingBackground] = useState(false);
+  const [uploadBackgroundError, setUploadBackgroundError] = useState("");
   const { fontSize, setFontSizeMode } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
@@ -133,36 +131,48 @@ export default function EditPanel({
     setViewMode("widgets");
   }, [open]);
   
-  const handleCustomVideoUpload = async (
+  const handleCustomBackgroundUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     if (!user) {
-      setUploadVideoError(t('editPanel.uploadNotSignedIn') || "Please sign in first");
+      setUploadBackgroundError(t('editPanel.uploadNotSignedIn') || "Please sign in first");
+      return;
+    }
+
+    const mediaType = detectBackgroundMediaType(file) as CustomBackgroundMediaType | null;
+
+    if (!mediaType) {
+      setUploadBackgroundError(
+        t('editPanel.unsupportedBackgroundFile') ||
+          "Unsupported file type. Please upload an image or video."
+      );
+      event.target.value = "";
       return;
     }
 
     const validation = validateFileSize(file);
     if (!validation.valid) {
-      setUploadVideoError(t('editPanel.fileTooLarge') || validation.error || "File is too large");
+      setUploadBackgroundError(t('editPanel.fileTooLarge') || validation.error || "File is too large");
       event.target.value = "";
       return;
     }
 
-    setUploadingVideo(true);
-    setUploadVideoError("");
+    setUploadingBackground(true);
+    setUploadBackgroundError("");
 
     try {
-      const downloadUrl = await uploadBackgroundMedia(file, "video");
-      setCustomVideoBackgroundUrl(downloadUrl);
-      setDashboardBackgroundId("videoCustom");
+      const downloadUrl = await uploadBackgroundMedia(file, mediaType);
+      setCustomBackgroundUrl(downloadUrl);
+      setCustomBackgroundType(mediaType);
+      setDashboardBackgroundId("customMedia");
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Upload failed";
-      setUploadVideoError(errorMsg);
+      setUploadBackgroundError(errorMsg);
     } finally {
-      setUploadingVideo(false);
+      setUploadingBackground(false);
       event.target.value = "";
     }
   };
@@ -546,55 +556,6 @@ export default function EditPanel({
               </label>
             </div>
             <div style={{
-              //border-tykkelse
-                background: backgroundColor,
-                borderRadius:borderRadiusThemeElements,
-                padding: themeElementsPadding,
-
-            }}>    
-              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
-                {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
-              </label>
-
-              <input
-                type="range"
-                min={0}
-                max={12}
-                step={1}
-                value={widgetBorderWidth}
-                onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
-                aria-label={t('editPanel.widgetBorderWidth')}
-                style={{ 
-                  width: "100%",
-                  marginTop: 5,
-                 }}
-              />
-            </div>
-            <div style={{
-                //widget-opacity
-                background: backgroundColor,
-                borderRadius:borderRadiusThemeElements,
-                padding: themeElementsPadding,
-                }}>
-              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
-                {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
-              </label>
-
-              <input
-                type="range"
-                min={0.2}
-                max={1}
-                step={0.05}
-                value={widgetOpacity}
-                onChange={(event) => setWidgetOpacity(Number(event.target.value))}
-                aria-label={t('editPanel.widgetOpacity')}
-                style={{ 
-                  width: "100%",
-                  marginTop: 5,
-                 }}
-              />
-            </div>
-            <div style={{
               //tekstfarge
                 background: backgroundColor,
                 borderRadius:borderRadiusThemeElements,
@@ -646,6 +607,56 @@ export default function EditPanel({
               </label>
             </div> 
             <div style={{
+              //border-tykkelse
+                background: backgroundColor,
+                borderRadius:borderRadiusThemeElements,
+                padding: themeElementsPadding,
+
+            }}>    
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
+                {t('editPanel.widgetBorderWidth')}: {widgetBorderWidth}px
+              </label>
+
+              <input
+                type="range"
+                min={0}
+                max={12}
+                step={1}
+                value={widgetBorderWidth}
+                onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
+                aria-label={t('editPanel.widgetBorderWidth')}
+                style={{ 
+                  width: "100%",
+                  marginTop: 5,
+                 }}
+              />
+            </div>
+            <div style={{
+                //widget-opacity
+                background: backgroundColor,
+                borderRadius:borderRadiusThemeElements,
+                padding: themeElementsPadding,
+                }}>
+              <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
+                {t('editPanel.widgetOpacity')}: {Math.round(widgetOpacity * 100)}%
+              </label>
+
+              <input
+                type="range"
+                min={0.2}
+                max={1}
+                step={0.05}
+                value={widgetOpacity}
+                onChange={(event) => setWidgetOpacity(Number(event.target.value))}
+                aria-label={t('editPanel.widgetOpacity')}
+                style={{ 
+                  width: "100%",
+                  marginTop: 5,
+                 }}
+              />
+            </div>
+            
+            <div style={{
               //tilbakestill stil
               background: backgroundColor,
               borderRadius:borderRadiusThemeElements,
@@ -678,33 +689,33 @@ export default function EditPanel({
               padding: themeElementsPadding,
               }}>    
               <input
-                ref={customVideoInputRef}
+                ref={customBackgroundInputRef}
                 type="file"
-                accept="video/mp4,video/webm"
-                onChange={handleCustomVideoUpload}
+                accept="image/*,video/mp4,video/webm,video/quicktime"
+                onChange={handleCustomBackgroundUpload}
                 style={{ display: "none" }}
               />
 
               <button
-                onClick={() => !uploadingVideo && customVideoInputRef.current?.click()}
-                disabled={uploadingVideo}
+                onClick={() => !uploadingBackground && customBackgroundInputRef.current?.click()}
+                disabled={uploadingBackground}
                 style={{
                   width: "100%",
                   padding: "10px 12px",
                   borderRadius: 10,
-                  border: uploadVideoError ? "1px solid #d97706" : "1px solid #ddd",
-                  background: uploadVideoError ? "#fef3c7" : "#f3f3f3",
-                  cursor: uploadingVideo ? "not-allowed" : "pointer",
+                  border: uploadBackgroundError ? "1px solid #d97706" : "1px solid #ddd",
+                  background: uploadBackgroundError ? "#fef3c7" : "#f3f3f3",
+                  cursor: uploadingBackground ? "not-allowed" : "pointer",
                   textAlign: "left",
                   fontWeight: 600,
-                  opacity: uploadingVideo ? 0.6 : 1,
+                  opacity: uploadingBackground ? 0.6 : 1,
                   fontSize,
                 }}
               >
-                {uploadingVideo ? t('editPanel.uploading') : t('editPanel.uploadCustomVideo')}
+                {uploadingBackground ? t('editPanel.uploading') : t('editPanel.uploadCustomBackground')}
               </button>
 
-              {uploadVideoError && (
+              {uploadBackgroundError && (
                 <div
                   style={{
                     fontSize,
@@ -715,7 +726,7 @@ export default function EditPanel({
                     padding: "8px 10px",
                   }}
                 >
-                  {uploadVideoError}
+                  {uploadBackgroundError}
                 </div>
               )}
 
@@ -730,7 +741,7 @@ export default function EditPanel({
                   marginTop:8
                 }}
               >
-                {t('editPanel.customVideoSyncNote')}
+                {t('editPanel.customBackgroundSyncNote')}
 
               </div>
           </div>
@@ -806,9 +817,9 @@ export default function EditPanel({
             <div
               key={preset.id}
               style={{
-                border: "1px solid #ddd",
+                
                 borderRadius: 10,
-                background: "#f7f7f7",
+                background: backgroundColor,
                 padding: 10,
                 marginBottom: 8,
               }}
@@ -864,11 +875,10 @@ export default function EditPanel({
                     onClick={() => setDashboardBackgroundId(option.id)}
                     aria-label={t(option.labelKey)}
                     style={{
-                      width: "100%",
+                      width: "95%",
                       padding: 0,
                       borderRadius: 10,
-                      border: selected ? "2px solid #4da3ff" : "1px solid #ddd",
-                      background: selected ? "#eaf4ff" : "#f7f7f7",
+                      background: selected ? "#eaf4ff" : backgroundColor,
                       cursor: "pointer",
                       overflow: "hidden",
                       fontSize,
@@ -905,7 +915,7 @@ export default function EditPanel({
                     textAlign: "left",
                   }}
                 >
-                  {option.id.startsWith("video") ? (
+                  {option.id === "customMedia" ? (
                     <div
                       style={{
                         width: 64,
@@ -922,7 +932,7 @@ export default function EditPanel({
                         flexShrink: 0,
                       }}
                     >
-                      Video
+                      Media
                     </div>
                   ) : (
                     <div
