@@ -15,7 +15,7 @@ newsRouter.get("/", async (req, res) => {
   const cacheKey = country;
   const cached = newsCache.get(cacheKey);
 
-  // Returner cache hvis den er fersk
+  //Returner cache
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
     return res.json(cached.data);
   }
@@ -27,6 +27,7 @@ newsRouter.get("/", async (req, res) => {
       return res.status(500).json({ error: "Missing WORLD_NEWS_API_KEY on server" });
     }
 
+    //Første forsøk (brukerens land)
     const url = `https://api.worldnewsapi.com/search-news?source-countries=${encodeURIComponent(country)}`;
 
     const r = await fetch(url, {
@@ -45,9 +46,29 @@ newsRouter.get("/", async (req, res) => {
       });
     }
 
-    const json = JSON.parse(bodyText);
+    let json = JSON.parse(bodyText);
 
-    const articles = (json.news || []).map((article: any) => ({
+    
+    let list = json.news || json.data || [];
+
+    
+    if (list.length === 0 && country === "no") {
+      console.log("No news for NO, falling back to US");
+
+      const fallbackUrl = `https://api.worldnewsapi.com/search-news?source-countries=us`;
+
+      const fallbackRes = await fetch(fallbackUrl, {
+        headers: {
+          "x-api-key": apiKey,
+        },
+      });
+
+      const fallbackJson = await fallbackRes.json();
+
+      list = fallbackJson.news || fallbackJson.data || [];
+    }
+
+    const articles = list.map((article: any) => ({
       title: article.title,
       url: article.url,
     }));
