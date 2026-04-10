@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 export type WeatherView = {
-  placeLabel: string; // f.eks. "Oslo, Norge"
+  placeLabel: string;
+  countryCode?: string; 
   temperatureC: number;
   windSpeedMs?: number;
   symbolCode?: string;
@@ -30,30 +31,34 @@ async function getPosition(): Promise<GeolocationPosition> {
   });
 }
 
-async function reverseGeocode(lat: number, lon: number): Promise<string> {
+async function reverseGeocode(
+  lat: number,
+  lon: number
+): Promise<{ label: string; countryCode?: string }> {
   const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`;
 
   const r = await fetch(url, {
     headers: { Accept: "application/json" },
   });
 
-  if (!r.ok) return "Din posisjon";
+  if (!r.ok) return { label: "Din posisjon" };
 
   const j = await r.json();
   const a = j?.address;
 
   const city = a?.city || a?.town || a?.village || a?.municipality;
   const country = a?.country;
+  const countryCode = a?.country_code;
 
-  if (city && country) return `${city}, ${country}`;
-  if (city) return city;
+  let label = "Din posisjon";
 
-  const display = j?.display_name;
-  if (typeof display === "string" && display.length > 0) {
-    return display.split(",").slice(0, 2).join(", ").trim();
-  }
+  if (city && country) label = `${city}, ${country}`;
+  else if (city) label = city;
 
-  return "Din posisjon";
+  return {
+    label,
+    countryCode: countryCode?.toLowerCase(), 
+  };
 }
 
 async function fetchWeatherFromProxy(lat: number, lon: number) {
@@ -68,7 +73,7 @@ export function useWeatherWidget() {
   const [state, setState] = useState<WeatherState>({ status: "idle" });
 
   const load = useCallback(async () => {
-    // ✅ Ikke "loading" hvis vi allerede har data — bare marker refreshing
+    //Ikke "loading" hvis vi allerede har data, bare marker refreshing
     setState((prev) => {
       if (prev.status === "success") {
         return { ...prev, refreshing: true };
@@ -83,7 +88,7 @@ export function useWeatherWidget() {
       const lon = pos.coords.longitude;
 
       // 2) Stednavn
-      const placeLabel = await reverseGeocode(lat, lon);
+      const geo = await reverseGeocode(lat, lon);
 
       // 3) Vær
       const json = await fetchWeatherFromProxy(lat, lon);
@@ -97,16 +102,17 @@ export function useWeatherWidget() {
       }
 
       const view: WeatherView = {
-        placeLabel,
-        temperatureC: round1(temperature),
-        windSpeedMs: typeof wind === "number" ? round1(wind) : undefined,
-        symbolCode: typeof symbol === "string" ? symbol : undefined,
-        updatedAtISO: new Date().toISOString(),
-      };
+      placeLabel: geo.label,
+      countryCode: geo.countryCode, 
+      temperatureC: round1(temperature),
+      windSpeedMs: typeof wind === "number" ? round1(wind) : undefined,
+      symbolCode: typeof symbol === "string" ? symbol : undefined,
+      updatedAtISO: new Date().toISOString(),
+};
 
       setState({ status: "success", data: view, refreshing: false });
     } catch (e: any) {
-      // ✅ Hvis vi allerede har data, behold den og bare stopp refreshing
+      // Hvis vi allerede har data, behold den og bare stopp refreshing
       setState((prev) => {
         if (prev.status === "success") {
           return { ...prev, refreshing: false };
@@ -119,7 +125,7 @@ export function useWeatherWidget() {
   useEffect(() => {
     void load();
 
-    // ✅ Auto-refresh hvert minutt
+    //Auto-refresh hvert 15 minutt
     const id = setInterval(() => {
       void load();
     }, 15 * 60 * 1000);

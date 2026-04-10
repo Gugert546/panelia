@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useWeatherWidget } from "../WeatherWidget/WeatherWidgetLogic";
 
 type NewsArticle = {
   title: string;
@@ -16,84 +17,59 @@ type NewsResponse = {
 };
 
 export default function NewsWidget() {
-  const [country, setCountry] = useState("");
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
+
   const { fontSize } = useFontSize();
   const { t } = useLanguage();
+  const { state: weatherState } = useWeatherWidget();
 
-  async function fetchNewsByCountry(country: string) {
-    const code = country.trim().toLowerCase();
-    if (!code) return;
+if (weatherState.status === "success") {
+  console.log("Country:", weatherState.data.countryCode);
+}
 
-    setLoading(true);
+  useEffect(() => {
+    if (weatherState.status !== "success") return;
 
-    try {
-      const res = await fetch(`/api/news?country=${encodeURIComponent(code)}`);
+    const country = weatherState.data.countryCode;
+    if (!country) return;
 
-      if (!res.ok) {
-        const txt = await res.text();
-        throw new Error(`News request failed ${res.status}: ${txt}`);
+    const fetchNews = async () => {
+      setLoading(true);
+
+      try {
+        const res = await fetch(
+         "https://panelia-server-1044777021142.europe-west1.run.app/api/news?country=" + country
+);
+
+        if (!res.ok) {
+          const txt = await res.text();
+          throw new Error(txt);
+        }
+
+        const data = (await res.json()) as NewsResponse;
+        setArticles(data.articles ?? []);
+      } catch (err) {
+        console.error("News fetch failed:", err);
       }
 
-      const data = (await res.json()) as NewsResponse;
+      setLoading(false);
+    };
 
-      setArticles(data.articles ?? []);
-    } catch (err) {
-
-      console.error("News fetch failed:", err);
-
-    }
-
-    setLoading(false);
-  }
-
-  function handleSubmit() {
-    if (!country) return;
-    fetchNewsByCountry(country);
-  }
+    fetchNews();
+  }, [weatherState]);
 
   return (
     <WidgetContainer>
-      <WidgetPane title={t('widgets.newsWidget.title')}>
+      <WidgetPane title={t("widgets.newsWidget.title")}>
         <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            gap: 8
-          }}
-        >
-          <input
-            type="text"
-            placeholder={t('widgets.newsWidget.placeholder')}
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-            style={{
-              fontSize,
-              padding: 4
-            }}
-          />
-
-          <button
-            onClick={handleSubmit}
-            style={{
-              fontSize,
-              padding: 4
-            }}
-          >
-            {t('widgets.newsWidget.getHeadlines')}
-          </button>
-
-          {loading && <p>{t('widgets.newsWidget.loading')}</p>}
-
-          <div
             style={{
               display: "flex",
               flexDirection: "column",
-              gap: 6,
+              gap: 12,
               overflowY: "auto",
-              flex: 1
+              flex: 1,
+              paddingRight: 4,
             }}
           >
             {articles.slice(0, 6).map((article, i) => (
@@ -103,15 +79,57 @@ export default function NewsWidget() {
                 target="_blank"
                 rel="noreferrer"
                 style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+
                   fontSize,
-                  textDecoration: "none"
+                  textDecoration: "none",
+                  color: "inherit",
+
+                  padding: "14px 16px",
+                  borderRadius: 14,
+
+                  
+                  background: "rgba(255,255,255,0.12)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  backdropFilter: "blur(12px)",
+
+                  transition: "all 0.2s ease",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.22)";
+                  e.currentTarget.style.transform = "scale(1.01)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+                  e.currentTarget.style.transform = "scale(1)";
                 }}
               >
-                {article.title}
+                {/* 📖 IKON */}
+                <span
+                  className="material-symbols-rounded"
+                  style={{
+                    fontSize: 28,
+                    opacity: 0.85,
+                  }}
+                >
+                  menu_book
+                </span>
+
+                {/* 📰 TEKST */}
+                <span
+                  style={{
+                    fontSize,
+                    lineHeight: 1.3,
+                    fontWeight: 500,
+                  }}
+                >
+                  {article.title}
+                </span>
               </a>
             ))}
           </div>
-        </div>
       </WidgetPane>
     </WidgetContainer>
   );
