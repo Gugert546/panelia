@@ -65,7 +65,7 @@ const BACKGROUND_OPTIONS: Array<{
 
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
-const DEFAULT_WIDGET_TEXT_COLOR = "#ffffff";
+const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
@@ -273,6 +273,7 @@ export default function EditPanel({
               background: language === 'no' ? '#ffffffb7' : '#ffffff7a',
               cursor: 'pointer',
               fontSize,
+              color:widgetTextColor,
             }}
             title="Norsk"
           >
@@ -287,6 +288,7 @@ export default function EditPanel({
               background: language === 'en' ? '#ffffffb7' : '#ffffff7a',
               cursor: 'pointer',
               fontSize,
+              color:widgetTextColor,
             }}
             title="English"
           >
@@ -299,11 +301,12 @@ export default function EditPanel({
           borderRadius: 4,
           border: '1px solid #ffffff7a',
           padding: '4px 8px',
+          color:widgetTextColor,
 
         }}onClick={onClose}>{t('editPanel.close')}</button>
       </div>
 
-      <h2 style={{fontSize:bigTitleFontSize}}>
+      <h2 style={{fontSize:bigTitleFontSize, color:widgetTextColor,}}>
         {viewMode === "widgets"
           ? t('editPanel.selectWidgets')
           : t('editPanel.modeBackground')}
@@ -326,6 +329,7 @@ export default function EditPanel({
             background: viewMode === "widgets" ? '#ffffffb7' : '#ffffff7a',
             cursor: "pointer",
             fontSize,
+            color:widgetTextColor,
           }}
         >
           {t('editPanel.modeWidgets')}
@@ -339,6 +343,7 @@ export default function EditPanel({
             background: viewMode === "background" ? '#ffffffb7' : '#ffffff7a',
             cursor: "pointer",
             fontSize,
+            color:widgetTextColor,
           }}
         >
           {t('editPanel.modeBackground')}
@@ -376,7 +381,8 @@ export default function EditPanel({
                   background: isActive ? "#fdfdfd80" : "#ffffff60",
                   border: isActive
                     ? "2px solid #ffffffd0"
-                    : ""
+                    : "",
+                    color:widgetTextColor,
                 }}
               >
                 <div
@@ -415,6 +421,7 @@ export default function EditPanel({
               borderRadius: 8,
               cursor: "pointer",
               background: "#ffffff57",
+              color:widgetTextColor,
               //border: "1px solid #ddd"
             }}
           >
@@ -440,6 +447,7 @@ export default function EditPanel({
           <h3 style={{
             fontSize:titleTextSize,
             margin:"auto",
+            color:widgetTextColor,
 
           }}>{t('editPanel.fontSize')}</h3>
             <div style={{ 
@@ -457,6 +465,7 @@ export default function EditPanel({
                   background: buttonColor,
                   cursor: 'pointer',
                   fontSize,
+                  color:widgetTextColor,
                 }}
               >
             {t('editPanel.small')}
@@ -470,6 +479,7 @@ export default function EditPanel({
               background: buttonColor,
               cursor: 'pointer',
               fontSize,
+              color:widgetTextColor,
             }}
           >
             {t('editPanel.medium')}
@@ -483,6 +493,7 @@ export default function EditPanel({
               background: buttonColor,
               cursor: 'pointer',
               fontSize,
+              color:widgetTextColor,
             }}
           >
             {t('editPanel.large')}
@@ -495,7 +506,7 @@ export default function EditPanel({
             borderRadius:borderRadiusThemeElements,
             padding: themeElementsPadding,
             }} >
-            <label style={{ fontSize:titleTextSize, fontWeight: 600 }}>
+            <label style={{ fontSize:titleTextSize, fontWeight: 600,color:widgetTextColor, }}>
               {t('editPanel.widgetColorMenu')}
             </label>
 
@@ -512,6 +523,7 @@ export default function EditPanel({
                 background: buttonColor,
                 cursor: "pointer",
                 marginTop:5,
+                color:widgetTextColor,
               }}
             >
               <input
@@ -526,6 +538,7 @@ export default function EditPanel({
                   inset: 0,
                   opacity: 0,
                   cursor: "pointer",
+                  color:widgetTextColor,
                 }}
               />
               <span
@@ -537,7 +550,7 @@ export default function EditPanel({
                   background: widgetSurfaceColor,
                 }}
               />
-              <span style={{ fontSize, fontWeight: 500 }}>
+              <span style={{ fontSize, fontWeight: 500,color:widgetTextColor, }}>
                 {t('editPanel.widgetColorButton')}
               </span>
             </label>
@@ -548,6 +561,7 @@ export default function EditPanel({
                 fontSize,
                 fontWeight: 500,
                 marginTop: 10,
+                color:widgetTextColor,
               }}
             >
               {t('editPanel.widgetOpacity')}: {Math.round(widgetSurfaceAlpha * 100)}%
@@ -573,6 +587,7 @@ export default function EditPanel({
                 background: backgroundColor,
                 borderRadius:borderRadiusThemeElements,
                 padding: themeElementsPadding,
+                color:widgetTextColor,
 
                 }}>  
               <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
@@ -648,6 +663,7 @@ export default function EditPanel({
                 background: backgroundColor,
                 borderRadius:borderRadiusThemeElements,
                 padding: themeElementsPadding,
+                color:widgetTextColor,
                 }}>
               <label style={{ fontSize:titleTextSize, fontWeight: 600, marginTop: 8 }}>
                 {t('editPanel.widgetTextColor')}
@@ -716,13 +732,14 @@ export default function EditPanel({
                   fontWeight: 600,
                   textAlign: "left",
                   fontSize,
+                  color:widgetTextColor,
                 }}
               >
                 {t('editPanel.resetWidgetStyle')}
               </button>
             </div>
             <div style={{
-
+              //custom bakgrunn
               background: backgroundColor,
               borderRadius:borderRadiusThemeElements,
               padding: themeElementsPadding,
@@ -749,6 +766,7 @@ export default function EditPanel({
                   fontWeight: 600,
                   opacity: uploadingBackground ? 0.6 : 1,
                   fontSize,
+                  color:widgetTextColor,
                 }}
               >
                 {uploadingBackground ? t('editPanel.uploading') : t('editPanel.uploadCustomBackground')}
@@ -772,7 +790,7 @@ export default function EditPanel({
               <div
                 style={{
                   fontSize,
-                  color: "#4b5563",
+                  color:widgetTextColor,
                   background: "#f7f7f7",
                   border: "1px dashed #d1d5db",
                   borderRadius: 8,
@@ -792,6 +810,7 @@ export default function EditPanel({
             background: backgroundColor,
             padding: "8px 10px",
             borderRadius: 8,
+            color:widgetTextColor,
             
             }}>
           <h3 style={{fontSize:titleTextSize, }}>{t('editPanel.customPresets')}</h3>
@@ -830,6 +849,7 @@ export default function EditPanel({
                 fontWeight: 600,
                 whiteSpace: "nowrap",
                 fontSize,
+                color:widgetTextColor,
               }}
             >
               {t('editPanel.savePreset')}
@@ -881,6 +901,7 @@ export default function EditPanel({
                     background: "#eaf4ff",
                     cursor: "pointer",
                     fontWeight: 600,
+                    color:widgetTextColor,
                   }}
                 >
                   {t('editPanel.applyPreset')}
@@ -895,6 +916,7 @@ export default function EditPanel({
                     background: "#fff1f1",
                     cursor: "pointer",
                     fontWeight: 600,
+                    color:widgetTextColor,
                   }}
                 >
                   {t('editPanel.deletePreset')}
