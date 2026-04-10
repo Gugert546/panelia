@@ -97,7 +97,9 @@ export default function SearchWidgetUI() {
               flex: 1,
               border: "none",
               outline: "none",
-              background: "transparent",
+              background: "#ffffff10",
+              borderRadius:12,
+              padding:8,
               fontSize,
               color: "inherit"
             }}

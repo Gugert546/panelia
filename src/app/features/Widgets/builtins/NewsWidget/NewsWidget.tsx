@@ -18,7 +18,7 @@ type NewsResponse = {
 
 export default function NewsWidget() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
 
   const { fontSize } = useFontSize();
   const { t } = useLanguage();
