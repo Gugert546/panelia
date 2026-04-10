@@ -398,7 +398,7 @@ export default function CalendarWidget({
     <>
       <div
         style={{
-          backgroundColor: "rgba(255,255,255,0.55)",
+          backgroundColor: "rgba(255,255,255,0.15)",
           padding: "8px 6px",
           fontWeight: 600,
           fontSize: "11px",
@@ -415,7 +415,7 @@ export default function CalendarWidget({
           <div
             key={`header-${idx}`}
             style={{
-              backgroundColor: "rgba(255,255,255,0.55)",
+              backgroundColor: "rgba(255,255,255,0.15)",
               padding: "8px 6px",
               fontWeight: 600,
               fontSize: "11px",
@@ -502,7 +502,7 @@ export default function CalendarWidget({
         <div
           data-time-slot={time}
           style={{
-            backgroundColor: "rgba(255,255,255,0.55)",
+            backgroundColor: "rgba(255, 255, 255, 0.15)",
             padding: "8px 6px",
             fontSize: "10px",
             fontWeight: 600,
@@ -595,7 +595,7 @@ export default function CalendarWidget({
                           : "0px",
                       background: hexToRgba(calendarColor, laneTone),
                       borderLeft: `2px solid ${hexToRgba(calendarColor, 0.72)}`,
-                      color: "rgba(15,23,42,0.95)",
+                      color: "inherit",
                       whiteSpace: item.isStart ? "normal" : "nowrap",
                       wordBreak: item.isStart ? "break-word" : "normal",
                       textOverflow: item.isStart ? "clip" : "ellipsis",
@@ -729,7 +729,7 @@ export default function CalendarWidget({
                     ? "not-allowed"
                     : "pointer",
                 padding: "8px 12px",
-                color: "rgba(15, 23, 42, 0.95)",
+                color: "inherit",
                 opacity:
                   calendarRefreshBusy ||
                   calendarConnectionBusy ||
@@ -762,7 +762,7 @@ export default function CalendarWidget({
                     ? "not-allowed"
                     : "pointer",
                 padding: "8px 12px",
-                color: "rgba(15, 23, 42, 0.95)",
+                color: "inherit",
                 opacity:
                   calendarConnectionBusy || calendarConnectionStatus === "loading"
                     ? 0.7

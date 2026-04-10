@@ -182,3 +182,8 @@ html, body, #root {
 * {
   box-sizing: border-box;
 }
+
+.notes-widget-textarea::placeholder {
+  color: inherit;
+  opacity: 0.65;
+}

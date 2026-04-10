@@ -151,7 +151,7 @@ export default function BookmarkUi() {
           {error && (
             <div
               style={{
-                color: "#111827",
+                color: "inherit",
                 fontSize: 12,
                 padding: "8px 10px",
                 borderRadius: 10,
@@ -169,7 +169,7 @@ export default function BookmarkUi() {
                 padding: "7px 10px",
                 borderRadius: 10,
                 background: "rgba(255,255,255,0.18)",
-                color: "#0b1320",
+                color: "inherit",
                 border: "none",
                 cursor: "pointer",
                 fontSize,
@@ -200,7 +200,7 @@ export default function BookmarkUi() {
                   padding: "4px 8px",
                   fontSize: 12,
                   background: "rgba(17, 24, 39, 0.18)",
-                  color: "#0b1320",
+                  color: "inherit",
                   border: "none",
                   borderRadius: 8,
                   cursor: "pointer",
@@ -225,7 +225,7 @@ export default function BookmarkUi() {
               <div
                 style={{
                   fontSize,
-                  color: "rgba(17, 24, 39, 0.78)",
+                  color: "inherit",
                   textAlign: "center",
                   padding: 16,
                   background: "rgba(255,255,255,0.2)",
@@ -242,7 +242,7 @@ export default function BookmarkUi() {
                     alignItems: "center",
                     gap: 6,
                     paddingLeft: 2,
-                    color: "#0b1320",
+                    color: "inherit",
                     fontSize: Math.max(12, fontSize - 1),
                     fontWeight: 500,
                   }}
@@ -269,7 +269,7 @@ export default function BookmarkUi() {
                       style={{
                         border: "none",
                         background: "transparent",
-                        color: "#0b1320",
+                        color: "inherit",
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 6,
@@ -322,7 +322,7 @@ export default function BookmarkUi() {
                                 cursor: "pointer",
                                 fontSize: 13,
                                 fontWeight: isSelected ? 600 : 500,
-                                color: "#0b1320",
+                                color: "inherit",
                                 background: isSelected
                                   ? "rgba(59,130,246,0.20)"
                                   : "transparent",
@@ -355,7 +355,7 @@ export default function BookmarkUi() {
                       border: "none",
                       borderRadius: 8,
                       background: "rgba(255,255,255,0.22)",
-                      color: "#0b1320",
+                      color: "inherit",
                       fontSize: 12,
                       fontWeight: 600,
                       padding: "4px 8px",
@@ -390,7 +390,7 @@ export default function BookmarkUi() {
                         padding: "6px 8px",
                         fontSize: 12,
                         background: "rgba(17,24,39,0.16)",
-                        color: "#0b1320",
+                        color: "inherit",
                         border: "none",
                         borderRadius: 8,
                         cursor: "pointer",
@@ -407,7 +407,7 @@ export default function BookmarkUi() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: "rgba(17, 24, 39, 0.75)",
+                      color: "inherit",
                       padding: 10,
                       borderRadius: 12,
                       background: "rgba(255,255,255,0.22)",
@@ -439,6 +439,7 @@ export default function BookmarkUi() {
                             border: "1px solid rgba(255,255,255,0.28)",
                             borderRadius: 10,
                             padding: "8px 10px",
+                            color:"inherit",
                           }}
                         >
                           <a
@@ -453,7 +454,7 @@ export default function BookmarkUi() {
                               display: "inline-flex",
                               alignItems: "center",
                               justifyContent: "center",
-                              color: "#0b1320",
+                              color: "inherit",
                               textDecoration: "none",
                               flexShrink: 0,
                               fontSize: 16,
@@ -469,7 +470,7 @@ export default function BookmarkUi() {
                             rel="noopener noreferrer"
                             style={{
                               textDecoration: "none",
-                              color: "#0b1320",
+                              color: "inherit",
                               fontSize,
                               fontWeight: 500,
                               flex: 1,
@@ -486,7 +487,7 @@ export default function BookmarkUi() {
                             style={{
                               border: "none",
                               background: "rgba(17,24,39,0.16)",
-                              color: "#0b1320",
+                              color: "inherit",
                               borderRadius: 7,
                               padding: "3px 8px",
                               fontSize: 11,
@@ -514,7 +515,7 @@ export default function BookmarkUi() {
               border: "none",
               borderRadius: 8,
               background: "rgba(17,24,39,0.16)",
-              color: "#0b1320",
+              color: "inherit",
               padding: "4px 8px",
               fontSize: 11,
               fontWeight: 500,
