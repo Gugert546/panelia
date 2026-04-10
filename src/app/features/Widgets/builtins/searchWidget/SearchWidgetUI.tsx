@@ -99,7 +99,7 @@ export default function SearchWidgetUI() {
               outline: "none",
               background: "transparent",
               fontSize,
-              color: "#111"
+              color: "inherit"
             }}
           />
 

@@ -59,7 +59,7 @@ export default function CustomButtonItemWidget({
             alignItems: "center",
             gap: 8,
             textDecoration: "none",
-            color: "#111",
+            color: "inherit",
             width: "100%",
             height: "100%",
             padding: 12,

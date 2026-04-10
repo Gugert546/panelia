@@ -33,6 +33,7 @@
     "widgetBorderWidth": "Thickness",
     "widgetSize": "Widget size",
     "resetWidgetStyle": "Reset widget style",
+    "reset":"Reset",
     "addCustomButton": "Add custom button",
     "customPresets": "Custom themes",
     "presetNamePlaceholder": "Theme name",

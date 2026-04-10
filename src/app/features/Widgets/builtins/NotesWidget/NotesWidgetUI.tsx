@@ -51,6 +51,7 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
           </button>
 
           <textarea
+            className="notes-widget-textarea"
             value={state.text}
             onChange={(e) => actions.setText(e.target.value)}
             placeholder={t('widgets.notesWidget.placeholder')}
@@ -62,8 +63,10 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
               borderRadius: 12,
               border: "none",
               background: "transparent",
+              color: "inherit",
               outline: "none",
               fontSize,
+              fontFamily: "inherit",
               boxSizing: "border-box"
             }}
           />
