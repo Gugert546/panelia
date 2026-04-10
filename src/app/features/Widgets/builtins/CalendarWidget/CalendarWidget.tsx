@@ -530,7 +530,7 @@ export default function CalendarWidget({
                       calendarColorById.get(items[0].event.calendarId || "primary") || "#3b82f6",
                       0.08
                     )
-                  : "rgba(255,255,255,0.92)",
+                  : "rgba(59, 130, 246, 0.08)",
                 borderLeft: hasEvents
                   ? `3px solid ${hexToRgba(
                       calendarColorById.get(items[0].event.calendarId || "primary") || "#3b82f6",
@@ -561,7 +561,7 @@ export default function CalendarWidget({
                       calendarColorById.get(items[0].event.calendarId || "primary") || "#3b82f6",
                       0.08
                     )
-                  : "rgba(255,255,255,0.92)";
+                  : "rgba(59, 130, 246, 0.08)";
               }}
               onClick={() => {
                 void handleCellClick(dayIdx, time);
