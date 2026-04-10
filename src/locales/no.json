@@ -33,6 +33,7 @@
     "widgetBorderWidth": "Tykkelse",
     "widgetSize": "Widget-størrelse",
     "resetWidgetStyle": "Tilbakestill widget-stil",
+    "reset":"Reset",
     "addCustomButton": "Legg til egendefinert knapp",
     "customPresets": "Egendefinerte temaer",
     "presetNamePlaceholder": "Navn på tema",
