@@ -83,6 +83,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "news", label: "Nyheter", icon: "newsmode" },
   { id: "weather", label: "Vær", icon: "partly_cloudy_day" },
   { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
+  { id: "info", label: "Info", icon: "info" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
 ] as const;
@@ -324,6 +325,7 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   news: { x: 0, y: 0, w: 10, h: 10 },
   spotify: { x: 0, y: 0, w: 4, h: 3 },
   bookmark: { x: 0, y: 0, w: 4, h: 4 },
+  info: { x: 0, y: 0, w: 6, h: 6 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
 

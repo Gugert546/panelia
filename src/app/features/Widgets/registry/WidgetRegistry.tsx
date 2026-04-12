@@ -2,14 +2,13 @@ import type { FC } from "react";
 
 import ClockWidget from "../builtins/ClockWidget/ClockWidget";
 import NotesWidget from "../builtins/NotesWidget/NotesWidgetUI";
-import CalendarWidget, {
-  type CalendarWidgetProps,
-} from "../builtins/CalendarWidget/CalendarWidget";
+import CalendarWidget from "../builtins/CalendarWidget/CalendarWidget";
 import SearchWidgetUI from "../builtins/searchWidget/SearchWidgetUI";
 import WeatherWidget from "../builtins/WeatherWidget/WeatherWidgetUI";
 import NewsWidget from "../builtins/NewsWidget/NewsWidget";
 import SpotifyWidget from "../builtins/SpotifyWidget/SpotifyWidget";
 import BookmarkUi from "../builtins/BookmarkWidget/BookmarkUi";
+import InfoWidget from "../builtins/InfoWidget/InfoWidget";
 import CustomButtonItemWidget from "../builtins/CustomButtonsWidget/CustomButtonItemWidget";
 import type { CustomButtonConfig } from "../../dashboard/hooks/useWidgetsState";
 import { useWidgets } from "../../dashboard/hooks/WidgetsContext";
@@ -23,6 +22,7 @@ export type WidgetType =
   | "news"
   | "spotify"
   | "bookmark"
+  | "info"
   | "customButtons"
   | "customButton";
 
@@ -46,17 +46,13 @@ const ClockWidgetAdapter: FC<WidgetComponentProps> = () => <ClockWidget />;
 const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId, onClose }) => (
   <NotesWidget widgetId={widgetId ?? ""} onClose={onClose} />
 );
-const CalendarWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => (
-  <CalendarWidget
-    {...(config as Partial<CalendarWidgetProps>)}
-    variant="widget"
-  />
-);
+const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => <CalendarWidget />;
 const SearchWidgetAdapter: FC<WidgetComponentProps> = () => <SearchWidgetUI />;
 const WeatherWidgetAdapter: FC<WidgetComponentProps> = () => <WeatherWidget />;
 const NewsWidgetAdapter: FC<WidgetComponentProps> = () => <NewsWidget />;
 const SpotifyWidgetAdapter: FC<WidgetComponentProps> = () => <SpotifyWidget />;
 const BookmarkWidgetAdapter: FC<WidgetComponentProps> = () => <BookmarkUi />;
+const InfoWidgetAdapter: FC<WidgetComponentProps> = () => <InfoWidget />;
 const CustomButtonWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId }) => {
   const { customButtonConfigs } = useWidgets();
 
@@ -74,51 +70,62 @@ const CustomButtonWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId }) => {
   );
 };
 
+const INFO_WIDGET_FALLBACK: WidgetDefinition = {
+  title: "Info",
+  Component: InfoWidgetAdapter,
+  defaultGrid: { w: 6, h: 3 },
+};
+
 const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
   clock: {
     title: "Klokke",
     Component: ClockWidgetAdapter,
-    defaultGrid: { w: 5, h: 3 },
+    defaultGrid: { w: 3, h: 2 },
   },
   notes: {
     title: "Notater",
     Component: NotesWidgetAdapter,
-    defaultGrid: { w: 8, h: 8 },
+    defaultGrid: { w: 4, h: 4 },
   },
   calendar: {
     title: "Kalender",
     Component: CalendarWidgetAdapter,
-    defaultGrid: { w: 16, h: 12 },
+    defaultGrid: { w: 8, h: 6 },
   },
   google_search: {
     title: "Søk",
     Component: SearchWidgetAdapter,
-    defaultGrid: { w: 14, h: 3 },
+    defaultGrid: { w: 8, h: 2 },
   },
   weather: {
     title: "Vær",
     Component: WeatherWidgetAdapter,
-    defaultGrid: { w: 5, h: 4 },
+    defaultGrid: { w: 3, h: 3 },
   },
   news: {
     title: "Nyheter",
     Component: NewsWidgetAdapter,
-    defaultGrid: { w: 10, h: 10 },
+    defaultGrid: { w: 6, h: 6 },
   },
   spotify: {
     title: "Spotify",
     Component: SpotifyWidgetAdapter,
-    defaultGrid: { w: 8, h: 13},
+    defaultGrid: { w: 4, h: 3 },
   },
   bookmark: {
     title: "Bokmerker",
     Component: BookmarkWidgetAdapter,
-    defaultGrid: { w: 8, h: 16 },
+    defaultGrid: { w: 4, h: 4 },
+  },
+  info: {
+    title: "Info",
+    Component: InfoWidgetAdapter,
+    defaultGrid: { w: 6, h: 3 },
   },
   customButton: {
     title: "Egendefinert knapp",
     Component: CustomButtonWidgetAdapter,
-    defaultGrid: { w: 4, h: 4 },
+    defaultGrid: { w: 2, h: 2 },
   },
 };
 
@@ -148,4 +155,7 @@ export function buildWidgets(
   };
 }
 
-export const WIDGETS = STATIC_WIDGETS;
+export const WIDGETS: Record<string, WidgetDefinition> = {
+  ...STATIC_WIDGETS,
+  info: STATIC_WIDGETS.info ?? INFO_WIDGET_FALLBACK,
+};
