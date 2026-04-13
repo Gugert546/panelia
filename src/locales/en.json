@@ -137,7 +137,13 @@
     },
     "infoWidget":{
       "title":"Welcome to Panelia",
-      "bread":"Bruk siden vår, hvis ikke får du besøk i natt! "
+      "bread":"Bruk siden vår, hvis ikke får du besøk i natt! ",
+      "aboutUs":"vi er Audun, Einar, Jonas og Sindre",
+      "aboutPanelia":"Panelia er en personelig widget-basert startside. Her kan du selv velge hvordan siden skal se ut og hvilke widgets du skal bruke",
+      "aboutTask":"vi har valgt å lage vår egen oppgave...",
+      "aboutGoal":"",
+      "plannedWork":"hvordan skal vi jobbe med prosjektet, fremdriftsplan",
+      "challenges":""
     }
   }
 }
