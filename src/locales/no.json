@@ -141,9 +141,13 @@
       "aboutUs":"om oss:vi er Audun, Einar, Jonas og Sindre",
       "aboutPanelia":"om panelia: Panelia er en personelig widget-basert startside. Her kan du selv velge hvordan siden skal se ut og hvilke widgets du skal bruke",
       "aboutTask":"om oppgavestilen: vi har valgt å lage vår egen oppgave...",
-      "aboutGoal":"målformulering:målet er å utvikle en nettside som fungerer like godt eller bedre enn den løsningen som de fleste bruker i dag.",
-      "plannedWork":"hvordan skal vi jobbe med prosjektet, fremdriftsplan",
-      "challenges":"utfordinger: manage tilgang til api-er, sikkerhet"
+      "erfaringer":"hva har vi lært av måten vi har jobbet på/hvilke erfaringer har vi gjort oss",
+      "utbytte":"hva har vi fått ut av prosjektet:",
+      "utbytte2":"Erfaring, kompentanse og selvtillit med arbeid på større prosjekter",
+      "utbytte3":"Større kompetanse på integrering av tredjeparts apier",
+      "utbytte4":"En side som vi personelig kommer til å bruke i fremtiden",
+      "challenges":"utfordinger: manage tilgang til api-er, sikkerhet",
+      "goalTitle":"Våre mål"
     }
   }
 }

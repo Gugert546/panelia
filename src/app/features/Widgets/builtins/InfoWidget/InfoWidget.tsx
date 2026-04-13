@@ -4,7 +4,8 @@ import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useFontSize } from "../../../../providers/themeProviders";
 
-import fremgang  from  "../../../../../assets/fremgang.png"
+import fremgang  from  "../../../../../assets/fremgang.png";
+import paneliaLogo  from  "../../../../../assets/logo.png"
 
 export default function InfoWidget() {
   const { t } = useLanguage();
@@ -13,12 +14,23 @@ export default function InfoWidget() {
   const titleSize = fontSize + 2;
 
   const slides = [
-    {text: t("widgets.infoWidget.aboutUs")},
-    {text: t("widgets.infoWidget.aboutTask")},
-    {text: t("widgets.infoWidget.aboutPanelia")},
-    {text: t("widgets.infoWidget.aboutGoal")},
-    {text: t("widgets.infoWidget.plannedWork"),image: fremgang, alt:"fremdriftsplan for Panelia-prosjektet"},
-    {text: t("widgets.infoWidget.challenges")},
+    {image:paneliaLogo},
+    {text: "Panelia skal være en nettside som skal brukes som det første “trappetrinnet” når brukeren skal ut på internett, her skal informasjon som brukeren trenger/ønsker samles og presenteres på en ryddig og intuitiv måte ",title:"om problemstilling"},
+    {title:"Fremgangsmåte",image: fremgang, alt:"fremdriftsplan for Panelia-prosjektet" },
+    {title:"Erfaringer",
+          text:"-Plan vs virkelighet",
+          text2:"-Fleksibel rollefordeling",
+          text3:"-Dailies og faste arbeidsdager’",
+          text4:"-Prioritering av kjernefunksjonalitet",
+          text5:"-Viktigheten av kommunikasjon",
+      },
+    {title:"Utbytte",
+        text: t("widgets.infoWidget.utbytte"),
+        text2:t("widgets.infoWidget.utbytte2"),
+        text3:t("widgets.infoWidget.utbytte3"),
+        text4:"Erfaring med Ai, API og web utvikling",
+        text5:t("widgets.infoWidget.utbytte4")
+      },
   ];
 
   const goToPreviousSlide = () => {
@@ -87,27 +99,70 @@ export default function InfoWidget() {
             >
               <div
                 style={{
-                  padding: "12px 14px",
+                  padding: "4px 4px",
                   borderRadius: 8,
                   border: "1px solid #ddd",
-                  background: "#fff",
+                  background: "#ffffff9d",
                   fontWeight: 100,
                   fontSize,
                   width: "100%",
                   display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  alignItems: "top",
+                  justifyContent: "top",
                   overflowY: "auto",
+                  flexDirection:"column"
                 }}
               >
-                {slides[currentSlide].text}
-                {slides[currentSlide].image && (
-                  <img
-                  src={slides[currentSlide].image}
-                  alt={slides[currentSlide].alt}
-                  style={{ maxWidth: "100%", height: "auto", borderRadius: 8 }}
-                  />
+                {slides[currentSlide].title &&(
+                  <div> 
+                    <h2>{slides[currentSlide].title}</h2>
+                  </div>
+
                 )}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    textAlign:"left",
+                  }}>
+                  {slides[currentSlide].text}
+                  {slides[currentSlide].image && (
+                    <img
+                    src={slides[currentSlide].image}
+                    alt={slides[currentSlide].alt}
+                    style={{ alignItems:"center",maxWidth: "100%", height: "auto", borderRadius: 8 }}
+                    />
+                  )}
+                  </div>
+                  <div
+                    style={{
+                      padding: "12px 14px",
+                      textAlign:"left"
+                    }}>
+                    {slides[currentSlide].text2}
+                  </div>
+                  <div
+                  style={{
+                      padding: "12px 14px",
+                      textAlign:"left"
+                    }}>
+                    {slides[currentSlide].text3}
+                  </div>
+                  <div
+                  style={{
+                      padding: "12px 14px",
+                      textAlign:"left"
+                    }}>
+                    {slides[currentSlide].text4}
+                  </div>
+                   <div
+                  style={{
+                      padding: "12px 14px",
+                      textAlign:"left"
+                    }}>
+                    {slides[currentSlide].text5}
+                  </div>
+                
               </div>
             </div>
           </div>
