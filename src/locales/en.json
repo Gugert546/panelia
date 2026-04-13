@@ -134,6 +134,10 @@
       "refreshFromGoogle": "Refresh from Google",
       "time": "Time"
 
+    },
+    "infoWidget":{
+      "title":"Welcome to Panelia",
+      "bread":"Bruk siden vår, hvis ikke får du besøk i natt! "
     }
   }
 }

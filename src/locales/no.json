@@ -134,6 +134,10 @@
       "refreshing": "Oppdaterer...",
       "refreshFromGoogle": "Oppdater fra Google",
       "time": "Tid"
+    },
+    "infoWidget":{
+      "title":"Velkommen til Panelia",
+      "bread":"Bruk siden vår, hvis ikke får du besøk i natt! "
     }
   }
 }
