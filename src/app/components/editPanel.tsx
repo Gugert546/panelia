@@ -159,6 +159,9 @@ export default function EditPanel({
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
   const widgetSurfaceAlpha = getColorAlpha(widgetSurfaceColor);
+  const notesWidgetCount = activeWidgets.filter(
+    (activeWidgetId) => activeWidgetId === "notes" || activeWidgetId.startsWith("notes:")
+  ).length;
 
   useEffect(() => {
     setModalOpen(false);
@@ -379,6 +382,10 @@ export default function EditPanel({
 
         {viewMode === "widgets" &&
           availableWidgets.map(widget => {
+            const widgetLabel =
+              widget.id === "notes" && notesWidgetCount > 0
+                ? `${widget.label} (${notesWidgetCount})`
+                : widget.label;
 
             const isActive =
               widget.id === "notes"
@@ -411,7 +418,7 @@ export default function EditPanel({
                     gap: 12,
                   }}
                 >
-                  <span style={{ fontSize }}>{widget.label}</span>
+                  <span style={{ fontSize }}>{widgetLabel}</span>
                   <span
                     className="material-symbols-rounded"
                     aria-hidden="true"
