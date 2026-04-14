@@ -4,7 +4,6 @@ import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useFontSize } from "../../../../providers/themeProviders";
 
-import fremgang  from  "../../../../../assets/fremgang.png";
 import paneliaLogo  from  "../../../../../assets/logo.png"
 
 export default function InfoWidget() {
@@ -15,21 +14,25 @@ export default function InfoWidget() {
 
   const slides = [
     {image:paneliaLogo},
-    {text: "Panelia skal være en nettside som skal brukes som det første “trappetrinnet” når brukeren skal ut på internett, her skal informasjon som brukeren trenger/ønsker samles og presenteres på en ryddig og intuitiv måte ",title:"om problemstilling"},
-    {title:"Fremgangsmåte",image: fremgang, alt:"fremdriftsplan for Panelia-prosjektet" },
-    {title:"Erfaringer",
-          text:"-Plan vs virkelighet",
-          text2:"-Fleksibel rollefordeling",
-          text3:"-Dailies og faste arbeidsdager’",
-          text4:"-Prioritering av kjernefunksjonalitet",
-          text5:"-Viktigheten av kommunikasjon",
-      },
-    {title:"Utbytte",
-        text: t("widgets.infoWidget.utbytte"),
-        text2:t("widgets.infoWidget.utbytte2"),
-        text3:t("widgets.infoWidget.utbytte3"),
-        text4:"Erfaring med Ai, API og web utvikling",
-        text5:t("widgets.infoWidget.utbytte4")
+    {title:"",
+      text: ""
+    },
+    {title:"",
+        image: "", 
+        alt:""},
+    {title:"",
+        text:"",
+        text2:"",
+        text3:"",
+        text4:"",
+        text5:"",
+    },
+    {title:"",
+        text:"",
+        text2:"",
+        text3:"",
+        text4:"",
+        text5:""
       },
   ];
 

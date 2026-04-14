@@ -46,7 +46,13 @@ const ClockWidgetAdapter: FC<WidgetComponentProps> = () => <ClockWidget />;
 const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId, onClose }) => (
   <NotesWidget widgetId={widgetId ?? ""} onClose={onClose} />
 );
-const CalendarWidgetAdapter: FC<WidgetComponentProps> = () => <CalendarWidget />;
+const CalendarWidgetAdapter: FC<WidgetComponentProps> = ({ config, onClose }) => (
+  <CalendarWidget
+    variant="widget"
+    onClose={onClose}
+    {...config}
+  />
+);
 const SearchWidgetAdapter: FC<WidgetComponentProps> = () => <SearchWidgetUI />;
 const WeatherWidgetAdapter: FC<WidgetComponentProps> = () => <WeatherWidget />;
 const NewsWidgetAdapter: FC<WidgetComponentProps> = () => <NewsWidget />;
