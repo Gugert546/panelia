@@ -34,7 +34,7 @@ export const FontSizeProvider: React.FC<FontSizeProviderProps> = ({ children }) 
         setFontSize(14);
         break;
       case 'large':
-        setFontSize(16);
+        setFontSize(18);
         break;
     }
   };

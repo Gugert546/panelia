@@ -64,6 +64,7 @@
     "news": "News",
     "weather": "Weather",
     "bookmark": "Bookmark",
+    "info": "Info",
     "notes": "Notes",
     "spotify": "Spotify",
     "calendar": "Calendar",
@@ -133,6 +134,20 @@
       "refreshFromGoogle": "Refresh from Google",
       "time": "Time"
 
+    },
+    "infoWidget":{
+      "title":"Welcome to Panelia",
+      "bread":"Bruk siden vår, hvis ikke får du besøk i natt! ",
+      "aboutUs":"vi er Audun, Einar, Jonas og Sindre",
+      "aboutPanelia":"Panelia er en personelig widget-basert startside. Her kan du selv velge hvordan siden skal se ut og hvilke widgets du skal bruke",
+      "aboutTask":"vi har valgt å lage vår egen oppgave...",
+      "erfaringer":"vi skal produsere en nettside som skal brukes som det første “trappetrinnet” når brukeren skal ut på internett, her skal informasjon som brukeren trenger/ønsker samles og presenteres på en ryddig og intuitiv måte ",
+      "utbytte":"hva har vi fått ut av prosjektet:",
+      "utbytte2":"Erfaring, kompentanse og selvtillit med arbeid på større prosjekter",
+      "utbytte3":"større kompetanse på integrering av tredjeparts apier",
+      "utbytte4":"En side som vi personelig kommer til å bruke i fremtiden",
+      "challenges":"",
+      "goalTitle":"Våre mål"
     }
   }
 }

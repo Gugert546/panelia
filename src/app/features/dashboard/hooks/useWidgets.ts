@@ -15,6 +15,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "news", label: "Nyheter", icon: "newsmode" },
   { id: "weather", label: "Vær", icon: "partly_cloudy_day" },
   { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
+  { id: "info", label: "Info", icon: "info" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
 ] as const;
