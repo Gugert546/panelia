@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
 
-type FontSize = 'small' | 'medium' | 'large';
+const DEFAULT_FONT_SIZE = 14;
 
 interface FontSizeContextType {
   fontSize: number;
-  setFontSizeMode: (size: FontSize) => void;
+  setFontSize: (size: number) => void;
 }
 
 const FontSizeContext = createContext<FontSizeContextType | undefined>(undefined);
@@ -23,24 +23,10 @@ interface FontSizeProviderProps {
 }
 
 export const FontSizeProvider: React.FC<FontSizeProviderProps> = ({ children }) => {
-  const [fontSize, setFontSize] = useState<number>(14); // default medium
-
-  const setFontSizeMode = (size: FontSize) => {
-    switch (size) {
-      case 'small':
-        setFontSize(12);
-        break;
-      case 'medium':
-        setFontSize(14);
-        break;
-      case 'large':
-        setFontSize(18);
-        break;
-    }
-  };
+  const [fontSize, setFontSize] = useState<number>(DEFAULT_FONT_SIZE);
 
   return (
-    <FontSizeContext.Provider value={{ fontSize, setFontSizeMode }}>
+    <FontSizeContext.Provider value={{ fontSize, setFontSize }}>
       {children}
     </FontSizeContext.Provider>
   );
