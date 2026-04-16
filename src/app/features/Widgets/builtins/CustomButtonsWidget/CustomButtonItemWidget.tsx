@@ -50,82 +50,91 @@ export default function CustomButtonItemWidget({
   return (
     <WidgetContainer>
       <WidgetPane title="">
-        <button
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
+        <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            textDecoration: "none",
-            color: "inherit",
+            containerType: "inline-size",
             width: "100%",
             height: "100%",
-            padding: 12,
-            borderRadius: 8,
-            background: "none",
-            border: "none",
-            transition: "opacity 0.2s ease",
-            cursor: "pointer",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "0.8";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "1";
           }}
         >
-          {currentFavicon ? (
-            <img
-              src={currentFavicon}
-              alt=""
-              onError={() => {
-                setFaviconIndex((prev) => {
-                  if (prev >= faviconCandidates.length - 1) {
-                    return prev;
-                  }
-                  return prev + 1;
-                });
-              }}
-              style={{
-                width: 20,
-                height: 20,
-                objectFit: "contain",
-                flexShrink: 0,
-              }}
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              style={{
-                width: 20,
-                height: 20,
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: 999,
-                background: "rgba(0,0,0,0.08)",
-                fontSize: 12,
-                fontWeight: 700,
-                flexShrink: 0,
-              }}
-            >
-              {label.slice(0, 1).toUpperCase()}
-            </span>
-          )}
-
-          <span
+          <button
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
             style={{
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              fontWeight: 500,
+              display: "flex",
+              alignItems: "center",
+              gap: "clamp(10px, 5cqw, 18px)",
+              textDecoration: "none",
+              color: "inherit",
+              width: "100%",
+              height: "100%",
+              padding: "clamp(12px, 7cqw, 22px)",
+              borderRadius: "clamp(10px, 5cqw, 18px)",
+              background: "none",
+              border: "none",
+              transition: "opacity 0.2s ease",
+              cursor: "pointer",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = "0.8";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = "1";
             }}
           >
-            {label}
-          </span>
-        </button>
+            {currentFavicon ? (
+              <img
+                src={currentFavicon}
+                alt=""
+                onError={() => {
+                  setFaviconIndex((prev) => {
+                    if (prev >= faviconCandidates.length - 1) {
+                      return prev;
+                    }
+                    return prev + 1;
+                  });
+                }}
+                style={{
+                  width: "clamp(24px, 14cqw, 44px)",
+                  height: "clamp(24px, 14cqw, 44px)",
+                  objectFit: "contain",
+                  flexShrink: 0,
+                }}
+              />
+            ) : (
+              <span
+                aria-hidden="true"
+                style={{
+                  width: "clamp(24px, 14cqw, 44px)",
+                  height: "clamp(24px, 14cqw, 44px)",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 999,
+                  background: "rgba(0,0,0,0.08)",
+                  fontSize: "clamp(13px, 8cqw, 22px)",
+                  fontWeight: 700,
+                  flexShrink: 0,
+                }}
+              >
+                {label.slice(0, 1).toUpperCase()}
+              </span>
+            )}
+
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                fontWeight: 500,
+                fontSize: "clamp(14px, 9cqw, 26px)",
+              }}
+            >
+              {label}
+            </span>
+          </button>
+        </div>
       </WidgetPane>
     </WidgetContainer>
   );
