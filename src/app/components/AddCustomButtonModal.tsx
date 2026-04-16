@@ -14,6 +14,8 @@ type AddCustomButtonModalProps = {
   removeCustomButton: (id: string) => void;
 };
 
+const MODAL_BACKDROP_COLOR = "transparent";
+
 export default function AddCustomButtonModal({ open, onClose, customButtonConfigs, removeCustomButton }: AddCustomButtonModalProps) {
   const [label, setLabel] = useState("");
   const [url, setUrl] = useState("");
@@ -80,7 +82,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
         left: 0,
         width: "100vw",
         height: "100vh",
-        background: "transparent",
+        background: MODAL_BACKDROP_COLOR,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -90,7 +92,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
     >
       <div
         style={{
-          background: "rgba(255,255,255,0.15)",
+          background: "rgba(255, 255, 255, 0.9)",
           backdropFilter: "blur(14px)",
           padding: 20,
           borderRadius: 20,
