@@ -157,7 +157,7 @@ export default function WeatherWidgetUI() {
                 flex: 1,
                 minHeight: 0,
                 display: "flex",
-                alignItems: "center",
+                alignItems: "end",
                 containerType: "inline-size",
               }}
               onMouseEnter={() => setControlsAreVisible(true)}
@@ -270,6 +270,9 @@ export default function WeatherWidgetUI() {
               </div>
               <div
               //venstre blokk
+                  style={{
+                    paddingBottom:20,
+                  }}
               
                 >     
                   <div
@@ -278,7 +281,7 @@ export default function WeatherWidgetUI() {
                       zIndex: 1,
                       width: "100%",
                       display: "flex",
-                      flexDirection: "column",
+                      flexDirection: "column-reverse",
                       justifyContent: "center",
                       gap: "clamp(6px, 1.8cqw, 16px)",
                     }}
@@ -321,35 +324,35 @@ export default function WeatherWidgetUI() {
                   </div>
                 </div>
                 <div
-                //høyre blokk
-                >
-                  {windIsEnabled && (
-                    <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
-                      <div>
-                        {t("widgets.weatherWidget.wind")}: {state.data.windSpeedMs ?? "—"} m/s
+                  //høyre blokk
+                  >
+                    {windIsEnabled && (
+                      <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
+                        <div>
+                          <b style={{fontWeight:600}}>{t("widgets.weatherWidget.wind")}</b>: {state.data.windSpeedMs ?? "—"} m/s
+                        </div>
+                        <div>
+                          <b style={{fontWeight:600}}>{t("widgets.weatherWidget.windDirection")}</b>: {state.data.windDirection != null ? `${state.data.windDirection}°` : "—"}
+                        </div>
                       </div>
-                      <div>
-                        {t("widgets.weatherWidget.windDirection")}: {state.data.windDirection != null ? `${state.data.windDirection}°` : "—"}
+                    )}
+                    {humidityIsEnabled && (
+                      <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
+                        <div>
+                          <b style={{fontWeight:600}}>{t("widgets.weatherWidget.humidity")}</b>: {state.data.humidity != null ? `${state.data.humidity}%` : "—"}
+                        </div>
+                        <div>
+                          <b style={{fontWeight:600}}>{t("widgets.weatherWidget.chanceOfRain")}</b>: {state.data.chanceOfRain != null ? `${state.data.chanceOfRain}%` : "0"}%
+                        </div>
                       </div>
-                    </div>
-                  )}
-                  {humidityIsEnabled && (
-                    <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
-                      <div>
-                        {t("widgets.weatherWidget.humidity")}: {state.data.humidity != null ? `${state.data.humidity}%` : "—"}
+                    )}
+                    {uvIsEnabled && (
+                      <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
+                        <div>
+                          <b style={{fontWeight:600}}>{t("widgets.weatherWidget.uvIndex")}</b>: {state.data.uvIndex ?? "—"}
+                        </div>
                       </div>
-                      <div>
-                        {t("widgets.weatherWidget.chanceOfRain")}: {state.data.chanceOfRain != null ? `${state.data.chanceOfRain}%` : "0"}%
-                      </div>
-                    </div>
-                  )}
-                  {uvIsEnabled && (
-                    <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
-                      <div>
-                        {t("widgets.weatherWidget.uvIndex")}: {state.data.uvIndex ?? "—"}
-                      </div>
-                    </div>
-                  )}
+                    )}
                 </div>
               </div>
           )}
