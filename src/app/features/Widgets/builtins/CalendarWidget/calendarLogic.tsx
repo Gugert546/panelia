@@ -213,6 +213,10 @@ export function useCalendarLogic(selectedCalendarIds: string[] = ["primary"]) {
     setWeekOffset((prev) => prev + 1);
   }, []);
 
+  const goToCurrentWeek = useCallback(() => {
+    setWeekOffset(0);
+  }, []);
+
   const handleCellClick = useCallback(
     async (dayIdx: number, time: string) => {
       const key = `${dayIdx}-${time}`;
@@ -337,6 +341,8 @@ export function useCalendarLogic(selectedCalendarIds: string[] = ["primary"]) {
     formatDate,
     goToPreviousWeek,
     goToNextWeek,
+    goToCurrentWeek,
+    isViewingCurrentWeek: weekOffset === 0,
     handleCellClick,
     creatingKey,
     getCellRenderState,
