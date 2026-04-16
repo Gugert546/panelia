@@ -48,7 +48,10 @@ export default function SearchWidgetUI() {
             gap: 10,
             width: "100%",
             height: "100%",
-            position: "relative"
+            position: "relative",
+            background: "#ffffff10",
+            borderRadius:12,
+            paddingLeft:10
           }}
         >
 
@@ -95,18 +98,17 @@ export default function SearchWidgetUI() {
             onKeyDown={actions.handleKeyDown}
             style={{
               flex: 1,
-              border: "none",
+              border:"1px solid #0000004b",
               outline: "none",
               background: "#ffffff10",
               borderRadius:12,
-              padding:8,
+              padding:10,
               fontSize,
               color: "inherit"
             }}
           />
-
         </div>
-
+      
         {/* PORTAL DROPDOWN */}
 
         {state.menuOpen && rect &&
