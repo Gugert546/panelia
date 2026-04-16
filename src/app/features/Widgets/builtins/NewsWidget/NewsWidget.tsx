@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useWeatherWidget } from "../WeatherWidget/WeatherWidgetLogic";
+import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 
 type NewsArticle = {
   title: string;
@@ -16,19 +17,55 @@ type NewsResponse = {
   articles: NewsArticle[];
 };
 
+function NewsArticleIcon({ url, title }: NewsArticle) {
+  const candidates = useMemo(() => getFaviconCandidates(url), [url]);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [url, candidates.length]);
+
+  const current = candidates[index] ?? "";
+
+  if (current) {
+    return (
+      <img
+        src={current}
+        alt=""
+        onError={() => setIndex((prev) => Math.min(prev + 1, candidates.length - 1))}
+        style={{ width: 20, height: 20, objectFit: "contain", flexShrink: 0 }}
+      />
+    );
+  }
+
+  return (
+    <span
+      style={{
+        width: 20,
+        height: 20,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 12,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}
+    >
+      {title.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
 export default function NewsWidget() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const { fontSize } = useFontSize();
   const { t } = useLanguage();
   const { state: weatherState } = useWeatherWidget();
 
-if (weatherState.status === "success") {
-  console.log("Country:", weatherState.data.countryCode);
-}
-
   useEffect(() => {
+    setLoading(true);
     if (weatherState.status !== "success") return;
 
     const country = weatherState.data.countryCode;
@@ -39,8 +76,7 @@ if (weatherState.status === "success") {
 
       try {
         const res = await fetch(
-         "https://panelia-server-1044777021142.europe-west1.run.app/api/news?country=" + country
-);
+         "https://panelia-server-1044777021142.europe-west1.run.app/api/news?country=" + country);
 
         if (!res.ok) {
           const txt = await res.text();
@@ -62,6 +98,12 @@ if (weatherState.status === "success") {
   return (
     <WidgetContainer>
       <WidgetPane title={t("widgets.newsWidget.title")}>
+        <style>{`
+          @keyframes news-widget-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
         <div
             style={{
               display: "flex",
@@ -72,7 +114,31 @@ if (weatherState.status === "success") {
               paddingRight: 4,
             }}
           >
-            {articles.slice(0, 6).map((article, i) => (
+            {loading ? (
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 180,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  aria-label="Loading news"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: "3px solid rgba(255,255,255,0.2)",
+                    borderTopColor: "rgba(255,255,255,0.92)",
+                    animation: "news-widget-spin 0.9s linear infinite",
+                  }}
+                />
+              </div>
+            ) : null}
+
+            {!loading && articles.slice(0, 6).map((article, i) => (
               <a
                 key={i}
                 href={article.url}
@@ -106,18 +172,8 @@ if (weatherState.status === "success") {
                   e.currentTarget.style.transform = "scale(1)";
                 }}
               >
-                {/* 📖 IKON */}
-                <span
-                  className="material-symbols-rounded"
-                  style={{
-                    fontSize: 28,
-                    opacity: 0.85,
-                  }}
-                >
-                  menu_book
-                </span>
+                <NewsArticleIcon url={article.url} title={article.title} />
 
-                {/* 📰 TEKST */}
                 <span
                   style={{
                     fontSize,
