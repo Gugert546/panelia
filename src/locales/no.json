@@ -133,7 +133,8 @@
       "checking": "Sjekker...",
       "refreshing": "Oppdaterer...",
       "refreshFromGoogle": "Oppdater fra Google",
-      "time": "Tid"
+      "time": "Tid",
+      "today": "I dag"
     },
     "infoWidget":{
       "title":"Velkommen til Panelia",

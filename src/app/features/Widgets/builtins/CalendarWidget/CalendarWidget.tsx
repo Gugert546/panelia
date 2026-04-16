@@ -41,6 +41,7 @@ const GRID_COLUMN_TIME_WIDTH = 56;
 const STICKY_LABEL_EVENT_LIMIT = 6;
 const STICKY_LABEL_RENDER_LIMIT = 3;
 const STICKY_ROW_MIN_HEIGHT = 26;
+const DAY_COLUMN_DIVIDER = "1px solid rgba(0,0,0,0.28)";
 
 
 
@@ -209,6 +210,8 @@ export default function CalendarWidget({
     formatDate,
     goToPreviousWeek,
     goToNextWeek,
+    goToCurrentWeek,
+    isViewingCurrentWeek,
     handleCellClick,
     creatingKey,
     editingEvent,
@@ -420,6 +423,8 @@ export default function CalendarWidget({
               fontWeight: 600,
               fontSize: "11px",
               textAlign: "center",
+              borderRight:
+                idx < displayWeekDays.length - 1 ? DAY_COLUMN_DIVIDER : "none",
             }}
           >
             <div>{day}</div>
@@ -458,6 +463,8 @@ export default function CalendarWidget({
             flexDirection: "column",
             gap: "2px",
             minHeight: `${STICKY_ROW_MIN_HEIGHT}px`,
+            borderRight:
+              dayIdx < displayWeekDays.length - 1 ? DAY_COLUMN_DIVIDER : "none",
           }}
         >
           {labels.map((label) => (
@@ -551,6 +558,8 @@ export default function CalendarWidget({
                 flexDirection: "column",
                 gap: "2px",
                 overflow: "hidden",
+                borderRight:
+                  dayIdx < displayWeekDays.length - 1 ? DAY_COLUMN_DIVIDER : "none",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = "rgba(224, 242, 254, 1)";
@@ -699,6 +708,25 @@ export default function CalendarWidget({
             >
               →
             </button>
+
+            {!isViewingCurrentWeek && (
+              <button
+                onClick={goToCurrentWeek}
+                style={{
+                  background: "rgba(15,23,42,0.12)",
+                  border: "none",
+                  borderRadius: "9999px",
+                  padding: "8px 12px",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  color: "rgba(15,23,42,0.95)",
+                }}
+                title="Back to current date"
+              >
+                {t("widgets.calendarWidget.today")}
+              </button>
+            )}
           </div>
           
           {/* sub-kalender velger*/}

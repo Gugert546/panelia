@@ -132,7 +132,8 @@
       "checking": "Checking...",
       "refreshing": "Refreshing...",
       "refreshFromGoogle": "Refresh from Google",
-      "time": "Time"
+      "time": "Time",
+      "today": "Today"
 
     },
     "infoWidget":{
