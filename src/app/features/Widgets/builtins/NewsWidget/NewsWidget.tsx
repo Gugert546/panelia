@@ -58,13 +58,14 @@ function NewsArticleIcon({ url, title }: NewsArticle) {
 
 export default function NewsWidget() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const { fontSize } = useFontSize();
   const { t } = useLanguage();
   const { state: weatherState } = useWeatherWidget();
 
   useEffect(() => {
+    setLoading(true);
     if (weatherState.status !== "success") return;
 
     const country = weatherState.data.countryCode;
@@ -75,8 +76,7 @@ export default function NewsWidget() {
 
       try {
         const res = await fetch(
-         "https://panelia-server-1044777021142.europe-west1.run.app/api/news?country=" + country
-);
+         "https://panelia-server-1044777021142.europe-west1.run.app/api/news?country=" + country);
 
         if (!res.ok) {
           const txt = await res.text();
@@ -98,6 +98,12 @@ export default function NewsWidget() {
   return (
     <WidgetContainer>
       <WidgetPane title={t("widgets.newsWidget.title")}>
+        <style>{`
+          @keyframes news-widget-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
         <div
             style={{
               display: "flex",
@@ -108,7 +114,31 @@ export default function NewsWidget() {
               paddingRight: 4,
             }}
           >
-            {articles.slice(0, 6).map((article, i) => (
+            {loading ? (
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 180,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <div
+                  aria-label="Loading news"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    border: "3px solid rgba(255,255,255,0.2)",
+                    borderTopColor: "rgba(255,255,255,0.92)",
+                    animation: "news-widget-spin 0.9s linear infinite",
+                  }}
+                />
+              </div>
+            ) : null}
+
+            {!loading && articles.slice(0, 6).map((article, i) => (
               <a
                 key={i}
                 href={article.url}
