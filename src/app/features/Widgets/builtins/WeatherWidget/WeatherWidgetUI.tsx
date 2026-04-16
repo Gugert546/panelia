@@ -106,10 +106,10 @@ export default function WeatherWidgetUI() {
   const { fontSize } = useFontSize();
   const { t } = useLanguage();
 
-  const debug = "snow";
-  const resolvedSymbolCode = debug ?? state.data?.symbolCode;
+  const debug = "clear"; // legg inn "debug ??" før "state.data?.symbolCode" i neste linje
+  const resolvedSymbolCode = state.data?.symbolCode;
   const visualMode = state.status === "success"
-    ? getWeatherVisualMode(resolvedSymbolCode)
+    ? getWeatherVisualMode(resolvedSymbolCode)  
     : "cloudy";
   const cloudTone = state.status === "success"
     ? getWeatherCloudTone(resolvedSymbolCode)
@@ -121,7 +121,7 @@ export default function WeatherWidgetUI() {
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
-    gap: 6,
+    gap: "clamp(6px, 1.6cqw, 14px)",
   };
 
   return (
@@ -145,6 +145,7 @@ export default function WeatherWidgetUI() {
                 minHeight: 0,
                 display: "flex",
                 alignItems: "stretch",
+                containerType: "inline-size",
               }}
             >
               <WeatherAtmosphere mode={visualMode} cloudTone={cloudTone} />
@@ -157,10 +158,10 @@ export default function WeatherWidgetUI() {
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
-                  gap: 6,
+                  gap: "clamp(6px, 1.8cqw, 16px)",
                 }}
               >
-                <div style={{ fontSize: 12, opacity: 0.8 }}>
+                <div style={{ fontSize: "clamp(12px, 4.2cqw, 22px)", opacity: 0.8 }}>
                   {state.data.placeLabel}
                 </div>
 
@@ -168,13 +169,13 @@ export default function WeatherWidgetUI() {
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 10
+                    gap: "clamp(10px, 3cqw, 20px)"
                   }}
                 >
 
                   <div
                     style={{
-                      fontSize: 36,
+                      fontSize: "clamp(36px, 14cqw, 88px)",
                       fontWeight: 900,
                       lineHeight: 1
                     }}
@@ -185,15 +186,19 @@ export default function WeatherWidgetUI() {
                   {state.data.symbolCode && (
                     <img
                       src={`/yr-icons/${state.data.symbolCode}.png`}
-                      width={40}
-                      height={40}
+                      width={64}
+                      height={64}
+                      style={{
+                        width: "clamp(40px, 12cqw, 72px)",
+                        height: "clamp(40px, 12cqw, 72px)",
+                      }}
                       alt=""
                     />
                   )}
 
                 </div>
 
-                <div style={{ fontSize }}>
+                <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
                   {t('widgets.weatherWidget.wind')}: {state.data.windSpeedMs ?? "—"} m/s
                 </div>
               </div>
