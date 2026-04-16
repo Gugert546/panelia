@@ -106,7 +106,7 @@ export default function WeatherWidgetUI() {
   const { fontSize } = useFontSize();
   const { t } = useLanguage();
 
-  const debug = "clear"; // legg inn "debug ??" før "state.data?.symbolCode" i neste linje
+  //const debug = "clear"; // legg inn "debug ??" før "state.data?.symbolCode" i neste linje
   const resolvedSymbolCode = state.data?.symbolCode;
   const visualMode = state.status === "success"
     ? getWeatherVisualMode(resolvedSymbolCode)  

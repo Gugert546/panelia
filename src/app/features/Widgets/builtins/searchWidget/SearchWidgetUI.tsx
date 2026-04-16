@@ -40,7 +40,6 @@ export default function SearchWidgetUI() {
   return (
     <WidgetContainer>
       <WidgetPane>
-
         <div
           style={{
             display: "flex",
@@ -49,7 +48,6 @@ export default function SearchWidgetUI() {
             width: "100%",
             height: "100%",
             position: "relative",
-            background: "#ffffff10",
             borderRadius:12,
             paddingLeft:10
           }}
@@ -57,7 +55,6 @@ export default function SearchWidgetUI() {
 
           {/* Engine selector */}
           <div style={{ position: "relative" }}>
-
             <button
               ref={buttonRef}
               type="button"
@@ -73,7 +70,6 @@ export default function SearchWidgetUI() {
                 justifyContent: "center"
               }}
             >
-
               <img
                 src={state.engineInfo.icon}
                 alt={state.engineInfo.label}
@@ -83,13 +79,9 @@ export default function SearchWidgetUI() {
                   objectFit: "contain"
                 }}
               />
-
             </button>
-
           </div>
-
           {/* Search input */}
-
           <input
             type="text"
             placeholder={`${t('widgets.searchWidget.searchPlaceholder')} ${state.engineInfo.label}`}
@@ -108,9 +100,7 @@ export default function SearchWidgetUI() {
             }}
           />
         </div>
-      
         {/* PORTAL DROPDOWN */}
-
         {state.menuOpen && rect &&
           createPortal(
 
