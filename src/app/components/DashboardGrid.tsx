@@ -11,6 +11,7 @@ type Props = {
   onCloseWidget: (widgetId: string) => void;
   onToggleWidgetLock: (widgetId: string) => void;
   sidebarWidth: number;
+  isInteractive?: boolean;
   calendarWidgetConfig?: Record<string, unknown>;
 };
 
@@ -28,6 +29,7 @@ export default function DashboardGrid({
   onCloseWidget,
   onToggleWidgetLock,
   sidebarWidth,
+  isInteractive = true,
   calendarWidgetConfig
 }: Props) {
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
@@ -91,8 +93,8 @@ export default function DashboardGrid({
       cols={40}          // Mer columns --> Finere horisontal kontroll
       rowHeight={30}    // Mindre rowHeight --> Mer vertikal kontroll og flere rader tilgjengelig
       width={window.innerWidth - sidebarWidth}
-      isDraggable
-      isResizable
+      isDraggable={isInteractive}
+      isResizable={isInteractive}
       draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn"
       compactType={null}
       preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
@@ -139,7 +141,7 @@ export default function DashboardGrid({
             onMouseEnter={() => setHoveredWidgetId(widgetId)}
             onMouseLeave={() => setHoveredWidgetId((prev) => (prev === widgetId ? null : prev))}
           >
-            {hoveredWidgetId === widgetId && (
+            {isInteractive && hoveredWidgetId === widgetId && (
               <button
                 type="button"
                 className="widget-lock-btn"

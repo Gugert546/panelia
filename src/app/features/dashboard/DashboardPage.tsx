@@ -30,6 +30,7 @@ import {
 
 import { WidgetsProvider, useWidgets } from "./hooks/WidgetsContext";
 import { useLanguage } from "../../providers/languageProvider";
+import { useAuth } from "../auth/useAuth";
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
@@ -91,6 +92,8 @@ function DashboardPageContent() {
   const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
 
   const { t } = useLanguage();
+  const { user, loading } = useAuth();
+  const isAuthenticated = Boolean(user);
 
   const {
     activeWidgets,
@@ -144,7 +147,7 @@ function DashboardPageContent() {
   );
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
-    isCalendarVisible || isCalendarWidgetActive;
+    isAuthenticated && (isCalendarVisible || isCalendarWidgetActive);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -153,6 +156,15 @@ function DashboardPageContent() {
 
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+    if (loading) return;
+    if (isAuthenticated) return;
+
+    setEditOpen(false);
+    setIsChatVisible(false);
+    setIsCalendarVisible(false);
+  }, [isAuthenticated, loading]);
 
   useEffect(() => {
     if (!shouldManageCalendarConnection) return;
@@ -360,6 +372,8 @@ function DashboardPageContent() {
 
 
   const handleSidebarNavigation = (itemKey: string) => {
+    if (!isAuthenticated) return;
+
     if (itemKey === "calendar") {
       setIsCalendarVisible((prev) => !prev);
     }
@@ -403,8 +417,12 @@ function DashboardPageContent() {
       )}
 
       <Sidebar
+        disabled={!isAuthenticated}
         onSidebarNav={handleSidebarNavigation}
-        onEditClick={() => setEditOpen((prev) => !prev)}
+        onEditClick={() => {
+          if (!isAuthenticated) return;
+          setEditOpen((prev) => !prev);
+        }}
       />
 
       <div
@@ -464,6 +482,7 @@ function DashboardPageContent() {
           onCloseWidget={removeCustomButton}
           onToggleWidgetLock={toggleWidgetLock}
           sidebarWidth={SIDEBAR_WIDTH}
+          isInteractive={isAuthenticated}
           calendarWidgetConfig={{
             calendarConnectionStatus,
             calendarConnectionBusy,

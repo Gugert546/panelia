@@ -75,6 +75,15 @@ type WidgetLayoutDocument = {
   updatedAt?: unknown;
 };
 
+const PUBLIC_WIDGET_IDS = ["info", "google_search", "weather","clock"] as const;
+
+const PUBLIC_LAYOUTS: Record<string, LayoutItem> = {
+  info: { x: 1, y: 2, w: 12, h: 12 },
+  google_search: { x: 13, y: 14, w: 14, h: 3 },
+  weather: { x: 21, y: 6, w: 6, h: 7 },
+  clock:{x:17,y:10,w:4,h:3}
+};
+
 // Available widgets for the dashboard
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke", icon: "schedule" },
@@ -393,8 +402,27 @@ function migrateLegacyMap<T>(input: Record<string, T>) {
   );
 }
 
+function applyPublicDashboardDefaults() {
+  return {
+    activeWidgets: [...PUBLIC_WIDGET_IDS],
+    customButtonConfigs: {},
+    layouts: { ...PUBLIC_LAYOUTS },
+    widgetLocks: {},
+    widgetSurfaceColor: DEFAULT_WIDGET_SURFACE_COLOR,
+    widgetBorderColor: DEFAULT_WIDGET_BORDER_COLOR,
+    widgetTextColor: DEFAULT_WIDGET_TEXT_COLOR,
+    widgetOpacity: DEFAULT_WIDGET_OPACITY,
+    widgetBorderWidth: DEFAULT_WIDGET_BORDER_WIDTH,
+    widgetSizeMode: DEFAULT_WIDGET_SIZE_MODE,
+    dashboardBackgroundId: DEFAULT_DASHBOARD_BACKGROUND_ID,
+    customBackgroundUrl: "",
+    customBackgroundType: "image" as CustomBackgroundMediaType,
+    dashboardPresets: [],
+  };
+}
+
 export function useWidgetsState() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
@@ -430,21 +458,25 @@ export function useWidgetsState() {
 
   // Load widget layout from Firestore
   const loadLayout = useCallback(async () => {
+    if (loading) return;
+
     if (!user) {
-      setActiveWidgets([]);
-      setCustomButtonConfigs({});
-      setLayouts({});
-      setWidgetLocks({});
-      setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
-      setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
-      setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
-      setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
-      setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
-      setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
-      setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
-      setCustomBackgroundUrl("");
-      setCustomBackgroundType("image");
-      setDashboardPresets([]);
+      const publicDefaults = applyPublicDashboardDefaults();
+
+      setActiveWidgets(publicDefaults.activeWidgets);
+      setCustomButtonConfigs(publicDefaults.customButtonConfigs);
+      setLayouts(publicDefaults.layouts);
+      setWidgetLocks(publicDefaults.widgetLocks);
+      setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
+      setWidgetBorderColor(publicDefaults.widgetBorderColor);
+      setWidgetTextColor(publicDefaults.widgetTextColor);
+      setWidgetOpacity(publicDefaults.widgetOpacity);
+      setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+      setWidgetSizeMode(publicDefaults.widgetSizeMode);
+      setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
+      setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
+      setCustomBackgroundType(publicDefaults.customBackgroundType);
+      setDashboardPresets(publicDefaults.dashboardPresets);
       setIsLoading(false);
       hasLoadedRef.current = false;
       return;
@@ -455,20 +487,22 @@ export function useWidgetsState() {
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
-        setActiveWidgets([]);
-        setCustomButtonConfigs({});
-        setLayouts({});
-        setWidgetLocks({});
-        setWidgetSurfaceColor(DEFAULT_WIDGET_SURFACE_COLOR);
-        setWidgetBorderColor(DEFAULT_WIDGET_BORDER_COLOR);
-        setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
-        setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
-        setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
-        setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
-        setDashboardBackgroundId(DEFAULT_DASHBOARD_BACKGROUND_ID);
-        setCustomBackgroundUrl("");
-        setCustomBackgroundType("image");
-        setDashboardPresets([]);
+        const publicDefaults = applyPublicDashboardDefaults();
+
+        setActiveWidgets(publicDefaults.activeWidgets);
+        setCustomButtonConfigs(publicDefaults.customButtonConfigs);
+        setLayouts(publicDefaults.layouts);
+        setWidgetLocks(publicDefaults.widgetLocks);
+        setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
+        setWidgetBorderColor(publicDefaults.widgetBorderColor);
+        setWidgetTextColor(publicDefaults.widgetTextColor);
+        setWidgetOpacity(publicDefaults.widgetOpacity);
+        setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+        setWidgetSizeMode(publicDefaults.widgetSizeMode);
+        setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
+        setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
+        setCustomBackgroundType(publicDefaults.customBackgroundType);
+        setDashboardPresets(publicDefaults.dashboardPresets);
         hasLoadedRef.current = true;
         return;
       }
@@ -544,7 +578,7 @@ export function useWidgetsState() {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [loading, user]);
 
   useEffect(() => {
     void loadLayout();

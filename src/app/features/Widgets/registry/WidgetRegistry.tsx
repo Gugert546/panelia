@@ -126,7 +126,7 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
   info: {
     title: "Info",
     Component: InfoWidgetAdapter,
-    defaultGrid: { w: 6, h: 3 },
+    defaultGrid: { w: 12, h: 12 },
   },
   customButton: {
     title: "Egendefinert knapp",

@@ -3,6 +3,7 @@ import { useState } from "react";
 type SidebarProps = {
   onEditClick?: () => void;
   onSidebarNav?: (itemKey: string) => void;
+  disabled?: boolean;
 };
 
 const SIDEBAR_WIDTH = 86;
@@ -20,7 +21,11 @@ const items: NavItem[] = [
   { key: "chat", label: "Chat", icon: "chat_bubble" },
 ];
 
-export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
+export default function Sidebar({
+  onEditClick,
+  onSidebarNav,
+  disabled = false,
+}: SidebarProps) {
   const [active, setActive] = useState("calendar");
 
     return (
@@ -44,7 +49,10 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
         <button
           key={item.key}
           aria-label={item.label}
+          disabled={disabled}
+          title={disabled ? "Sign in to use the side panel" : item.label}
           onClick={() => {
+            if (disabled) return;
             setActive(item.key);
 
             if (item.key === "edit" && onEditClick) {
@@ -67,7 +75,8 @@ export default function Sidebar({ onEditClick, onSidebarNav }: SidebarProps) {
               ? "1px solid rgba(255,255,255,0.4)" 
               : "1px solid rgba(255,255,255,0.2)",
             borderRadius: 16,
-            cursor: "pointer",
+            cursor: disabled ? "not-allowed" : "pointer",
+            opacity: disabled ? 0.5 : 1,
             transition: "all 0.2s ease",
           }}
         >
