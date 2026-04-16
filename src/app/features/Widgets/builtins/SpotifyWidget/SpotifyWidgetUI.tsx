@@ -83,23 +83,64 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
       height: "100%"
     };
 
-  const darkModeSwitchStyle = {
-    width: 38,
-    height: 20,
-    borderRadius: 999,
-    border: "none",
-    padding: 2,
-    cursor: "pointer",
-    background: isDarkMode ? "#1DB954" : "#A0A0A0",
-    display: "flex",
-    justifyContent: isDarkMode ? "flex-end" : "flex-start",
-    alignItems: "center"
+  const controlButtonStyle = isDarkMode
+    ? {
+      width: 28,
+      height: 28,
+      background: "#1F1F1F",
+      color: "#FFFFFF",
+      border: "1px solid #2A2A2A",
+      borderRadius: 999,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }
+    : {
+      width: 28,
+      height: 28,
+      borderRadius: 999,
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    };
+
+  const actionIconStyle = {
+    fontFamily: "\"Material Symbols Rounded\"",
+    fontWeight: 400,
+    fontStyle: "normal",
+    fontSize: 18,
+    lineHeight: 1,
+    display: "block",
+    color: isDarkMode ? "#C4C4C4" : "#4A4A4A",
+    fontVariationSettings: "\"FILL\" 1, \"wght\" 400, \"GRAD\" 0, \"opsz\" 24"
   };
 
   return (
     <WidgetContainer>
       <WidgetPane title="">
         <div style={paneContentStyle}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              alignItems: "center",
+              marginBottom: 8
+            }}
+          >
+            <button
+              onClick={onToggleDarkMode}
+              style={controlButtonStyle}
+              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
+            >
+              <span className="material-symbols-rounded" aria-hidden="true" style={actionIconStyle}>
+                {isDarkMode ? "light_mode" : "dark_mode"}
+              </span>
+            </button>
+          </div>
+
           <div
             style={{
               display: "flex",
@@ -122,25 +163,6 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
             <div style={{ fontSize, opacity: 0.8 }}>
               {t("widgets.spotifyWidget.startPlaying")}
             </div>
-          </div>
-
-          <div style={{ display: "flex", justifyContent: "flex-start", paddingTop: 8, flexShrink: 0 }}>
-            <button
-              onClick={onToggleDarkMode}
-              style={darkModeSwitchStyle}
-              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
-              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
-            >
-              <span
-                style={{
-                  width: 16,
-                  height: 16,
-                  borderRadius: "50%",
-                  background: "#FFFFFF",
-                  display: "block"
-                }}
-              />
-            </button>
           </div>
         </div>
       </WidgetPane>
@@ -215,31 +237,20 @@ export function SpotifyPlayingView({
 
   const controlButtonStyle = isDarkMode
     ? {
+      width: 28,
+      height: 28,
       background: "#1F1F1F",
       color: "#FFFFFF",
       border: "1px solid #2A2A2A",
-      borderRadius: 8,
-      padding: "4px 8px",
+      borderRadius: 999,
       cursor: "pointer"
     }
     : {
-      borderRadius: 8,
-      padding: "4px 8px",
+      width: 28,
+      height: 28,
+      borderRadius: 999,
       cursor: "pointer"
     };
-
-  const darkModeSwitchStyle = {
-    width: 38,
-    height: 20,
-    borderRadius: 999,
-    border: "none",
-    padding: 2,
-    cursor: "pointer",
-    background: isDarkMode ? "#1DB954" : "#A0A0A0",
-    display: "flex",
-    justifyContent: isDarkMode ? "flex-end" : "flex-start",
-    alignItems: "center"
-  };
 
   const playbackBarStyle = {
     display: "flex",
@@ -334,37 +345,24 @@ export function SpotifyPlayingView({
         <div style={paneContentStyle}>
           {isMinimized ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <img
-                src={track.album.images[0]?.url}
-                width="100%"
-                style={{ borderRadius: 8, cursor: "pointer" }}
-                onClick={onExpandFromCover}
-                aria-label="Expand player"
-              />
-              <div style={{ 
-                display: "flex", 
-                justifyContent: "flex-end",
-                gap: 6,
-                alignItems: "center",
-                }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 6,
+                  alignItems: "center"
+                }}
+              >
                 <button
-                    onClick={onToggleDarkMode}
-                    style={darkModeSwitchStyle}
-                    aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
-                    title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
-                  >
-                    <span
-                      style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: "50%",
-                          background: "#FFFFFF",
-                          display: "block",
-                          marginLeft: 20
-                        }}
-                    />
-                  </button>
-
+                  onClick={onToggleDarkMode}
+                  style={controlButtonStyle}
+                  aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+                  title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
+                >
+                  <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
+                    {isDarkMode ? "light_mode" : "dark_mode"}
+                  </span>
+                </button>
                 <button
                   onClick={onExpandFromCover}
                   style={controlButtonStyle}
@@ -376,6 +374,13 @@ export function SpotifyPlayingView({
                   </span>
                 </button>
               </div>
+              <img
+                src={track.album.images[0]?.url}
+                width="100%"
+                style={{ borderRadius: 8, cursor: "pointer" }}
+                onClick={onExpandFromCover}
+                aria-label="Expand player"
+              />
             </div>
           ) : (
             <div
@@ -414,20 +419,13 @@ export function SpotifyPlayingView({
                 }}>
                   <button
                     onClick={onToggleDarkMode}
-                    style={darkModeSwitchStyle}
+                    style={controlButtonStyle}
                     aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
                     title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
                   >
-                    <span
-                      style={{
-                          width: 16,
-                          height: 16,
-                          borderRadius: "50%",
-                          background: "#FFFFFF",
-                          display: "block",
-                          marginLeft: 20
-                        }}
-                    />
+                    <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
+                      {isDarkMode ? "light_mode" : "dark_mode"}
+                    </span>
                   </button>
                 <button
                   onClick={onToggleMinimized}
