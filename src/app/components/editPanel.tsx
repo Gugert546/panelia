@@ -69,6 +69,9 @@ const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
+const DEFAULT_FONT_SIZE = 14;
+const MIN_FONT_SIZE = 10;
+const MAX_FONT_SIZE = 22;
 
 function toColorInputValue(value: string) {
   const trimmed = value.trim();
@@ -155,7 +158,7 @@ export default function EditPanel({
   const customBackgroundInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [uploadBackgroundError, setUploadBackgroundError] = useState("");
-  const { fontSize, setFontSizeMode } = useFontSize();
+  const { fontSize, setFontSize } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
   const widgetSurfaceAlpha = getColorAlpha(widgetSurfaceColor);
@@ -221,7 +224,7 @@ export default function EditPanel({
     setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
     setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
     setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
-    setFontSizeMode("medium");
+    setFontSize(DEFAULT_FONT_SIZE);
   };
 
   const handleSavePreset = () => {
@@ -475,56 +478,40 @@ export default function EditPanel({
             color:widgetTextColor,
 
           }}>{t('editPanel.fontSize')}</h3>
-            <div style={{ 
-                display: 'flex',
-                gap: 8,
-                marginTop:5,
-               
-              }}>
-              <button
-                onClick={() => setFontSizeMode('small')}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginTop: 8,
+              }}
+            >
+              <input
+                type="range"
+                min={MIN_FONT_SIZE}
+                max={MAX_FONT_SIZE}
+                step={1}
+                value={fontSize}
+                onChange={(event) => setFontSize(Number(event.target.value))}
+                aria-label={t('editPanel.fontSize')}
                 style={{
-                  padding: '8px 12px',
-                  borderRadius: 4,
-                  border: buttonBorder,
-                  background: buttonColor,
-                  cursor: 'pointer',
+                  flex: 1,
+                  accentColor: widgetTextColor,
+                  cursor: "pointer",
+                }}
+              />
+              <span
+                style={{
+                  minWidth: 32,
                   fontSize,
-                  color:widgetTextColor,
+                  color: widgetTextColor,
+                  textAlign: "right",
                 }}
               >
-            {t('editPanel.small')}
-          </button>
-          <button
-            onClick={() => setFontSizeMode('medium')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: buttonBorder,
-              background: buttonColor,
-              cursor: 'pointer',
-              fontSize,
-              color:widgetTextColor,
-            }}
-          >
-            {t('editPanel.medium')}
-          </button>
-          <button
-            onClick={() => setFontSizeMode('large')}
-            style={{
-              padding: '8px 12px',
-              borderRadius: 4,
-              border: buttonBorder,
-              background: buttonColor,
-              cursor: 'pointer',
-              fontSize,
-              color:widgetTextColor,
-            }}
-          >
-            {t('editPanel.large')}
-          </button>
+                {fontSize}
+              </span>
+            </div>
         </div>
-      </div>
           <div  style={{
             //velg Widget farge
             background: backgroundColor,
