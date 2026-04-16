@@ -15,7 +15,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
       style={{
         width: "100%",
         height: "100%",
-        padding: 20,
+        padding: 8,
         borderRadius: 20,
         overflow: "hidden",
 
