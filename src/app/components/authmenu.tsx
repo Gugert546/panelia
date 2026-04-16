@@ -2,8 +2,6 @@ import { useState } from "react";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../../lib/firebase/client";
 import { useAuth } from "../features/auth/useAuth";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { createUserWithEmailAndPassword } from "firebase/auth";
 import type { CSSProperties } from "react";
 
 const panelStyle: CSSProperties = {
@@ -18,20 +16,6 @@ const panelStyle: CSSProperties = {
   border: "1px solid rgba(214, 233, 255, 0.18)",
   boxShadow: "0 22px 48px rgba(10, 19, 37, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
   backdropFilter: "blur(16px)",
-};
-
-const fieldStyle: CSSProperties = {
-  width: "100%",
-  height: 54,
-  borderRadius: 20,
-  border: "1px solid rgba(176, 205, 244, 0.24)",
-  background: "#ffffff",
-  color: "rgba(32, 41, 55, 0.95)",
-  fontSize: "inherit",
-  fontFamily: "inherit",
-  padding: "0 20px",
-  outline: "none",
-  marginBottom: 10,
 };
 
 const actionButtonStyle: CSSProperties = {
@@ -64,26 +48,8 @@ export default function AuthMenu() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
-  const handleEmailLogin = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, email, password);
-      setOpen(false);
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
-
-  const handleRegister = async () => {
-    try {
-      await createUserWithEmailAndPassword(auth, email, password);
-      setOpen(false);
-    } catch (error: any) {
-      alert(error.message);
-    }
-  };
+ 
 
   const handleGoogleLogin = async () => {
     await signInWithPopup(auth, googleProvider);
@@ -141,36 +107,6 @@ export default function AuthMenu() {
         <div style={panelStyle}>
           {!user ? (
             <>
-              <input
-                type="email"
-                placeholder="Epost:"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                style={fieldStyle}
-              />
-
-              <input
-                type="password"
-                placeholder="Passord:"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                style={fieldStyle}
-              />
-
-              <button
-                onClick={handleEmailLogin}
-                style={actionButtonStyle}
-              >
-                logg inn
-              </button>
-
-              <button
-                onClick={handleRegister}
-                style={actionButtonStyle}
-              >
-                Registrer
-              </button>
-
               <button
                 onClick={handleGoogleLogin}
                 style={{
