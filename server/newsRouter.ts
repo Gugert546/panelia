@@ -5,6 +5,34 @@ export const newsRouter = express.Router();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutter
 const newsCache = new Map<string, { timestamp: number; data: any }>();
 
+type NewsApiArticle = {
+  title?: string;
+  url?: string;
+};
+
+type NewsApiPayload = {
+  news?: NewsApiArticle[];
+  data?: NewsApiArticle[];
+};
+
+function getArticlesFromPayload(payload: unknown): NewsApiArticle[] {
+  if (!payload || typeof payload !== "object") {
+    return [];
+  }
+
+  const { news, data } = payload as NewsApiPayload;
+
+  if (Array.isArray(news)) {
+    return news;
+  }
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  return [];
+}
+
 newsRouter.get("/", async (req, res) => {
   const country = String(req.query.country ?? "").trim().toLowerCase();
 
@@ -46,12 +74,9 @@ newsRouter.get("/", async (req, res) => {
       });
     }
 
-    let json = JSON.parse(bodyText);
+    const json: unknown = JSON.parse(bodyText);
+    let list = getArticlesFromPayload(json);
 
-    
-    let list = json.news || json.data || [];
-
-    
     if (list.length === 0 && country === "no") {
       console.log("No news for NO, falling back to US");
 
@@ -63,12 +88,11 @@ newsRouter.get("/", async (req, res) => {
         },
       });
 
-      const fallbackJson = await fallbackRes.json();
-
-      list = fallbackJson.news || fallbackJson.data || [];
+      const fallbackJson: unknown = await fallbackRes.json();
+      list = getArticlesFromPayload(fallbackJson);
     }
 
-    const articles = list.map((article: any) => ({
+    const articles = list.map((article) => ({
       title: article.title,
       url: article.url,
     }));

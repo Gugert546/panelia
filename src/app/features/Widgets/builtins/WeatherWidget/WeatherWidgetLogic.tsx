@@ -7,6 +7,10 @@ export type WeatherView = {
   windSpeedMs?: number;
   symbolCode?: string;
   updatedAtISO: string;
+  humidity?: number;
+  windDirection?: number;
+  uvIndex?: number;
+  chanceOfRain?: number;
 };
 
 type WeatherState =
@@ -17,6 +21,7 @@ type WeatherState =
 function round1(n: number) {
   return Math.round(n * 10) / 10;
 }
+
 
 async function getPosition(): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
@@ -96,6 +101,10 @@ export function useWeatherWidget() {
       const temperature = json?.temperature;
       const wind = json?.windSpeed;
       const symbol = json?.symbol;
+      const humidity =json?.humidity;
+      const windDirection =json?.windFrom;
+      const uvIndex=json?.uvIndex;
+      const chanceOR=json?.chanceOfRain;
 
       if (typeof temperature !== "number") {
         throw new Error("Fant ikke temperatur i respons");
@@ -108,6 +117,10 @@ export function useWeatherWidget() {
       windSpeedMs: typeof wind === "number" ? round1(wind) : undefined,
       symbolCode: typeof symbol === "string" ? symbol : undefined,
       updatedAtISO: new Date().toISOString(),
+      humidity: typeof humidity === "number" ? round1(humidity) : undefined,
+      windDirection: typeof windDirection === "number" ? windDirection : undefined,
+      uvIndex: typeof uvIndex === "number" ? uvIndex : undefined,
+      chanceOfRain: typeof chanceOR === "number" ? round1(chanceOR) : undefined,
 };
 
       setState({ status: "success", data: view, refreshing: false });

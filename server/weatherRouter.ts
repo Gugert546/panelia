@@ -36,6 +36,10 @@ weatherRouter.get("/", async (req, res) => {
 
   const ts = data?.properties?.timeseries?.[0];
   const details = ts?.data?.instant?.details;
+  const precipitationProbability =
+    ts?.data?.next_1_hours?.details?.probability_of_precipitation ??
+    ts?.data?.next_6_hours?.details?.probability_of_precipitation ??
+    ts?.data?.next_12_hours?.details?.probability_of_precipitation;
 
   const result = {
     time: ts?.time,
@@ -43,6 +47,8 @@ weatherRouter.get("/", async (req, res) => {
     windSpeed: details?.wind_speed,
     windFrom: details?.wind_from_direction,
     humidity: details?.relative_humidity,
+    uvIndex: details?.ultraviolet_index_clear_sky ?? null,
+    chanceOfRain: precipitationProbability ?? null,
     symbol:
       ts?.data?.next_1_hours?.summary?.symbol_code ??
       ts?.data?.next_6_hours?.summary?.symbol_code,

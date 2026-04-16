@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties, type FocusEvent } from "react";
 import { useWeatherWidget } from "./WeatherWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
@@ -105,9 +105,22 @@ export default function WeatherWidgetUI() {
   const { state } = useWeatherWidget();
   const { fontSize } = useFontSize();
   const { t } = useLanguage();
+  const [humidityIsEnabled, setHumidityIsEnabled] = useState(false);
+  const [windIsEnabled, setWindIsEnabled] = useState(false);
+  const [uvIsEnabled,setUvIsEnabled] = useState(false);
+  const [controlsAreVisible, setControlsAreVisible] = useState(false);
+
+  function handleWidgetBlur(event: FocusEvent<HTMLDivElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setControlsAreVisible(false);
+    }
+  }
 
   //const debug = "clear"; // legg inn "debug ??" før "state.data?.symbolCode" i neste linje
   const resolvedSymbolCode = state.data?.symbolCode;
+      if (resolvedSymbolCode==="clear"){
+        setUvIsEnabled(true)
+      }
   const visualMode = state.status === "success"
     ? getWeatherVisualMode(resolvedSymbolCode)  
     : "cloudy";
@@ -144,65 +157,201 @@ export default function WeatherWidgetUI() {
                 flex: 1,
                 minHeight: 0,
                 display: "flex",
-                alignItems: "stretch",
+                alignItems: "center",
                 containerType: "inline-size",
               }}
+              onMouseEnter={() => setControlsAreVisible(true)}
+              onMouseLeave={() => setControlsAreVisible(false)}
+              onFocus={() => setControlsAreVisible(true)}
+              onBlur={handleWidgetBlur}
             >
               <WeatherAtmosphere mode={visualMode} cloudTone={cloudTone} />
 
               <div
                 style={{
-                  position: "relative",
-                  zIndex: 1,
-                  width: "100%",
+                  position: "absolute",
+                  top: "clamp(8px, 2.2cqw, 14px)",
+                  left: "clamp(8px, 2.2cqw, 14px)",
+                  zIndex: 4,
                   display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  gap: "clamp(6px, 1.8cqw, 16px)",
+                  gap: "clamp(6px, 1.5cqw, 10px)",
+                  opacity: controlsAreVisible ? 1 : 0,
+                  transform: controlsAreVisible ? "translateY(0)" : "translateY(-4px)",
+                  pointerEvents: controlsAreVisible ? "auto" : "none",
+                  transition: "opacity 160ms ease, transform 160ms ease",
                 }}
               >
-                <div style={{ fontSize: "clamp(12px, 4.2cqw, 22px)", opacity: 0.8 }}>
-                  {state.data.placeLabel}
-                </div>
-
-                <div
+                <button
+                  type="button"
+                  onClick={() => setWindIsEnabled((current) => !current)}
+                  aria-label={windIsEnabled ? t("widgets.weatherWidget.hideWind") : t("widgets.weatherWidget.showWind")}
+                  title={windIsEnabled ? t("widgets.weatherWidget.hideWind") : t("widgets.weatherWidget.showWind")}
+                  aria-pressed={windIsEnabled}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "clamp(10px, 3cqw, 20px)"
+                    width: "clamp(24px, 6cqw, 32px)",
+                    height: "clamp(24px, 6cqw, 32px)",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(255, 255, 255, 0.35)",
+                    display: "grid",
+                    placeItems: "center",
+                    background: windIsEnabled ? "rgba(15, 23, 42, 0.78)" : "rgba(15, 23, 42, 0.58)",
+                    color: "#f8fafc",
+                    cursor: "pointer",
+                    backdropFilter: "blur(10px)",
+                    boxShadow: "0 8px 22px rgba(15, 23, 42, 0.3)",
                   }}
                 >
+                  <span
+                    className="material-symbols-rounded"
+                    aria-hidden="true"
+                    style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+                  >
+                    air
+                  </span>
+                </button>
 
+                <button
+                  type="button"
+                  onClick={() => setHumidityIsEnabled((current) => !current)}
+                  aria-label={humidityIsEnabled ? t("widgets.weatherWidget.hideHumidity") : t("widgets.weatherWidget.showHumidity")}
+                  title={humidityIsEnabled ? t("widgets.weatherWidget.hideHumidity") : t("widgets.weatherWidget.showHumidity")}
+                  aria-pressed={humidityIsEnabled}
+                  style={{
+                    width: "clamp(24px, 6cqw, 32px)",
+                    height: "clamp(24px, 6cqw, 32px)",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(255, 255, 255, 0.35)",
+                    display: "grid",
+                    placeItems: "center",
+                    background: humidityIsEnabled ? "rgba(15, 23, 42, 0.78)" : "rgba(15, 23, 42, 0.58)",
+                    color: "#f8fafc",
+                    cursor: "pointer",
+                    backdropFilter: "blur(10px)",
+                    boxShadow: "0 8px 22px rgba(15, 23, 42, 0.3)",
+                  }}
+                >
+                  <span
+                    className="material-symbols-rounded"
+                    aria-hidden="true"
+                    style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+                  >
+                    humidity_percentage
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setUvIsEnabled((current) => !current)}
+                  aria-label={uvIsEnabled ? t("widgets.weatherWidget.hideUvIndex") : t("widgets.weatherWidget.showUvIndex")}
+                  title={uvIsEnabled ? t("widgets.weatherWidget.hideUvIndex") : t("widgets.weatherWidget.showUvIndex")}
+                  aria-pressed={uvIsEnabled}
+                  style={{
+                    width: "clamp(24px, 6cqw, 32px)",
+                    height: "clamp(24px, 6cqw, 32px)",
+                    borderRadius: "999px",
+                    border: "1px solid rgba(255, 255, 255, 0.35)",
+                    display: "grid",
+                    placeItems: "center",
+                    background: uvIsEnabled ? "rgba(15, 23, 42, 0.78)" : "rgba(15, 23, 42, 0.58)",
+                    color: "#f8fafc",
+                    cursor: "pointer",
+                    backdropFilter: "blur(10px)",
+                    boxShadow: "0 8px 22px rgba(15, 23, 42, 0.3)",
+                  }}
+                >
+                  <span
+                    className="material-symbols-rounded"
+                    aria-hidden="true"
+                    style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+                  >
+                    sunny
+                  </span>
+                </button>
+              </div>
+              <div
+              //venstre blokk
+              
+                >     
                   <div
                     style={{
-                      fontSize: "clamp(36px, 14cqw, 88px)",
-                      fontWeight: 900,
-                      lineHeight: 1
+                      position: "relative",
+                      zIndex: 1,
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      gap: "clamp(6px, 1.8cqw, 16px)",
                     }}
-                  >
-                    {state.data.temperatureC}°
+                    >
+                    <div style={{ fontSize: "clamp(12px, 4.2cqw, 22px)", opacity: 0.8 }}>
+                      {state.data.placeLabel}
+                    </div>
+
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "clamp(10px, 3cqw, 20px)"
+                        }}
+                      >
+                        <div
+                            style={{
+                              fontSize: "clamp(36px, 14cqw, 88px)",
+                              fontWeight: 900,
+                              lineHeight: 1
+                            }}
+                          >
+                            {state.data.temperatureC}°
+                        </div>
+
+                        {state.data.symbolCode && (
+                          <img
+                            src={`/yr-icons/${state.data.symbolCode}.png`}
+                            width={64}
+                            height={64}
+                            style={{
+                              width: "clamp(40px, 12cqw, 72px)",
+                              height: "clamp(40px, 12cqw, 72px)",
+                            }}
+                            alt=""
+                          />
+                          )}
+                          
+                      </div>
                   </div>
-
-                  {state.data.symbolCode && (
-                    <img
-                      src={`/yr-icons/${state.data.symbolCode}.png`}
-                      width={64}
-                      height={64}
-                      style={{
-                        width: "clamp(40px, 12cqw, 72px)",
-                        height: "clamp(40px, 12cqw, 72px)",
-                      }}
-                      alt=""
-                    />
-                  )}
-
                 </div>
-
-                <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
-                  {t('widgets.weatherWidget.wind')}: {state.data.windSpeedMs ?? "—"} m/s
+                <div
+                //høyre blokk
+                >
+                  {windIsEnabled && (
+                    <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
+                      <div>
+                        {t("widgets.weatherWidget.wind")}: {state.data.windSpeedMs ?? "—"} m/s
+                      </div>
+                      <div>
+                        {t("widgets.weatherWidget.windDirection")}: {state.data.windDirection != null ? `${state.data.windDirection}°` : "—"}
+                      </div>
+                    </div>
+                  )}
+                  {humidityIsEnabled && (
+                    <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
+                      <div>
+                        {t("widgets.weatherWidget.humidity")}: {state.data.humidity != null ? `${state.data.humidity}%` : "—"}
+                      </div>
+                      <div>
+                        {t("widgets.weatherWidget.chanceOfRain")}: {state.data.chanceOfRain != null ? `${state.data.chanceOfRain}%` : "0"}%
+                      </div>
+                    </div>
+                  )}
+                  {uvIsEnabled && (
+                    <div style={{ fontSize: `clamp(${fontSize}px, 4.6cqw, ${Math.round(fontSize * 1.8)}px)` }}>
+                      <div>
+                        {t("widgets.weatherWidget.uvIndex")}: {state.data.uvIndex ?? "—"}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
-            </div>
           )}
 
         </div>

@@ -99,7 +99,17 @@
     },
     "weatherWidget": {
       "loading": "Henter vær...",
-      "wind": "Vind"
+      "wind": "Vind",
+      "humidity":"Luftfuktighet",
+      "showWind": "Vis vind",
+      "hideWind": "Skjul vind",
+      "showHumidity": "Vis luftfuktighet",
+      "hideHumidity": "Skjul luftfuktighet",
+      "windDirection": "Vindretning",
+      "chanceOfRain":"Nedbørsjanse",
+      "uvIndex": "UV-indeks",
+      "showUvIndex": "Vis UV-indeks",
+      "hideUvIndex": "Skjul UV-indeks"
     },
     "customButtons": {
       "title": "Egne knapper",
