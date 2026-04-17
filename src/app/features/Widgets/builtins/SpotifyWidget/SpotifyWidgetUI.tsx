@@ -1,3 +1,4 @@
+import { useState, type CSSProperties, type FocusEvent } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import spotifyLogo from "../../../../../assets/spotify-logo.png";
@@ -61,8 +62,19 @@ type IdleViewProps = {
 
 export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: IdleViewProps) {
   const { t } = useLanguage();
+  const [controlsAreVisible, setControlsAreVisible] = useState(false);
 
-  const paneContentStyle = isDarkMode
+  function handleWidgetBlur(event: FocusEvent<HTMLDivElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setControlsAreVisible(false);
+    }
+  }
+
+  const controlInset = isDarkMode
+    ? "calc(clamp(8px, 2.2cqw, 14px) + 20px)"
+    : "clamp(8px, 2.2cqw, 14px)";
+
+  const paneContentStyle: CSSProperties = isDarkMode
     ? {
       width: "calc(100% + 40px)",
       height: "calc(100% + 40px)",
@@ -83,7 +95,7 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
       height: "100%"
     };
 
-  const controlButtonStyle = isDarkMode
+  /*const controlButtonStyle = isDarkMode
     ? {
       width: 28,
       height: 28,
@@ -105,7 +117,8 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
       alignItems: "center",
       justifyContent: "center"
     };
-
+    /*
+  /*
   const actionIconStyle = {
     fontFamily: "\"Material Symbols Rounded\"",
     fontWeight: 400,
@@ -115,28 +128,60 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
     display: "block",
     color: isDarkMode ? "#C4C4C4" : "#4A4A4A",
     fontVariationSettings: "\"FILL\" 1, \"wght\" 400, \"GRAD\" 0, \"opsz\" 24"
-  };
+  };*/
 
   return (
     <WidgetContainer>
       <WidgetPane title="">
-        <div style={paneContentStyle}>
+        <div
+          style={{
+            ...paneContentStyle,
+            position: "relative"
+          }}
+          onMouseEnter={() => setControlsAreVisible(true)}
+          onMouseLeave={() => setControlsAreVisible(false)}
+          onFocus={() => setControlsAreVisible(true)}
+          onBlur={handleWidgetBlur}
+        >
           <div
             style={{
+              position: "absolute",
+              top: controlInset,
+              left: controlInset,
+              zIndex: 1,
               display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              marginBottom: 8
+              opacity: controlsAreVisible ? 1 : 0,
+              transform: controlsAreVisible ? "translateY(0)" : "translateY(-4px)",
+              pointerEvents: controlsAreVisible ? "auto" : "none",
+              transition: "opacity 160ms ease, transform 160ms ease"
             }}
           >
             <button
+              type="button"
               onClick={onToggleDarkMode}
-              style={controlButtonStyle}
               aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
               title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
+              aria-pressed={isDarkMode}
+              style={{
+                width: "clamp(24px, 6cqw, 32px)",
+                height: "clamp(24px, 6cqw, 32px)",
+                borderRadius: "999px",
+                border: "1px solid rgba(255, 255, 255, 0.35)",
+                display: "grid",
+                placeItems: "center",
+                background: isDarkMode ? "rgba(15, 23, 42, 0.78)" : "rgba(15, 23, 42, 0.58)",
+                color: "#f8fafc",
+                cursor: "pointer",
+                backdropFilter: "blur(10px)",
+                boxShadow: "0 8px 22px rgba(15, 23, 42, 0.3)"
+              }}
             >
-              <span className="material-symbols-rounded" aria-hidden="true" style={actionIconStyle}>
-                {isDarkMode ? "light_mode" : "dark_mode"}
+              <span
+                className="material-symbols-rounded"
+                aria-hidden="true"
+                style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+              >
+                dark_mode
               </span>
             </button>
           </div>
@@ -206,10 +251,17 @@ export function SpotifyPlayingView({
   onChangeDevice
 }: PlayingViewProps) {
   const { t } = useLanguage();
+  const [controlsAreVisible, setControlsAreVisible] = useState(false);
 
   const track = player.item;
   const progress = player.progress_ms;
   const duration = track.duration_ms;
+
+  function handleWidgetBlur(event: FocusEvent<HTMLDivElement>) {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setControlsAreVisible(false);
+    }
+  }
 
   const panelStyle = isDarkMode
     ? { color: "#FFFFFF" }
@@ -235,22 +287,36 @@ export function SpotifyPlayingView({
       height: "100%"
     };
 
-  const controlButtonStyle = isDarkMode
-    ? {
-      width: 28,
-      height: 28,
-      background: "#1F1F1F",
-      color: "#FFFFFF",
-      border: "1px solid #2A2A2A",
-      borderRadius: 999,
-      cursor: "pointer"
-    }
-    : {
-      width: 28,
-      height: 28,
-      borderRadius: 999,
-      cursor: "pointer"
-    };
+  const controlInset = isDarkMode
+    ? "calc(clamp(8px, 2.2cqw, 14px) + 20px)"
+    : "clamp(8px, 2.2cqw, 14px)";
+
+  const floatingControlsStyle: CSSProperties = {
+    position: "absolute" as const,
+    top: controlInset,
+    left: controlInset,
+    zIndex: 2,
+    display: "flex",
+    gap: "clamp(6px, 1.5cqw, 10px)",
+    opacity: controlsAreVisible ? 1 : 0,
+    transform: controlsAreVisible ? "translateY(0)" : "translateY(-4px)",
+    pointerEvents: controlsAreVisible ? "auto" : "none",
+    transition: "opacity 160ms ease, transform 160ms ease"
+  };
+
+  const controlButtonStyle: CSSProperties = {
+    width: "clamp(24px, 6cqw, 32px)",
+    height: "clamp(24px, 6cqw, 32px)",
+    borderRadius: "999px",
+    border: "1px solid rgba(255, 255, 255, 0.35)",
+    display: "grid",
+    placeItems: "center",
+    background: isDarkMode ? "rgba(15, 23, 42, 0.78)" : "rgba(15, 23, 42, 0.58)",
+    color: "#f8fafc",
+    cursor: "pointer",
+    backdropFilter: "blur(10px)",
+    boxShadow: "0 8px 22px rgba(15, 23, 42, 0.3)"
+  };
 
   const playbackBarStyle = {
     display: "flex",
@@ -317,6 +383,11 @@ export function SpotifyPlayingView({
     flexShrink: 0
   };
 
+  const floatingControlIconStyle: CSSProperties = {
+    fontSize: "clamp(14px, 3.8cqw, 18px)",
+    lineHeight: 1
+  };
+
   const utilityRowStyle = {
     marginTop: 5,
     display: "flex",
@@ -342,38 +413,43 @@ export function SpotifyPlayingView({
   return (
     <WidgetContainer>
       <WidgetPane title="">
-        <div style={paneContentStyle}>
+        <div
+          style={{
+            ...paneContentStyle,
+            position: "relative"
+          }}
+          onMouseEnter={() => setControlsAreVisible(true)}
+          onMouseLeave={() => setControlsAreVisible(false)}
+          onFocus={() => setControlsAreVisible(true)}
+          onBlur={handleWidgetBlur}
+        >
+          <div style={floatingControlsStyle}>
+            <button
+              type="button"
+              onClick={onToggleDarkMode}
+              style={controlButtonStyle}
+              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
+              aria-pressed={isDarkMode}
+            >
+              <span className="material-symbols-rounded" aria-hidden="true" style={floatingControlIconStyle}>
+                dark_mode
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={isMinimized ? onExpandFromCover : onToggleMinimized}
+              style={controlButtonStyle}
+              aria-label={isMinimized ? t("widgets.spotifyWidget.expandPlayer") : t("widgets.spotifyWidget.minimizePlayer")}
+              title={isMinimized ? t("widgets.spotifyWidget.expandPlayer") : t("widgets.spotifyWidget.minimizePlayer")}
+            >
+              <span className="material-symbols-rounded" aria-hidden="true" style={floatingControlIconStyle}>
+                {isMinimized ? "open_in_full" : "close_fullscreen"}
+              </span>
+            </button>
+          </div>
           {isMinimized ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 6,
-                  alignItems: "center"
-                }}
-              >
-                <button
-                  onClick={onToggleDarkMode}
-                  style={controlButtonStyle}
-                  aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
-                  title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
-                >
-                  <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
-                    {isDarkMode ? "light_mode" : "dark_mode"}
-                  </span>
-                </button>
-                <button
-                  onClick={onExpandFromCover}
-                  style={controlButtonStyle}
-                  aria-label="Expand player"
-                  title="Expand player"
-                >
-                  <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
-                    open_in_full
-                  </span>
-                </button>
-              </div>
               <img
                 src={track.album.images[0]?.url}
                 width="100%"
@@ -408,35 +484,6 @@ export function SpotifyPlayingView({
                   }}
                 >
                   {t("widgets.spotifyWidget.nowPlaying")}
-                </div>
-                <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: 6,
-
-                }}>
-                  <button
-                    onClick={onToggleDarkMode}
-                    style={controlButtonStyle}
-                    aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
-                    title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
-                  >
-                    <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
-                      {isDarkMode ? "light_mode" : "dark_mode"}
-                    </span>
-                  </button>
-                <button
-                  onClick={onToggleMinimized}
-                  style={controlButtonStyle}
-                  aria-label={isMinimized ? t("widgets.spotifyWidget.expandPlayer") : t("widgets.spotifyWidget.minimizePlayer")}
-                  title={isMinimized ? t("widgets.spotifyWidget.expandPlayer") : t("widgets.spotifyWidget.minimizePlayer")}
-                >
-                  <span className="material-symbols-rounded" aria-hidden="true" style={utilityIconStyle}>
-                    {isMinimized ? "open_in_full" : "close_fullscreen"}
-                  </span>
-                </button>
                 </div>
               </div>
 

@@ -118,9 +118,6 @@ export default function WeatherWidgetUI() {
 
   //const debug = "clear"; // legg inn "debug ??" før "state.data?.symbolCode" i neste linje
   const resolvedSymbolCode = state.data?.symbolCode;
-      if (resolvedSymbolCode==="clear"){
-        setUvIsEnabled(true)
-      }
   const visualMode = state.status === "success"
     ? getWeatherVisualMode(resolvedSymbolCode)  
     : "cloudy";

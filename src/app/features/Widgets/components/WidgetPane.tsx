@@ -23,7 +23,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         border: `${widgetBorderWidth}px solid ${widgetBorderColor}`,
         color: widgetTextColor,
         opacity: widgetOpacity,
-        backdropFilter: "blur(14px)",
+        backdropFilter: "blur(10px)",
 
         display: "flex",
         flexDirection: "column",
