@@ -98,7 +98,17 @@
     },
     "weatherWidget": {
       "loading": "Fetching weather...",
-      "wind": "Wind"
+      "wind": "Wind",
+      "humidity":"Humidity",
+      "showWind": "Show wind",
+      "hideWind": "Hide wind",
+      "showHumidity": "Show humidity",
+      "hideHumidity": "Hide humidity",
+      "windDirection": "Wind direction",
+      "chanceOfRain":"Rain chance",
+      "uvIndex": "UV index",
+      "showUvIndex": "Show UV index",
+      "hideUvIndex": "Hide UV index"
     },
     "customButtons": {
       "title": "Custom buttons",
