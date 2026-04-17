@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 
+// Legger til ledende null for enkeltsifrede tall (f.eks. 9 → "09")
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -13,24 +14,33 @@ type ClockWidgetProps = {
 export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
   const [now, setNow] = useState(new Date());
 
+  // Oppdaterer klokkeslettet hvert sekund
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
 
+  // Henter time, minutt og sekund én gang og gjenbruker for både digital og analog visning
   const hours24 = now.getHours();
   const minutes = now.getMinutes();
   const seconds = now.getSeconds();
 
+  // Formaterte strenger for digital visning
   const h = pad(hours24);
   const m = pad(minutes);
   const s = pad(seconds);
 
+  // Konverterer til 12-timersformat for analoge vinkler
   const hours = hours24 % 12;
 
+  // Beregner rotasjonsvinkler for viserne (grader)
   const hourAngle = hours * 30 + minutes * 0.5 + seconds * (0.5 / 60);
   const minuteAngle = minutes * 6 + seconds * 0.1;
   const secondAngle = seconds * 6;
+
+  // Hjelpefunksjon som returnerer stilobjekt for en viser.
+  // Dreiepunktet er 2px fra bunnen av elementet, og translateY kompenserer for dette
+  // slik at viserne roterer nøyaktig rundt sentermarkøren.
 
   const handStyle = (angle: number, length: string, thickness: number, color: string) => ({
     position: "absolute" as const,
@@ -58,6 +68,7 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
           }}
         >
           {mode === "analog" ? (
+            // Analog urskive – rektangulær form for å passe widgetens proporsjoner
             <div
               style={{
                 width: "96%",
@@ -71,10 +82,12 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
                 overflow: "hidden",
               }}
             >
+              {/* 12 timemerker – større for hvert kvartal (3, 6, 9, 12) */}
               {[...Array(12)].map((_, index) => {
                 const angle = index * 30;
                 const isMajor = index % 3 === 0;
                 return (
+                  // Roterer hele wrapper-elementet rundt senterets origo
                   <div
                     key={index}
                     style={{
@@ -99,10 +112,12 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
                 );
               })}
 
+              {/* Visere: time, minutt, sekund */}
               <div style={handStyle(hourAngle, "24%", 5, "#f7f7f7")} />
               <div style={handStyle(minuteAngle, "34%", 3, "#f0f0f0")} />
               <div style={handStyle(secondAngle, "38%", 2, "#ff8d8d")} />
 
+              {/* Senterpunkt som dekker visernes rotasjonspunkt */}
               <div
                 style={{
                   position: "absolute",
@@ -117,6 +132,7 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
               />
             </div>
           ) : (
+            // Digital visning – skalerer med container-bredden via cqw
             <span
               style={{
                 fontWeight: 700,
