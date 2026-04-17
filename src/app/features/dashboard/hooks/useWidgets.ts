@@ -43,7 +43,7 @@ export function useWidgets() {
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load layout from Firestore
+  // Leser tidligere lagret layout for innlogget bruker.
   const loadLayout = useCallback(async () => {
     if (!user) return;
 
@@ -63,7 +63,7 @@ export function useWidgets() {
     }
   }, [user]);
 
-  // Save layout to Firestore with debounce
+  // Lagrer layout til Firestore (kalles via debounce).
   const saveLayout = useCallback(async () => {
     if (!user) return;
 
@@ -84,7 +84,7 @@ export function useWidgets() {
     }
   }, [user, activeWidgets, layouts]);
 
-  // Debounced save function
+  // Debouncet lagring for å redusere antall writes under flytting/resizing.
   const debouncedSave = useCallback(() => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -95,7 +95,7 @@ export function useWidgets() {
     }, SAVE_DEBOUNCE_MS);
   }, [saveLayout]);
 
-  // Load layout on mount or user change
+  // Laster layout når bruker endres.
   useEffect(() => {
     if (user) {
       loadLayout();
@@ -104,7 +104,7 @@ export function useWidgets() {
     }
   }, [user, loadLayout]);
 
-  // Cleanup timeout on unmount
+  // Rydder timeout ved unmount.
   useEffect(() => {
     return () => {
       if (saveTimeoutRef.current) {

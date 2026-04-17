@@ -42,6 +42,7 @@ type WidgetDefinition = {
   };
 };
 
+// Adaptere som gir felles props-signatur til alle widgets i gridet.
 const ClockWidgetAdapter: FC<WidgetComponentProps> = () => <ClockWidget />;
 const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId, onClose }) => (
   <NotesWidget widgetId={widgetId ?? ""} onClose={onClose} />
@@ -138,6 +139,7 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
 export function buildWidgets(
   customButtonConfigs: Record<string, CustomButtonConfig>
 ): Record<string, WidgetDefinition> {
+  // Bygger dynamiske widget-definisjoner for egendefinerte knapper.
   const dynamicButtons = Object.fromEntries(
     Object.entries(customButtonConfigs).map(([id, config]) => [
       id,
@@ -162,6 +164,7 @@ export function buildWidgets(
 }
 
 export const WIDGETS: Record<string, WidgetDefinition> = {
+  // Fast register brukt av DashboardGrid for oppslag på widgettype.
   ...STATIC_WIDGETS,
   info: STATIC_WIDGETS.info ?? INFO_WIDGET_FALLBACK,
 };

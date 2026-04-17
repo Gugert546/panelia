@@ -14,6 +14,7 @@ type Props = {
 };
 
 export function WidgetsProvider({ children }: Props) {
+  // Samler all widgettilstand ett sted for dashboardet.
   const value = useWidgetsState();
 
   return (
@@ -26,6 +27,7 @@ export function WidgetsProvider({ children }: Props) {
 export function useWidgets() {
   const context = useContext(WidgetsContext);
 
+  // Tydelig feilmelding hvis hook brukes uten provider.
   if (!context) {
     throw new Error("useWidgets must be used inside WidgetsProvider");
   }

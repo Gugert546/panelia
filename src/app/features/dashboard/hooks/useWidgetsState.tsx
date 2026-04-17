@@ -75,7 +75,7 @@ type WidgetLayoutDocument = {
   updatedAt?: unknown;
 };
 
-// Available widgets for the dashboard
+// Tilgjengelige widgets i dashboard.
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke", icon: "schedule" },
   { id: "calendar", label: "Kalender", icon: "calendar_month" },
@@ -88,7 +88,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "spotify", label: "Spotify", icon: "music_note" },
 ] as const;
 
-// Debounce delay for saving to Firestore (5 seconds)
+// Debounce for lagring til Firestore (5 sekunder).
 const SAVE_DEBOUNCE_MS = 5000;
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
@@ -315,7 +315,7 @@ function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset 
   };
 }
 
-// Default layouts for new widgets (aligned with WidgetRegistry defaultGrid sizes)
+// Standardstørrelser for nye widgets (samkjørt med WidgetRegistry).
 const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   clock: { x: 0, y: 0, w: 5, h: 3 },
   notes: { x: 0, y: 0, w: 8, h: 8 },
@@ -373,7 +373,7 @@ function createCenteredLayout(
   return candidate;
 }
 
-// Generate a unique ID for custom buttons
+// Lager unik ID for egendefinerte knapper.
 function createCustomButtonId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `customButton:${crypto.randomUUID()}`;
@@ -381,7 +381,7 @@ function createCustomButtonId() {
   return `customButton:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// Legacy migration functions (for backward compatibility)
+// Migrering av gamle id-formater for bakoverkompatibilitet.
 function migrateLegacyCustomButtonId(id: string) {
   if (!id.startsWith("customButton__")) return id;
   return `customButton:${id.slice("customButton__".length)}`;
@@ -428,7 +428,7 @@ export function useWidgetsState() {
 
   const hasLoadedRef = useRef(false);
 
-  // Load widget layout from Firestore
+  // Leser lagret dashboard-oppsett fra Firestore ved innlogging.
   const loadLayout = useCallback(async () => {
     if (!user) {
       setActiveWidgets([]);
@@ -475,7 +475,7 @@ export function useWidgetsState() {
 
       const data = docSnap.data() as WidgetLayoutDocument;
 
-      // Apply legacy migrations
+      // Kjør migrering av historiske felter/id-er før state settes.
       const migratedActiveWidgets = Array.isArray(data.activeWidgets)
         ? data.activeWidgets.map(migrateLegacyCustomButtonId)
         : [];
@@ -550,7 +550,7 @@ export function useWidgetsState() {
     void loadLayout();
   }, [loadLayout]);
 
-  // Auto-save changes to Firestore with debouncing
+  // Autosave av layout/stil med debounce for færre writes.
   useEffect(() => {
     if (!user || isLoading || !hasLoadedRef.current) return;
 
@@ -601,6 +601,7 @@ export function useWidgetsState() {
 
   const persistPresetsImmediately = useCallback(
     async (nextPresets: DashboardPreset[]) => {
+      // Presets lagres umiddelbart for å unngå at raske bytter går tapt.
       if (!user || isLoading || !hasLoadedRef.current) return;
 
       try {
@@ -693,7 +694,7 @@ export function useWidgetsState() {
     void persistPresetsImmediately(nextPresets);
   }, [dashboardPresets, persistPresetsImmediately]);
 
-  // Toggle a widget on/off
+  // Slår widget av/på og oppretter notes-instans ved behov.
   const toggleWidget = useCallback((id: string) => {
     if (id === "notes") {
       const noteId = createNotesWidgetId();
@@ -732,12 +733,12 @@ export function useWidgetsState() {
     });
   }, []);
 
-  // Update widget layouts (e.g., after dragging/resizing)
+  // Oppdateres fra grid ved drag/resize.
   const updateLayout = useCallback((newLayouts: Record<string, LayoutItem>) => {
     setLayouts(newLayouts);
   }, []);
 
-  // Add a new custom button
+  // Legger til en ny egendefinert knapp-widget.
   const addCustomButton = useCallback((config: CustomButtonConfig) => {
     const id = createCustomButtonId();
 
@@ -752,7 +753,7 @@ export function useWidgetsState() {
     return id;
   }, []);
 
-  // Remove a custom button
+  // Fjerner knapp-widget og tilhørende layout/lås/config.
   const removeCustomButton = useCallback((id: string) => {
     setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
     setCustomButtonConfigs((prev) => {

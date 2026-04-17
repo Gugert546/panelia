@@ -33,6 +33,7 @@ import { useLanguage } from "../../providers/languageProvider";
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
+// Mapper valgt bakgrunns-id til riktig bakgrunnsbilde.
 function resolveDashboardBackground(
   backgroundId: DashboardBackgroundId
 ) {
@@ -80,6 +81,7 @@ function getImageBackgroundSource(
 function DashboardPageContent() {
   const SIDEBAR_WIDTH = 60;
 
+  // UI-tilstand for paneler/overlay.
   const [editOpen, setEditOpen] = useState(false);
   const [isChatVisible, setIsChatVisible] = useState(false);
   const [isCalendarVisible, setIsCalendarVisible] = useState(false);
@@ -146,6 +148,7 @@ function DashboardPageContent() {
   const shouldManageCalendarConnection =
     isCalendarVisible || isCalendarWidgetActive;
 
+  // Oppdaterer tid periodisk for å kunne bytte standardbakgrunn etter klokkeslett.
   useEffect(() => {
     const interval = setInterval(() => {
       setTime(new Date());
@@ -157,6 +160,7 @@ function DashboardPageContent() {
   useEffect(() => {
     if (!shouldManageCalendarConnection) return;
 
+    // Hindrer state-oppdatering etter unmount.
     let cancelled = false;
 
     const fetchCalendarStatus = async () => {
@@ -210,6 +214,7 @@ function DashboardPageContent() {
 
     url.searchParams.delete("calendar_oauth");
 
+    // Rydder URL etter OAuth callback slik at parameter ikke blir liggende.
     window.history.replaceState(
       {},
       "",
@@ -254,6 +259,7 @@ function DashboardPageContent() {
     if (calendarConnectionStatus !== "connected") return;
     if (calendarRefreshBusy) return;
 
+    // Henter først én gang, deretter periodisk polling.
     void pullFromGoogleCalendar(false);
 
     const interval = setInterval(() => {

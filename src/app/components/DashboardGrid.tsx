@@ -15,6 +15,7 @@ type Props = {
 };
 
 function getWidgetType(widgetId: string) {
+  // Støtter instans-IDer som "notes:<uuid>" ved å hente typen før kolon.
   const separatorIndex = widgetId.indexOf(":");
   if (separatorIndex === -1) return widgetId;
   return widgetId.slice(0, separatorIndex);
@@ -32,6 +33,7 @@ export default function DashboardGrid({
 }: Props) {
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
 
+  // Bygger layoutdata react-grid-layout trenger basert på aktiv state.
   const computedLayout = activeWidgets
     .map((widgetId, index) => {
       const widgetType = getWidgetType(widgetId);
@@ -75,7 +77,7 @@ export default function DashboardGrid({
         x: item.x,
         y: item.y,
         
-        // Clamp to widget minimums so users can’t resize smaller than starting size
+        // Sikrer at widget ikke kan lagres mindre enn minimumsstørrelsen.
         w: baseGrid ? Math.max(item.w, baseGrid.w) : item.w,
         h: baseGrid ? Math.max(item.h, baseGrid.h) : item.h,
       };
@@ -88,16 +90,16 @@ export default function DashboardGrid({
     <GridLayout
       className="layout"
       layout={computedLayout}
-      cols={40}          // Mer columns --> Finere horisontal kontroll
-      rowHeight={30}    // Mindre rowHeight --> Mer vertikal kontroll og flere rader tilgjengelig
+      cols={40}          // Flere kolonner gir finere horisontal plassering.
+      rowHeight={30}    // Lavere radhøyde gir bedre vertikal kontroll.
       width={window.innerWidth - sidebarWidth}
       isDraggable
       isResizable
       draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn"
       compactType={null}
-      preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
+      preventCollision={true}  // Hindrer automatisk dytting av andre widgets under drag.
       margin={[0, 0]}    
-      maxRows={40}      // tillatter flere rader for å unngå at widgets blir presset sammen vertikalt
+      maxRows={40}      // Tillater flere rader slik at widgets ikke presses sammen.
       containerPadding={[0, 0]}
       autoSize={false}
       style={{ height: "100%" }}
@@ -119,7 +121,7 @@ export default function DashboardGrid({
         const currentLayout: SafeLayout = storedLayout
           ? {
               ...storedLayout,
-              // Ensure persisted layouts never shrink below the widget's default size
+              // Beskytter mot gamle/persistede verdier som er mindre enn default.
               w: Math.max(storedLayout.w, baseGrid.w),
               h: Math.max(storedLayout.h, baseGrid.h),
             }
