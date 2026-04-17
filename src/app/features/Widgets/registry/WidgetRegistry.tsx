@@ -9,6 +9,7 @@ import NewsWidget from "../builtins/NewsWidget/NewsWidget";
 import SpotifyWidget from "../builtins/SpotifyWidget/SpotifyWidget";
 import BookmarkUi from "../builtins/BookmarkWidget/BookmarkUi";
 import InfoWidget from "../builtins/InfoWidget/InfoWidget";
+import MinesweeperWidgetUI from "../builtins/MinesweeperWidget/minesweeperUi";
 import CustomButtonItemWidget from "../builtins/CustomButtonsWidget/CustomButtonItemWidget";
 import type { CustomButtonConfig } from "../../dashboard/hooks/useWidgetsState";
 import { useWidgets } from "../../dashboard/hooks/WidgetsContext";
@@ -23,6 +24,7 @@ export type WidgetType =
   | "spotify"
   | "bookmark"
   | "info"
+  | "minesweeper"
   | "customButtons"
   | "customButton";
 
@@ -59,6 +61,7 @@ const NewsWidgetAdapter: FC<WidgetComponentProps> = () => <NewsWidget />;
 const SpotifyWidgetAdapter: FC<WidgetComponentProps> = () => <SpotifyWidget />;
 const BookmarkWidgetAdapter: FC<WidgetComponentProps> = () => <BookmarkUi />;
 const InfoWidgetAdapter: FC<WidgetComponentProps> = () => <InfoWidget />;
+const MinesweeperWidgetAdapter: FC<WidgetComponentProps> = () => <MinesweeperWidgetUI />;
 const CustomButtonWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId }) => {
   const { customButtonConfigs } = useWidgets();
 
@@ -127,6 +130,11 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
     title: "Info",
     Component: InfoWidgetAdapter,
     defaultGrid: { w: 12, h: 12 },
+  },
+  minesweeper: {
+    title: "Minesweeper",
+    Component: MinesweeperWidgetAdapter,
+    defaultGrid: { w: 8, h: 16 },
   },
   customButton: {
     title: "Egendefinert knapp",

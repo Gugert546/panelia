@@ -18,6 +18,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "info", label: "Info", icon: "info" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
+  { id: "minesweeper", label: "Minesweeper", icon: "bomb" },
 ] as const;
 
 const SAVE_DEBOUNCE_MS = 10000; // 10 seconds

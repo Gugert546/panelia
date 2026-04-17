@@ -95,6 +95,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "info", label: "Info", icon: "info" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
+  { id: "minesweeper", label: "Minesweeper", icon: "bomb" },
 ] as const;
 
 // Debounce delay for saving to Firestore (5 seconds)
@@ -333,6 +334,7 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   weather: { x: 0, y: 0, w: 5, h: 4 },
   news: { x: 0, y: 0, w: 10, h: 10 },
   spotify: { x: 0, y: 0, w: 4, h: 3 },
+  minesweeper: { x: 0, y: 0, w: 6, h: 6 },
   bookmark: { x: 0, y: 0, w: 4, h: 4 },
   info: { x: 0, y: 0, w: 6, h: 6 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },

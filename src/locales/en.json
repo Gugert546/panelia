@@ -68,6 +68,7 @@
     "notes": "Notes",
     "spotify": "Spotify",
     "calendar": "Calendar",
+    "minesweeper": "Minesweeper",
     "bookmarkWidget": {
       "title": "Bookmarks",
       "loading": "Loading bookmarks...",
@@ -123,6 +124,19 @@
     "notesWidget": {
       "closeNote": "Close note",
       "placeholder": "Write notes here..."
+    },
+    "minesweeperWidget": {
+      "mines": "Mines",
+      "flags": "Flags",
+      "time": "Time",
+      "newGame": "New game",
+      "idle": "First move is always safe",
+      "instructions": "Left click to reveal, right click to flag",
+      "won": "You cleared the field",
+      "lost": "Boom! Try again",
+      "cell": "Cell",
+      "congratsTitle": "Congratulations!",
+      "congratsBody": "You cleared every mine and won the board."
     },
     "spotifyWidget": {
       "connect": "Connect Spotify",

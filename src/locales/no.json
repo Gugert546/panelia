@@ -68,6 +68,7 @@
     "notes": "Notater",
     "spotify": "Spotify",
     "calendar": "Kalender",
+    "minesweeper": "Minesweeper",
     "bookmarkWidget": {
       "title": "Bokmerker",
       "loading": "Laster bokmerker...",
@@ -124,6 +125,19 @@
     "notesWidget": {
       "closeNote": "Lukk notat",
       "placeholder": "Skriv notater her..."
+    },
+    "minesweeperWidget": {
+      "mines": "Miner",
+      "flags": "Flagg",
+      "time": "Tid",
+      "newGame": "Nytt spill",
+      "idle": "Første trekk er alltid trygt",
+      "instructions": "Venstreklikk for å åpne, høyreklikk for å flagge",
+      "won": "Du ryddet brettet",
+      "lost": "Boom! Prøv igjen",
+      "cell": "Rute",
+      "congratsTitle": "Gratulerer!",
+      "congratsBody": "Du fant alle minene og vant brettet."
     },
     "spotifyWidget": {
       "connect": "Koble til Spotify",
