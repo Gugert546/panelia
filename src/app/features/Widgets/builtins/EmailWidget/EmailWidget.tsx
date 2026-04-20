@@ -5,7 +5,7 @@ import { useAuth } from "../../../auth/useAuth";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useFontSize } from "../../../../providers/themeProviders";
 
-type EmailProviderId = "gmail";
+type EmailProviderId = "gmail" | "outlook";
 type EmailConnectionStatus = "loading" | "connected" | "disconnected";
 
 type EmailMessage = {
@@ -26,7 +26,7 @@ type EmailMessagesResponse = {
 
 const EMAIL_PROVIDERS = [
   { id: "gmail", label: "Gmail", enabled: true },
-  { id: "outlook", label: "Outlook", enabled: false },
+  { id: "outlook", label: "Outlook", enabled: true },
   { id: "imap", label: "IMAP", enabled: false },
 ] as const;
 
@@ -55,6 +55,10 @@ function formatMessageTime(value: string | null, locale: string) {
   ).format(date);
 }
 
+function parseEmailProvider(value: string | null): EmailProviderId | null {
+  return value === "gmail" || value === "outlook" ? value : null;
+}
+
 export default function EmailWidget() {
   const { user, loading } = useAuth();
   const { t, language } = useLanguage();
@@ -75,8 +79,13 @@ export default function EmailWidget() {
   useEffect(() => {
     const url = new URL(window.location.href);
     const oauthResult = url.searchParams.get("email_oauth");
+    const oauthProvider = parseEmailProvider(url.searchParams.get("email_provider"));
 
     if (!oauthResult) return;
+
+    if (oauthProvider) {
+      setProvider(oauthProvider);
+    }
 
     setOauthNotice(
       oauthResult === "connected"
@@ -267,6 +276,15 @@ export default function EmailWidget() {
     window.open(message.providerUrl, "_blank", "noopener,noreferrer");
   };
 
+  const connectLabel =
+    provider === "outlook"
+      ? t("widgets.emailWidget.connectOutlook")
+      : t("widgets.emailWidget.connectGmail");
+  const connectHelp =
+    provider === "outlook"
+      ? t("widgets.emailWidget.connectOutlookHelp")
+      : t("widgets.emailWidget.connectGmailHelp");
+
   const showDisconnected =
     connectionStatus === "disconnected" || !user || !selectedProvider?.enabled;
 
@@ -360,7 +378,7 @@ export default function EmailWidget() {
                 {!user
                   ? t("widgets.emailWidget.signInRequired")
                   : selectedProvider?.enabled
-                    ? t("widgets.emailWidget.connectHelp")
+                    ? connectHelp
                     : t("widgets.emailWidget.providerUnavailable")}
               </div>
               {user && selectedProvider?.enabled && (
@@ -381,7 +399,7 @@ export default function EmailWidget() {
                 >
                   {connectionBusy
                     ? t("widgets.emailWidget.connecting")
-                    : t("widgets.emailWidget.connectGmail")}
+                    : connectLabel}
                 </button>
               )}
             </div>

@@ -1,10 +1,10 @@
 import express from "express";
 import fetch from "node-fetch";
-import { createHmac } from "crypto";
+import { createHash, createHmac, randomBytes } from "crypto";
 import type { DocumentReference } from "@google-cloud/firestore";
 import { adminAuth, adminDb } from "./firebaseAdmin";
 
-type EmailProvider = "gmail";
+type EmailProvider = "gmail" | "outlook";
 
 type EmailIntegrationDoc = {
   connected?: boolean;
@@ -44,11 +44,54 @@ type GmailMessageResponse = {
   };
 };
 
+type OutlookMessagesResponse = {
+  value?: OutlookMessageResponse[];
+};
+
+type OutlookMessageResponse = {
+  id?: string;
+  conversationId?: string;
+  subject?: string;
+  bodyPreview?: string;
+  receivedDateTime?: string;
+  isRead?: boolean;
+  webLink?: string;
+  from?: {
+    emailAddress?: {
+      name?: string;
+      address?: string;
+    };
+  };
+};
+
+class ProviderApiError extends Error {
+  provider: EmailProvider;
+  status: number;
+  body: string;
+
+  constructor(provider: EmailProvider, status: number, body: string) {
+    super(`${provider} API request failed with status ${status}`);
+    this.provider = provider;
+    this.status = status;
+    this.body = body;
+  }
+}
+
 const router = express.Router();
-const ENABLED_PROVIDERS: EmailProvider[] = ["gmail"];
+const ENABLED_PROVIDERS: EmailProvider[] = ["gmail", "outlook"];
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
+const OUTLOOK_SCOPE = "offline_access User.Read Mail.Read";
 
 function getBaseUrl(req: express.Request) {
+  const configuredBaseUrl =
+    process.env.EMAIL_PUBLIC_BASE_URL ||
+    process.env.PUBLIC_SERVER_URL ||
+    process.env.SERVER_PUBLIC_URL;
+
+  if (configuredBaseUrl) {
+    return configuredBaseUrl.replace(/\/$/, "");
+  }
+
   return `${req.protocol}://${req.get("host")}`;
 }
 
@@ -77,7 +120,7 @@ async function requireUid(req: express.Request, res: express.Response) {
 }
 
 function parseProvider(value: unknown): EmailProvider | null {
-  return value === "gmail" ? "gmail" : null;
+  return value === "gmail" || value === "outlook" ? value : null;
 }
 
 function requireProvider(req: express.Request, res: express.Response) {
@@ -100,7 +143,15 @@ function signState(payload: string) {
   return createHmac("sha256", stateSecret()).update(payload).digest("base64url");
 }
 
-function encodeState(data: { uid: string; returnTo: string; provider: EmailProvider }) {
+function createPkceVerifier() {
+  return randomBytes(32).toString("base64url");
+}
+
+function createPkceChallenge(verifier: string) {
+  return createHash("sha256").update(verifier).digest("base64url");
+}
+
+function encodeState(data: { uid: string; returnTo: string; provider: EmailProvider; codeVerifier?: string }) {
   const payload = Buffer.from(JSON.stringify(data), "utf8").toString("base64url");
   const sig = signState(payload);
   return `${payload}.${sig}`;
@@ -120,11 +171,17 @@ function decodeState(state?: string | string[]) {
       uid?: string;
       returnTo?: string;
       provider?: string;
+      codeVerifier?: string;
     };
 
     const provider = parseProvider(parsed.provider);
     if (!parsed.uid || !parsed.returnTo || !provider) return null;
-    return { uid: parsed.uid, returnTo: parsed.returnTo, provider };
+    return {
+      uid: parsed.uid,
+      returnTo: parsed.returnTo,
+      provider,
+      codeVerifier: typeof parsed.codeVerifier === "string" ? parsed.codeVerifier : undefined,
+    };
   } catch {
     return null;
   }
@@ -132,6 +189,10 @@ function decodeState(state?: string | string[]) {
 
 function getGmailRedirectUri(req: express.Request) {
   return process.env.GOOGLE_GMAIL_REDIRECT_URI || process.env.EMAIL_GMAIL_REDIRECT_URI || `${getBaseUrl(req)}/api/email/callback`;
+}
+
+function getOutlookRedirectUri(req: express.Request) {
+  return process.env.MICROSOFT_OUTLOOK_REDIRECT_URI || process.env.EMAIL_OUTLOOK_REDIRECT_URI || `${getBaseUrl(req)}/api/email/callback`;
 }
 
 function buildGmailAuthUrl(req: express.Request, state: string) {
@@ -156,6 +217,45 @@ function buildGmailAuthUrl(req: express.Request, state: string) {
   return `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`;
 }
 
+function getOutlookCredentials() {
+  const clientId = process.env.MICROSOFT_CLIENT_ID || process.env.OUTLOOK_CLIENT_ID || process.env.AZURE_CLIENT_ID;
+  const clientSecret = process.env.MICROSOFT_CLIENT_SECRET || process.env.OUTLOOK_CLIENT_SECRET || process.env.AZURE_CLIENT_SECRET;
+
+  if (!clientId || !clientSecret) {
+    throw new Error("Microsoft OAuth credentials are not configured");
+  }
+
+  return { clientId, clientSecret };
+}
+
+function buildOutlookAuthUrl(req: express.Request, state: string, codeVerifier: string) {
+  const { clientId } = getOutlookCredentials();
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: getOutlookRedirectUri(req),
+    response_type: "code",
+    response_mode: "query",
+    scope: OUTLOOK_SCOPE,
+    state,
+    code_challenge: createPkceChallenge(codeVerifier),
+    code_challenge_method: "S256",
+  });
+
+  return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
+}
+
+function buildEmailAuthUrl(req: express.Request, provider: EmailProvider, state: string, codeVerifier?: string) {
+  if (provider === "gmail") {
+    return buildGmailAuthUrl(req, state);
+  }
+
+  if (!codeVerifier) {
+    throw new Error("Outlook OAuth PKCE verifier is missing");
+  }
+
+  return buildOutlookAuthUrl(req, state, codeVerifier);
+}
+
 function getIntegrationDocPath(uid: string, provider: EmailProvider) {
   return `users/${uid}/integrations/email_${provider}`;
 }
@@ -173,15 +273,9 @@ async function getIntegration(uid: string, provider: EmailProvider) {
 
 async function refreshAccessTokenIfNeeded(
   integration: EmailIntegrationDoc,
-  ref: DocumentReference
+  ref: DocumentReference,
+  provider: EmailProvider
 ) {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-
-  if (!clientId || !clientSecret) {
-    throw new Error("Google OAuth credentials are not configured");
-  }
-
   const now = Date.now();
   const expiresAt = integration.expiresAt ?? 0;
   const shouldRefresh = Boolean(integration.refreshToken) && (!integration.accessToken || now > expiresAt - 60_000);
@@ -190,21 +284,26 @@ async function refreshAccessTokenIfNeeded(
     return integration.accessToken ?? null;
   }
 
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      grant_type: "refresh_token",
-      refresh_token: integration.refreshToken ?? "",
-    }),
-  });
+  const response = await fetch(
+    provider === "gmail"
+      ? "https://oauth2.googleapis.com/token"
+      : "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        ...getTokenCredentials(provider),
+        ...(provider === "outlook" ? { scope: OUTLOOK_SCOPE } : {}),
+        grant_type: "refresh_token",
+        refresh_token: integration.refreshToken ?? "",
+      }),
+    }
+  );
 
   const payload = (await response.json()) as Record<string, unknown>;
 
   if (!response.ok) {
-    throw new Error(`Failed to refresh Gmail token: ${JSON.stringify(payload)}`);
+    throw new Error(`Failed to refresh ${provider} token: ${JSON.stringify(payload)}`);
   }
 
   const nextAccessToken = typeof payload.access_token === "string" ? payload.access_token : null;
@@ -229,9 +328,25 @@ async function getUsableAccessToken(uid: string, provider: EmailProvider) {
     throw new Error(`${provider} email is not connected`);
   }
 
-  const token = await refreshAccessTokenIfNeeded(data, ref);
+  const token = await refreshAccessTokenIfNeeded(data, ref, provider);
   if (!token) throw new Error("Missing email access token");
   return token;
+}
+
+function getTokenCredentials(provider: EmailProvider) {
+  if (provider === "gmail") {
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      throw new Error("Google OAuth credentials are not configured");
+    }
+
+    return { client_id: clientId, client_secret: clientSecret };
+  }
+
+  const { clientId, clientSecret } = getOutlookCredentials();
+  return { client_id: clientId, client_secret: clientSecret };
 }
 
 async function gmailApiGet(accessToken: string, url: string) {
@@ -252,10 +367,52 @@ async function gmailApiGet(accessToken: string, url: string) {
   }
 
   if (!response.ok) {
-    throw new Error(`Gmail API GET failed: ${response.status} ${text}`);
+    throw new ProviderApiError("gmail", response.status, text);
   }
 
   return payload;
+}
+
+async function graphApiGet(accessToken: string, url: string) {
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const text = await response.text();
+  let payload: Record<string, unknown> | null = null;
+
+  try {
+    payload = text ? (JSON.parse(text) as Record<string, unknown>) : null;
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    throw new ProviderApiError("outlook", response.status, text);
+  }
+
+  return payload;
+}
+
+function getSafeProviderErrorBody(body: string) {
+  if (!body) return "";
+
+  try {
+    const parsed = JSON.parse(body) as {
+      error?: {
+        code?: unknown;
+        message?: unknown;
+      };
+    };
+    const code = typeof parsed.error?.code === "string" ? parsed.error.code : undefined;
+    const message = typeof parsed.error?.message === "string" ? parsed.error.message : undefined;
+    return JSON.stringify({ error: { code, message } });
+  } catch {
+    return body.slice(0, 500);
+  }
 }
 
 function getHeader(message: GmailMessageResponse, headerName: string) {
@@ -334,11 +491,68 @@ async function listGmailMessages(accessToken: string, maxResults: number) {
     .slice(0, maxResults);
 }
 
+function buildOutlookMessageUrl(message: OutlookMessageResponse) {
+  return message.webLink || "https://outlook.office.com/mail/inbox";
+}
+
+function toOutlookMessage(message: OutlookMessageResponse): EmailMessage | null {
+  if (!message.id) return null;
+
+  const fromName = message.from?.emailAddress?.name?.trim();
+  const fromAddress = message.from?.emailAddress?.address?.trim();
+  const from = fromName && fromAddress
+    ? `${fromName} <${fromAddress}>`
+    : fromName || fromAddress || "Unknown sender";
+
+  return {
+    id: message.id,
+    threadId: message.conversationId || message.id,
+    provider: "outlook",
+    from,
+    subject: message.subject?.trim() || "(No subject)",
+    snippet: message.bodyPreview ?? "",
+    receivedAt: message.receivedDateTime || null,
+    unread: message.isRead === false,
+    providerUrl: buildOutlookMessageUrl(message),
+  };
+}
+
+async function listOutlookMessages(accessToken: string, maxResults: number) {
+  const fetchLimit = Math.min(25, Math.max(maxResults * 2, maxResults));
+  const params = new URLSearchParams({
+    "$top": String(fetchLimit),
+    "$select": "id,conversationId,from,subject,bodyPreview,receivedDateTime,isRead,webLink",
+    "$orderby": "receivedDateTime desc",
+  });
+
+  const payload = (await graphApiGet(
+    accessToken,
+    `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?${params.toString()}`
+  )) as OutlookMessagesResponse;
+
+  return (Array.isArray(payload.value) ? payload.value : [])
+    .map(toOutlookMessage)
+    .filter((message): message is EmailMessage => message !== null)
+    .sort((a, b) => {
+      if (a.unread !== b.unread) return a.unread ? -1 : 1;
+      const aTime = a.receivedAt ? new Date(a.receivedAt).getTime() : 0;
+      const bTime = b.receivedAt ? new Date(b.receivedAt).getTime() : 0;
+      return bTime - aTime;
+    })
+    .slice(0, maxResults);
+}
+
+async function listEmailMessages(provider: EmailProvider, accessToken: string, maxResults: number) {
+  return provider === "gmail"
+    ? listGmailMessages(accessToken, maxResults)
+    : listOutlookMessages(accessToken, maxResults);
+}
+
 router.get("/providers", (_req, res) => {
   return res.json({
     providers: [
       { id: "gmail", label: "Gmail", enabled: true },
-      { id: "outlook", label: "Outlook", enabled: false },
+      { id: "outlook", label: "Outlook", enabled: true },
       { id: "imap", label: "IMAP", enabled: false },
     ],
   });
@@ -354,8 +568,9 @@ router.post("/connect-url", async (req, res) => {
   const returnTo = typeof req.body?.returnTo === "string" && req.body.returnTo ? req.body.returnTo : "/dashboard";
 
   try {
-    const state = encodeState({ uid, returnTo, provider });
-    const url = buildGmailAuthUrl(req, state);
+    const codeVerifier = provider === "outlook" ? createPkceVerifier() : undefined;
+    const state = encodeState({ uid, returnTo, provider, codeVerifier });
+    const url = buildEmailAuthUrl(req, provider, state, codeVerifier);
     return res.json({ provider, url });
   } catch (err) {
     console.error("Email connect-url error:", err);
@@ -364,12 +579,6 @@ router.post("/connect-url", async (req, res) => {
 });
 
 router.get("/callback", async (req, res) => {
-  const code = req.query.code;
-
-  if (typeof code !== "string" || !code) {
-    return res.status(400).json({ error: "missing code" });
-  }
-
   const stateParam = req.query.state;
   const normalizedStateParam =
     typeof stateParam === "string"
@@ -382,30 +591,53 @@ router.get("/callback", async (req, res) => {
     return res.status(400).json({ error: "invalid oauth state" });
   }
 
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const oauthError = typeof req.query.error === "string" ? req.query.error : null;
+  if (oauthError) {
+    console.error(`${stateData.provider} OAuth returned error:`, {
+      error: oauthError,
+      description: req.query.error_description,
+    });
+    const url = new URL(stateData.returnTo, getBaseUrl(req));
+    url.searchParams.set("email_oauth", "error");
+    url.searchParams.set("email_provider", stateData.provider);
+    return res.redirect(url.toString());
+  }
 
-  if (!clientId || !clientSecret) {
-    return res.status(500).json({ error: "Google OAuth credentials are not configured" });
+  const code = req.query.code;
+  if (typeof code !== "string" || !code) {
+    const url = new URL(stateData.returnTo, getBaseUrl(req));
+    url.searchParams.set("email_oauth", "error");
+    url.searchParams.set("email_provider", stateData.provider);
+    return res.redirect(url.toString());
   }
 
   try {
-    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: clientId,
-        client_secret: clientSecret,
-        redirect_uri: getGmailRedirectUri(req),
-        grant_type: "authorization_code",
-      }),
-    });
+    const tokenResponse = await fetch(
+      stateData.provider === "gmail"
+        ? "https://oauth2.googleapis.com/token"
+        : "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          code,
+          ...getTokenCredentials(stateData.provider),
+          ...(stateData.provider === "outlook" ? { scope: OUTLOOK_SCOPE } : {}),
+          ...(stateData.provider === "outlook" && stateData.codeVerifier
+            ? { code_verifier: stateData.codeVerifier }
+            : {}),
+          redirect_uri: stateData.provider === "gmail"
+            ? getGmailRedirectUri(req)
+            : getOutlookRedirectUri(req),
+          grant_type: "authorization_code",
+        }),
+      }
+    );
 
     const payload = (await tokenResponse.json()) as Record<string, unknown>;
 
     if (!tokenResponse.ok) {
-      console.error("Gmail token exchange failed:", payload);
+      console.error(`${stateData.provider} token exchange failed:`, payload);
       const url = new URL(stateData.returnTo, getBaseUrl(req));
       url.searchParams.set("email_oauth", "error");
       url.searchParams.set("email_provider", stateData.provider);
@@ -502,10 +734,29 @@ router.get("/messages", async (req, res) => {
 
   try {
     const accessToken = await getUsableAccessToken(uid, provider);
-    const messages = await listGmailMessages(accessToken, maxResults);
+    const messages = await listEmailMessages(provider, accessToken, maxResults);
     return res.json({ provider, messages });
   } catch (err) {
-    console.error("Email messages error:", err);
+    if (err instanceof ProviderApiError) {
+      const providerError = getSafeProviderErrorBody(err.body);
+      console.error("Email provider messages error:", {
+        provider: err.provider,
+        status: err.status,
+        body: providerError,
+      });
+
+      return res.status(502).json({
+        error: "email provider request failed",
+        provider: err.provider,
+        providerStatus: err.status,
+        providerError,
+      });
+    }
+
+    console.error("Email messages error:", {
+      provider,
+      message: err instanceof Error ? err.message : String(err),
+    });
     return res.status(500).json({ error: "failed to list email messages" });
   }
 });
