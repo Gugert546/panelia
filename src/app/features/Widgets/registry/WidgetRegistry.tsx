@@ -42,7 +42,9 @@ type WidgetDefinition = {
   };
 };
 
-const ClockWidgetAdapter: FC<WidgetComponentProps> = () => <ClockWidget />;
+const ClockWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => (
+  <ClockWidget mode={config.mode === "analog" ? "analog" : "digital"} />
+);
 const NotesWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId, onClose }) => (
   <NotesWidget widgetId={widgetId ?? ""} onClose={onClose} />
 );

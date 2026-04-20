@@ -19,6 +19,8 @@ export type CustomButtonConfig = {
   favicon: string;
 };
 
+export type ClockMode = "digital" | "analog";
+
 export type WidgetInstance = {
   id: string;
   type: string;
@@ -43,6 +45,7 @@ export type DashboardPreset = {
   activeWidgets: string[];
   layouts: Record<string, LayoutItem>;
   widgetLocks: Record<string, boolean>;
+  clockModes: Record<string, ClockMode>;
   customButtonConfigs: Record<string, CustomButtonConfig>;
   widgetSurfaceColor: string;
   widgetBorderColor: string;
@@ -60,6 +63,7 @@ type WidgetLayoutDocument = {
   activeWidgets?: string[];
   layouts?: Record<string, LayoutItem>;
   widgetLocks?: Record<string, boolean>;
+  clockModes?: Record<string, ClockMode>;
   customButtonConfigs?: Record<string, CustomButtonConfig>;
   widgetSurfaceColor?: string;
   widgetBorderColor?: string;
@@ -207,6 +211,21 @@ function normalizeWidgetLocks(value: unknown): Record<string, boolean> {
   return next;
 }
 
+function normalizeClockModes(value: unknown): Record<string, ClockMode> {
+  if (!value || typeof value !== "object") return {};
+
+  const entries = Object.entries(value as Record<string, unknown>);
+  const next: Record<string, ClockMode> = {};
+
+  for (const [id, rawValue] of entries) {
+    if (rawValue === "analog" || rawValue === "digital") {
+      next[migrateLegacyCustomButtonId(id)] = rawValue;
+    }
+  }
+
+  return next;
+}
+
 function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
   if (!Array.isArray(value)) return [];
 
@@ -246,6 +265,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
       activeWidgets,
       layouts: normalizeLayouts(preset.layouts),
       widgetLocks: normalizeWidgetLocks(preset.widgetLocks),
+      clockModes: normalizeClockModes(preset.clockModes),
       customButtonConfigs: normalizeCustomButtonConfigs(preset.customButtonConfigs),
       widgetSurfaceColor:
         typeof preset.widgetSurfaceColor === "string" && preset.widgetSurfaceColor
@@ -408,6 +428,7 @@ function applyPublicDashboardDefaults() {
     customButtonConfigs: {},
     layouts: { ...PUBLIC_LAYOUTS },
     widgetLocks: {},
+    clockModes: {},
     widgetSurfaceColor: DEFAULT_WIDGET_SURFACE_COLOR,
     widgetBorderColor: DEFAULT_WIDGET_BORDER_COLOR,
     widgetTextColor: DEFAULT_WIDGET_TEXT_COLOR,
@@ -428,6 +449,7 @@ export function useWidgetsState() {
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
   const [widgetLocks, setWidgetLocks] = useState<Record<string, boolean>>({});
+  const [clockModes, setClockModes] = useState<Record<string, ClockMode>>({});
   const [widgetSurfaceColor, setWidgetSurfaceColor] = useState(
     DEFAULT_WIDGET_SURFACE_COLOR
   );
@@ -467,6 +489,7 @@ export function useWidgetsState() {
       setCustomButtonConfigs(publicDefaults.customButtonConfigs);
       setLayouts(publicDefaults.layouts);
       setWidgetLocks(publicDefaults.widgetLocks);
+      setClockModes(publicDefaults.clockModes);
       setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
       setWidgetBorderColor(publicDefaults.widgetBorderColor);
       setWidgetTextColor(publicDefaults.widgetTextColor);
@@ -493,6 +516,7 @@ export function useWidgetsState() {
         setCustomButtonConfigs(publicDefaults.customButtonConfigs);
         setLayouts(publicDefaults.layouts);
         setWidgetLocks(publicDefaults.widgetLocks);
+        setClockModes(publicDefaults.clockModes);
         setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
         setWidgetBorderColor(publicDefaults.widgetBorderColor);
         setWidgetTextColor(publicDefaults.widgetTextColor);
@@ -516,11 +540,13 @@ export function useWidgetsState() {
       const migratedCustomButtonConfigs = migrateLegacyMap(data.customButtonConfigs ?? {});
       const migratedLayouts = migrateLegacyMap(data.layouts ?? {});
       const migratedWidgetLocks = migrateLegacyMap(normalizeWidgetLocks(data.widgetLocks));
+      const migratedClockModes = migrateLegacyMap(normalizeClockModes(data.clockModes));
 
       setActiveWidgets(migratedActiveWidgets);
       setCustomButtonConfigs(migratedCustomButtonConfigs);
       setLayouts(migratedLayouts);
       setWidgetLocks(migratedWidgetLocks);
+      setClockModes(migratedClockModes);
       setWidgetSurfaceColor(
         typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
           ? data.widgetSurfaceColor
@@ -596,6 +622,7 @@ export function useWidgetsState() {
           customButtonConfigs,
           layouts,
           widgetLocks,
+          clockModes,
           widgetSurfaceColor,
           widgetBorderColor,
           widgetTextColor,
@@ -620,6 +647,7 @@ export function useWidgetsState() {
     customButtonConfigs,
     layouts,
     widgetLocks,
+    clockModes,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
@@ -663,6 +691,7 @@ export function useWidgetsState() {
       activeWidgets: [...activeWidgets],
       layouts: { ...layouts },
       widgetLocks: { ...widgetLocks },
+      clockModes: { ...clockModes },
       customButtonConfigs: { ...customButtonConfigs },
       widgetSurfaceColor,
       widgetBorderColor,
@@ -691,6 +720,7 @@ export function useWidgetsState() {
     dashboardPresets,
     layouts,
     widgetLocks,
+    clockModes,
     persistPresetsImmediately,
     widgetBorderColor,
     widgetTextColor,
@@ -707,6 +737,7 @@ export function useWidgetsState() {
     setActiveWidgets([...preset.activeWidgets]);
     setLayouts({ ...preset.layouts });
     setWidgetLocks({ ...preset.widgetLocks });
+    setClockModes({ ...preset.clockModes });
     setCustomButtonConfigs({ ...preset.customButtonConfigs });
     setWidgetSurfaceColor(preset.widgetSurfaceColor);
     setWidgetBorderColor(preset.widgetBorderColor);
@@ -813,11 +844,19 @@ export function useWidgetsState() {
     }));
   }, []);
 
+  const toggleClockMode = useCallback((widgetId: string) => {
+    setClockModes((prev) => ({
+      ...prev,
+      [widgetId]: prev[widgetId] === "analog" ? "digital" : "analog",
+    }));
+  }, []);
+
   return {
     activeWidgets,
     customButtonConfigs,
     layouts,
     widgetLocks,
+    clockModes,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
@@ -834,6 +873,7 @@ export function useWidgetsState() {
     addCustomButton,
     removeCustomButton,
     toggleWidgetLock,
+    toggleClockMode,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
     setWidgetTextColor,

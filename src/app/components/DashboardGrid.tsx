@@ -7,9 +7,11 @@ type Props = {
   activeWidgets: string[];
   layouts: Record<string, { x: number; y: number; w: number; h: number }>;
   widgetLocks: Record<string, boolean>;
+  clockModes: Record<string, "digital" | "analog">;
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
   onCloseWidget: (widgetId: string) => void;
   onToggleWidgetLock: (widgetId: string) => void;
+  onToggleClockMode: (widgetId: string) => void;
   sidebarWidth: number;
   isInteractive?: boolean;
   calendarWidgetConfig?: Record<string, unknown>;
@@ -25,9 +27,11 @@ export default function DashboardGrid({
   activeWidgets,
   layouts,
   widgetLocks,
+  clockModes,
   onLayoutChange,
   onCloseWidget,
   onToggleWidgetLock,
+  onToggleClockMode,
   sidebarWidth,
   isInteractive = true,
   calendarWidgetConfig
@@ -95,7 +99,7 @@ export default function DashboardGrid({
       width={window.innerWidth - sidebarWidth}
       isDraggable={isInteractive}
       isResizable={isInteractive}
-      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn"
+      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn"
       compactType={null}
       preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
       margin={[0, 0]}    
@@ -126,6 +130,8 @@ export default function DashboardGrid({
               h: Math.max(storedLayout.h, baseGrid.h),
             }
           : baseGrid;
+        const isClockWidget = widgetType === "clock";
+        const clockMode = clockModes[widgetId] ?? "digital";
         return (
           <div
             key={widgetId}
@@ -142,42 +148,88 @@ export default function DashboardGrid({
             onMouseLeave={() => setHoveredWidgetId((prev) => (prev === widgetId ? null : prev))}
           >
             {isInteractive && hoveredWidgetId === widgetId && (
-              <button
-                type="button"
-                className="widget-lock-btn"
-                aria-label={isLocked ? "Unlock widget" : "Lock widget"}
-                title={isLocked ? "Unlock widget" : "Lock widget"}
-                onClick={() => onToggleWidgetLock(widgetId)}
+              <div
                 style={{
                   position: "absolute",
                   top: 8,
                   right: 8,
-                  width: 24,
-                  height: 24,
-                  borderRadius: 999,
-                  border: "1px solid rgba(255,255,255,0.35)",
-                  background: isLocked
-                    ? "rgba(32, 32, 32, 0.75)"
-                    : "rgba(255,255,255,0.22)",
-                  backdropFilter: "blur(6px)",
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
+                  gap: 6,
                   zIndex: 2,
                 }}
               >
-                <span
-                  className="material-symbols-rounded"
-                  aria-hidden="true"
-                  style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                {isClockWidget && (
+                  <button
+                    type="button"
+                    className="widget-clock-mode-btn"
+                    aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    onClick={() => onToggleClockMode(widgetId)}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background:
+                        clockMode === "analog"
+                          ? "rgba(32, 32, 32, 0.75)"
+                          : "rgba(255,255,255,0.22)",
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      {clockMode === "analog" ? "schedule" : "av_timer"}
+                    </span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="widget-lock-btn"
+                  aria-label={isLocked ? "Unlock widget" : "Lock widget"}
+                  title={isLocked ? "Unlock widget" : "Lock widget"}
+                  onClick={() => onToggleWidgetLock(widgetId)}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: 999,
+                    border: "1px solid rgba(255,255,255,0.35)",
+                    background: isLocked
+                      ? "rgba(32, 32, 32, 0.75)"
+                      : "rgba(255,255,255,0.22)",
+                    backdropFilter: "blur(6px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
                 >
-                  {isLocked ? "lock" : "lock_open"}
-                </span>
-              </button>
+                  <span
+                    className="material-symbols-rounded"
+                    aria-hidden="true"
+                    style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                  >
+                    {isLocked ? "lock" : "lock_open"}
+                  </span>
+                </button>
+              </div>
             )}
             <Component
-              config={widgetType === "calendar" ? (calendarWidgetConfig ?? {}) : {}}
+              config={
+                widgetType === "calendar"
+                  ? (calendarWidgetConfig ?? {})
+                  : widgetType === "clock"
+                    ? { mode: clockMode }
+                    : {}
+              }
               onConfigChange={() => {}}
               widgetId={widgetId}
               onClose={() => onCloseWidget(widgetId)}
