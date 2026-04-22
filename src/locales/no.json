@@ -184,19 +184,47 @@
       "oauthConnected": "E-post er koblet til. Laster innboks...",
       "oauthError": "E-posttilkoblingen feilet. Sjekk serverterminalen for OAuth-feilen."
     },
-    "infoWidget":{
-      "title":"Velkommen til Panelia",
-      "bread":"Bruk siden vår, hvis ikke får du besøk i natt! ",
-      "aboutUs":"om oss:vi er Audun, Einar, Jonas og Sindre",
-      "aboutPanelia":"om panelia: Panelia er en personelig widget-basert startside. Her kan du selv velge hvordan siden skal se ut og hvilke widgets du skal bruke",
-      "aboutTask":"om oppgavestilen: vi har valgt å lage vår egen oppgave...",
-      "erfaringer":"hva har vi lært av måten vi har jobbet på/hvilke erfaringer har vi gjort oss",
-      "utbytte":"hva har vi fått ut av prosjektet:",
-      "utbytte2":"Erfaring, kompentanse og selvtillit med arbeid på større prosjekter",
-      "utbytte3":"Større kompetanse på integrering av tredjeparts apier",
-      "utbytte4":"En side som vi personelig kommer til å bruke i fremtiden",
-      "challenges":"utfordinger: manage tilgang til api-er, sikkerhet",
-      "goalTitle":"Våre mål"
+    "infoWidget": {
+      "title": "Velkommen til Panelia",
+      "slideCounter": "Slide",
+      "previousSlide": "Forrige slide",
+      "nextSlide": "Neste slide",
+      "slides": {
+        "welcome": {
+          "logoAlt": "Panelia-logo",
+          "body": "Panelia er dashboardet der du samler verktøyene du bruker hver dag. Her kan du bygge en startside som passer deg, enten du vil fokusere på studier, jobb, ren oversikt over hobby, eller alt samtidig."
+        },
+        "panelia": {
+          "title": "Hva er Panelia?",
+          "body": "Panelia er en personlig, widget-basert startside. Du kan velge hvilke widgets du vil bruke, plassere dem hvor du vil og justere utseende slik at dashboardet blir ditt eget. Du bygger din egen startside."
+        },
+        "gettingStarted": {
+          "title": "Kom i gang!",
+          "points": {
+            "signIn": "Logg inn for å begynne å plassere widgets, lagre oppsett og synkronisere preferanser.",
+            "addWidgets": "Åpne redigeringspanelet til venstre, og legg til widgets du ønsker.",
+            "moveResize": "Dra og endre størrelse på widgets for å bygge et godt arbeidsflyt-oppsett. Du drar widgetens nedre-høyre hjørne for å endre størrelse, og hvor som helst uten innhold, f.eks. langs kanten, for å flytte den.",
+            "customize": "Bytt tema, farger og skriftstørrelse i innstillingene. Gjør din side flott og unik!"
+          }
+        },
+        "widgets": {
+          "title": "Eksempler på widgets",
+          "points": {
+            "weather": "Vær-widgeten gir deg rask oversikt over dagens forhold.",
+            "calendar": "Kalender-widgeten hjelper deg å holde kontroll på planer og frister.",
+            "news": "Nyhets-widgeten henter oppdaterte overskrifter på sekunder.",
+            "notes": "Notat-widgeten gjør det enkelt å lagre ideer og huskelister."
+          }
+        },
+        "project": {
+          "title": "Om prosjektet",
+          "body": "Panelia er utviklet som bachelorprosjekt for å utforske design, frontend-arkitektur og integrasjon mot tredjepartstjenester. Vi takker for at du bruker Panelia!",
+          "points": {
+            "team": "Vi er Audun, Sindre, Jonas og Einar, fra Universitetet i Sørøst-Norge.",
+            "learning": "..."
+          }
+        }
+      }
     }
   }
 }
