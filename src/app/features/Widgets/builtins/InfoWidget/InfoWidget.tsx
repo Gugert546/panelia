@@ -2,13 +2,13 @@ import { useEffect, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
-import { useFontSize } from "../../../../providers/themeProviders";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
 import paneliaLogo  from  "../../../../../assets/logo.png"
 
 export default function InfoWidget() {
   const { t } = useLanguage();
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const [currentSlide, setCurrentSlide] = useState(0);
   const titleSize = fontSize + 2;
 

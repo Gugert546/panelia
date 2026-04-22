@@ -1,7 +1,7 @@
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
-import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 import { useMinesweeperWidget } from "./minesweeperLogic";
 
 const CELL_COLORS = [
@@ -28,7 +28,7 @@ function getStatusLabel(
 
 export default function MinesweeperWidgetUI() {
   const { state, actions } = useMinesweeperWidget();
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
   const confettiPieces = Array.from({ length: 18 }, (_, index) => index);
 

@@ -2,20 +2,83 @@ import { useState } from "react";
 import GridLayout from "react-grid-layout/legacy";
 import type { Layout } from "react-grid-layout";
 import { WIDGETS } from "../features/Widgets/registry/WidgetRegistry";
+import { WidgetInstanceProvider } from "../features/Widgets/components/WidgetInstanceContext";
+import type { WidgetStyleOverrides } from "../features/dashboard/hooks/useWidgetsState";
+import { useLanguage } from "../providers/languageProvider";
+import { useFontSize } from "../providers/themeProviders";
 
 type Props = {
   activeWidgets: string[];
   layouts: Record<string, { x: number; y: number; w: number; h: number }>;
   widgetLocks: Record<string, boolean>;
   clockModes: Record<string, "digital" | "analog">;
+  widgetStyles: Record<string, WidgetStyleOverrides>;
+  widgetSurfaceColor: string;
+  widgetBorderColor: string;
+  widgetTextColor: string;
+  widgetOpacity: number;
+  widgetBorderWidth: number;
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
   onCloseWidget: (widgetId: string) => void;
   onToggleWidgetLock: (widgetId: string) => void;
   onToggleClockMode: (widgetId: string) => void;
+  onSetWidgetStyle: (widgetId: string, patch: WidgetStyleOverrides) => void;
+  onResetWidgetStyle: (widgetId: string) => void;
   sidebarWidth: number;
   isInteractive?: boolean;
   calendarWidgetConfig?: Record<string, unknown>;
 };
+
+function toColorInputValue(value: string) {
+  const trimmed = value.trim();
+
+  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
+    if (trimmed.length === 4) {
+      const r = trimmed[1];
+      const g = trimmed[2];
+      const b = trimmed[3];
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
+
+    return trimmed;
+  }
+
+  const rgbaMatch = trimmed.match(
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    const [, red, green, blue] = rgbaMatch;
+    return `#${[red, green, blue]
+      .map((channel) => Number(channel).toString(16).padStart(2, "0"))
+      .join("")}`;
+  }
+
+  return "#ffffff";
+}
+
+function getColorAlpha(value: string) {
+  const trimmed = value.trim();
+  const rgbaMatch = trimmed.match(
+    /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    return Number(rgbaMatch[1]);
+  }
+
+  return 1;
+}
+
+function withAlpha(color: string, alpha: number) {
+  const normalizedColor = toColorInputValue(color);
+  const hex = normalizedColor.slice(1);
+  const red = Number.parseInt(hex.slice(0, 2), 16);
+  const green = Number.parseInt(hex.slice(2, 4), 16);
+  const blue = Number.parseInt(hex.slice(4, 6), 16);
+
+  return `rgba(${red},${green},${blue},${alpha})`;
+}
 
 function getWidgetType(widgetId: string) {
   const separatorIndex = widgetId.indexOf(":");
@@ -28,15 +91,26 @@ export default function DashboardGrid({
   layouts,
   widgetLocks,
   clockModes,
+  widgetStyles,
+  widgetSurfaceColor,
+  widgetBorderColor,
+  widgetTextColor,
+  widgetOpacity,
+  widgetBorderWidth,
   onLayoutChange,
   onCloseWidget,
   onToggleWidgetLock,
   onToggleClockMode,
+  onSetWidgetStyle,
+  onResetWidgetStyle,
   sidebarWidth,
   isInteractive = true,
   calendarWidgetConfig
 }: Props) {
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
+  const [styleEditorWidgetId, setStyleEditorWidgetId] = useState<string | null>(null);
+  const { t } = useLanguage();
+  const { fontSize: globalFontSize } = useFontSize();
 
   const computedLayout = activeWidgets
     .map((widgetId, index) => {
@@ -99,7 +173,7 @@ export default function DashboardGrid({
       width={window.innerWidth - sidebarWidth}
       isDraggable={isInteractive}
       isResizable={isInteractive}
-      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn"
+      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
       compactType={null}
       preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
       margin={[0, 0]}    
@@ -120,6 +194,14 @@ export default function DashboardGrid({
         const baseGrid = widget.defaultGrid;
         const storedLayout = layouts[widgetId];
         const isLocked = Boolean(widgetLocks[widgetId]);
+        const widgetStyle = widgetStyles[widgetId];
+        const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
+        const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
+        const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
+        const resolvedOpacity = widgetStyle?.widgetOpacity ?? widgetOpacity;
+        const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
+        const resolvedFontSize = widgetStyle?.widgetFontSize ?? globalFontSize;
+        const surfaceAlpha = getColorAlpha(resolvedSurfaceColor);
 
         type SafeLayout = { x?: number; y?: number; w: number; h: number };
         const currentLayout: SafeLayout = storedLayout
@@ -159,6 +241,40 @@ export default function DashboardGrid({
                   zIndex: 2,
                 }}
               >
+                {!isLocked && (
+                  <button
+                    type="button"
+                    className="widget-style-btn"
+                    aria-label={t("editPanel.widgetStyleOpen")}
+                    title={t("editPanel.widgetStyleOpen")}
+                    onClick={() =>
+                      setStyleEditorWidgetId((prev) => (prev === widgetId ? null : widgetId))
+                    }
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background:
+                        styleEditorWidgetId === widgetId
+                          ? "rgba(32, 32, 32, 0.75)"
+                          : "rgba(255,255,255,0.22)",
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      palette
+                    </span>
+                  </button>
+                )}
                 {isClockWidget && (
                   <button
                     type="button"
@@ -196,7 +312,14 @@ export default function DashboardGrid({
                   className="widget-lock-btn"
                   aria-label={isLocked ? "Unlock widget" : "Lock widget"}
                   title={isLocked ? "Unlock widget" : "Lock widget"}
-                  onClick={() => onToggleWidgetLock(widgetId)}
+                  onClick={() => {
+                    const willLock = !isLocked;
+                    onToggleWidgetLock(widgetId);
+
+                    if (willLock && styleEditorWidgetId === widgetId) {
+                      setStyleEditorWidgetId(null);
+                    }
+                  }}
                   style={{
                     width: 24,
                     height: 24,
@@ -222,18 +345,164 @@ export default function DashboardGrid({
                 </button>
               </div>
             )}
-            <Component
-              config={
-                widgetType === "calendar"
-                  ? (calendarWidgetConfig ?? {})
-                  : widgetType === "clock"
-                    ? { mode: clockMode }
-                    : {}
-              }
-              onConfigChange={() => {}}
-              widgetId={widgetId}
-              onClose={() => onCloseWidget(widgetId)}
-            />
+
+            {isInteractive && !isLocked && styleEditorWidgetId === widgetId && (
+              <div
+                className="widget-style-control"
+                style={{
+                  position: "absolute",
+                  top: 38,
+                  right: 8,
+                  width: 220,
+                  padding: 10,
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.35)",
+                  background: "rgba(20, 20, 20, 0.78)",
+                  backdropFilter: "blur(8px)",
+                  color: "#fff",
+                  zIndex: 3,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 8,
+                }}
+              >
+                <div style={{ fontSize: 12, fontWeight: 600 }}>
+                  {t("editPanel.widgetStyleThis")}
+                </div>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetColorMenu")}
+                  <input
+                    type="color"
+                    value={toColorInputValue(resolvedSurfaceColor)}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, {
+                        widgetSurfaceColor: withAlpha(event.target.value, surfaceAlpha),
+                      })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetOpacity")}: {Math.round(surfaceAlpha * 100)}%
+                  <input
+                    type="range"
+                    min={0.2}
+                    max={1}
+                    step={0.05}
+                    value={surfaceAlpha}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, {
+                        widgetSurfaceColor: withAlpha(resolvedSurfaceColor, Number(event.target.value)),
+                      })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetBorderColorTitle")}
+                  <input
+                    type="color"
+                    value={toColorInputValue(resolvedBorderColor)}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, { widgetBorderColor: event.target.value })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetTextColor")}
+                  <input
+                    type="color"
+                    value={toColorInputValue(resolvedTextColor)}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, { widgetTextColor: event.target.value })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.fontSize")}: {resolvedFontSize}px
+                  <input
+                    type="range"
+                    min={10}
+                    max={22}
+                    step={1}
+                    value={resolvedFontSize}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, {
+                        widgetFontSize: Number(event.target.value),
+                      })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetBorderWidth")}: {resolvedBorderWidth}px
+                  <input
+                    type="range"
+                    min={0}
+                    max={12}
+                    step={1}
+                    value={resolvedBorderWidth}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, {
+                        widgetBorderWidth: Number(event.target.value),
+                      })
+                    }
+                  />
+                </label>
+
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => onResetWidgetStyle(widgetId)}
+                    style={{
+                      flex: 1,
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: "rgba(255,255,255,0.15)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      padding: "6px 8px",
+                      fontSize: 12,
+                    }}
+                  >
+                    {t("editPanel.widgetStyleResetThis")}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStyleEditorWidgetId(null)}
+                    style={{
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: "rgba(255,255,255,0.15)",
+                      color: "#fff",
+                      cursor: "pointer",
+                      padding: "6px 8px",
+                      fontSize: 12,
+                    }}
+                  >
+                    {t("editPanel.close")}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <WidgetInstanceProvider widgetId={widgetId}>
+              <Component
+                config={
+                  widgetType === "calendar"
+                    ? (calendarWidgetConfig ?? {})
+                    : widgetType === "clock"
+                      ? { mode: clockMode }
+                      : {}
+                }
+                onConfigChange={() => {}}
+                widgetId={widgetId}
+                onClose={() => onCloseWidget(widgetId)}
+              />
+            </WidgetInstanceProvider>
           </div>
         );
       })}

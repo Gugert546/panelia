@@ -136,7 +136,7 @@ export default function EditPanel({
   setWidgetSurfaceColor,
   widgetBorderColor,
   setWidgetBorderColor,
-  widgetTextColor,
+  widgetTextColor: selectedWidgetTextColor,
   setWidgetTextColor,
   setWidgetOpacity,
   widgetBorderWidth,
@@ -158,10 +158,15 @@ export default function EditPanel({
   const customBackgroundInputRef = useRef<HTMLInputElement | null>(null);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [uploadBackgroundError, setUploadBackgroundError] = useState("");
-  const { fontSize, setFontSize } = useFontSize();
+  const { fontSize: widgetFontSize, setFontSize } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
   const widgetSurfaceAlpha = getColorAlpha(widgetSurfaceColor);
+  const panelSurfaceColor = "rgba(255,255,255,0.24)";
+  const panelBorderColor = "rgba(15,23,42,0.22)";
+  const panelTextColor = "#0f172a";
+  const widgetTextColor = panelTextColor;
+  const fontSize = 14;
   const notesWidgetCount = activeWidgets.filter(
     (activeWidgetId) => activeWidgetId === "notes" || activeWidgetId.startsWith("notes:")
   ).length;
@@ -236,7 +241,7 @@ export default function EditPanel({
     applyDashboardPreset(presetId);
   };
   //farge på elementer i tema/widget meny
-  const backgroundColor = widgetSurfaceColor;
+  const backgroundColor = panelSurfaceColor;
   //border-radius på elementer i tema menyen
   const borderRadiusThemeElements =8;
   //padding på elementer i tema-menyen
@@ -250,7 +255,7 @@ export default function EditPanel({
   //farge på knapper
   const buttonColor = "#d3d3d36e";
   //border rundt knapper
-  const buttonBorder = `1px solid ${widgetBorderColor}`;
+  const buttonBorder = `1px solid ${panelBorderColor}`;
   //border rundet highlightede knapper
   const buttonBorderHighlight= "2px solid #ffffffe0"
 
@@ -491,7 +496,7 @@ export default function EditPanel({
                 min={MIN_FONT_SIZE}
                 max={MAX_FONT_SIZE}
                 step={1}
-                value={fontSize}
+                value={widgetFontSize}
                 onChange={(event) => setFontSize(Number(event.target.value))}
                 aria-label={t('editPanel.fontSize')}
                 style={{
@@ -508,7 +513,7 @@ export default function EditPanel({
                   textAlign: "right",
                 }}
               >
-                {fontSize}
+                {widgetFontSize}
               </span>
             </div>
         </div>
@@ -766,7 +771,7 @@ export default function EditPanel({
                   
                   <input
                     type="color"
-                    value={toColorInputValue(widgetTextColor)}
+                    value={toColorInputValue(selectedWidgetTextColor)}
                     onChange={(event) => setWidgetTextColor(event.target.value)}
                     aria-label={t('editPanel.widgetTextColor')}
                     style={{
@@ -783,7 +788,7 @@ export default function EditPanel({
                       height: 18,
                       borderRadius: 999,
                       border: "1px solid rgba(0,0,0,0.3)",
-                      background: widgetTextColor,
+                      background: selectedWidgetTextColor,
                     }}
                   />
                   <span style={{ fontSize, fontWeight: 500 }}>

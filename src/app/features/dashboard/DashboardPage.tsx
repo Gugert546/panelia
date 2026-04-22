@@ -101,6 +101,7 @@ function DashboardPageContent() {
     layouts,
     widgetLocks,
     clockModes,
+    widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
@@ -116,6 +117,8 @@ function DashboardPageContent() {
     removeCustomButton,
     toggleWidgetLock,
     toggleClockMode,
+    setWidgetStyle,
+    resetWidgetStyle,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
     setWidgetTextColor,
@@ -481,10 +484,18 @@ function DashboardPageContent() {
           layouts={layouts}
           widgetLocks={widgetLocks}
           clockModes={clockModes}
+          widgetStyles={widgetStyles}
+          widgetSurfaceColor={widgetSurfaceColor}
+          widgetBorderColor={widgetBorderColor}
+          widgetTextColor={widgetTextColor}
+          widgetOpacity={widgetOpacity}
+          widgetBorderWidth={widgetBorderWidth}
           onLayoutChange={updateLayout}
           onCloseWidget={removeCustomButton}
           onToggleWidgetLock={toggleWidgetLock}
           onToggleClockMode={toggleClockMode}
+          onSetWidgetStyle={setWidgetStyle}
+          onResetWidgetStyle={resetWidgetStyle}
           sidebarWidth={SIDEBAR_WIDTH}
           isInteractive={isAuthenticated}
           calendarWidgetConfig={{
