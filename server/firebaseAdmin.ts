@@ -28,8 +28,8 @@ function normalizePrivateKey(raw: string) {
 
   const normalizedLineBreaks = withoutQuotes.replace(/\\n/g, "\n").replace(/\r\n/g, "\n");
   const normalizedMarkers = normalizedLineBreaks
-    .replace(/-+\s*BEGIN PRIVATE KEY-+/i, "-----BEGIN PRIVATE KEY-----")
-    .replace(/-+\s*END PRIVATE KEY-+/i, "-----END PRIVATE KEY-----");
+    .replace(/-+\s*-*\s*BEGIN PRIVATE KEY\s*-+/i, "-----BEGIN PRIVATE KEY-----")
+    .replace(/-+\s*-*\s*END PRIVATE KEY\s*-+/i, "-----END PRIVATE KEY-----");
 
   const lines = normalizedMarkers
     .split("\n")

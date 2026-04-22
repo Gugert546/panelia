@@ -68,6 +68,7 @@
     "notes": "Notes",
     "spotify": "Spotify",
     "calendar": "Calendar",
+    "email": "Email",
     "minesweeper": "Minesweeper",
     "bookmarkWidget": {
       "title": "Bookmarks",
@@ -159,6 +160,29 @@
       "time": "Time",
       "today": "Today"
 
+    },
+    "emailWidget": {
+      "title": "Email",
+      "checking": "Checking email connection...",
+      "soon": "soon",
+      "refresh": "Refresh email",
+      "connectGmailHelp": "Connect Gmail to show recent inbox messages here.",
+      "connectOutlookHelp": "Connect Outlook to show recent inbox messages here.",
+      "connectGmail": "Connect Gmail",
+      "connectOutlook": "Connect Outlook",
+      "connecting": "Connecting...",
+      "disconnect": "Disconnect",
+      "unreadFirst": "Unread first",
+      "unread": "Unread",
+      "empty": "No recent inbox messages.",
+      "signInRequired": "Sign in to connect email.",
+      "providerUnavailable": "This provider is planned, but Gmail and Outlook are supported now.",
+      "statusError": "Could not check email status.",
+      "messagesError": "Could not load email messages.",
+      "connectError": "Could not start email connection.",
+      "disconnectError": "Could not disconnect email.",
+      "oauthConnected": "Email connected. Loading inbox...",
+      "oauthError": "Email connection failed. Check the server terminal for the OAuth error."
     },
     "infoWidget":{
       "title":"Welcome to Panelia",

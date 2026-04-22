@@ -16,6 +16,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "weather", label: "Vær", icon: "partly_cloudy_day" },
   { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
   { id: "info", label: "Info", icon: "info" },
+  { id: "email", label: "E-post", icon: "mail" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
   { id: "minesweeper", label: "Minesweeper", icon: "bomb" },

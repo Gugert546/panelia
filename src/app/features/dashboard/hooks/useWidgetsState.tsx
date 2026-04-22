@@ -112,6 +112,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "weather", label: "Vær", icon: "partly_cloudy_day" },
   { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
   { id: "info", label: "Info", icon: "info" },
+  { id: "email", label: "E-post", icon: "mail" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
   { id: "minesweeper", label: "Minesweeper", icon: "bomb" },
@@ -382,6 +383,7 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   minesweeper: { x: 0, y: 0, w: 6, h: 6 },
   bookmark: { x: 0, y: 0, w: 4, h: 4 },
   info: { x: 0, y: 0, w: 6, h: 6 },
+  email: { x: 0, y: 0, w: 8, h: 8 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
 

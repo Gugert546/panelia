@@ -6,6 +6,7 @@ import { newsRouter } from "./newsRouter";
 import { aiRouter } from "./aiRouter";
 import spotifyRouter  from "./spotifyToken";
 import googleCalendarRouter from "./googleCalendarOAuth";
+import { emailRouter } from "./emailRouter";
 
 dotenv.config();
 
@@ -55,6 +56,7 @@ app.use("/api/news", newsRouter);
 app.use("/api/ai", aiRouter);
 app.use("/api/spotify", spotifyRouter);
 app.use("/api/google-calendar", googleCalendarRouter);
+app.use("/api/email", emailRouter);
 
 app.get("/health", (_, res) => res.send("OK"));
 
