@@ -15,24 +15,19 @@ export default function SpotifyCallback() {
       return;
     }
 
-    fetch(`/api/spotify/token?code=${code}`)
+    fetch("/api/spotify/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "same-origin",
+      body: JSON.stringify({ code }),
+    })
       .then(res => res.json())
       .then(data => {
-
-        console.log("Spotify token response:", data);
-
-        if (data.access_token) {
-
-          localStorage.setItem(
-            "spotify_token",
-            data.access_token
-          );
-
-          localStorage.setItem(
-            "spotify_refresh",
-            data.refresh_token
-          );
-
+        // Token lagres ikke i localStorage; refresh håndteres av HTTP-only cookie i backend.
+        if (!data?.access_token) {
+          console.error("Spotify token response mangler access_token");
         }
 
         navigate("/dashboard");
