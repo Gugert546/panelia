@@ -57,6 +57,12 @@ export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
   }, [isMinimized]);
 
   useEffect(() => {
+    // Rydd opp gamle token-nøkler fra tidligere localStorage-basert løsning.
+    localStorage.removeItem("spotify_token");
+    localStorage.removeItem("spotify_refresh");
+  }, []);
+
+  useEffect(() => {
     const refreshToken = async () => {
       const res = await fetch("/api/spotify/refresh", {
         method: "POST",

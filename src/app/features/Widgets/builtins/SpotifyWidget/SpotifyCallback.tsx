@@ -26,6 +26,10 @@ export default function SpotifyCallback() {
       .then(res => res.json())
       .then(data => {
         // Token lagres ikke i localStorage; refresh håndteres av HTTP-only cookie i backend.
+        // Rydd opp gamle nøkler fra tidligere implementasjon.
+        localStorage.removeItem("spotify_token");
+        localStorage.removeItem("spotify_refresh");
+
         if (!data?.access_token) {
           console.error("Spotify token response mangler access_token");
         }
