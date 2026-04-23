@@ -67,7 +67,7 @@
     "send": "Send",
     "sending": "Tenker...",
     "error": "Beklager, noe gikk galt.",
-    "welcome": "Hei! Jeg kan hjelpe deg med Panelia og dashbordet ditt.\n\nJeg kan svare på spørsmål, hjelpe deg med å planlegge widgets og oppsett, og bruke tilkoblede verktøy når de er tilgjengelige, som kalender, e-post, vær, søk, notater, bokmerker, Spotify og dashboard-innstillinger. Spør meg om det du vil gjøre."
+    "welcome": "Hei! Jeg kan hjelpe deg med Panelia og dashbordet ditt.\n\nJeg kan svare på spørsmål, hjelpe deg med å legge til eller fjerne widgets, knapper og bruke tilkoblede verktøy som kalender, bokmerker og med å endre tema. Spør meg om det du vil gjøre."
   },
   "widgets": {
     "clock": "Klokke",
