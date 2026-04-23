@@ -9,6 +9,8 @@ type ChatProps = {
   variant?: ChatVariant;
 };
 
+const MAX_INPUT_CHARS = 3000;
+
 export default function Chat({ variant = "widget" }: ChatProps) {
   const { messages, isSending, sendMessage } = useAiChat();
   const { t } = useLanguage();
@@ -85,6 +87,7 @@ export default function Chat({ variant = "widget" }: ChatProps) {
           }}
           placeholder={t("chat.placeholder")}
           disabled={isSending}
+          maxLength={MAX_INPUT_CHARS}
           style={styles.input}
         />
         <button
