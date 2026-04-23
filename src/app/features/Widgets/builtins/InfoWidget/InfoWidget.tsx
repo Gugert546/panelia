@@ -139,8 +139,8 @@ export default function InfoWidget() {
                 }}
               >
                 {slides[currentSlide].titleKey && (
-                  <div>
-                    <h2>{t(slides[currentSlide].titleKey)}</h2>
+                  <div style={{ padding: "12px 14px 0" }}>
+                    <h2 style={{ margin: 0 }}>{t(slides[currentSlide].titleKey)}</h2>
                   </div>
                 )}
                 <div
