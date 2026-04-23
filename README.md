@@ -14,4 +14,5 @@
 ```docker tag panelia-server gcr.io/panelia/panelia-server``` //tagger docker-imaget <br>
 ```docker push gcr.io/panelia/panelia-server```  //pusher image til google repository <br>
 ```gcloud run deploy panelia-server --image gcr.io/panelia/panelia-server --platform managed --region europe-west1  --allow-unauthenticated``` // deploy på google cloud run <br>
+```docker build -t panelia-server:latest . && docker tag panelia-server:latest gcr.io/panelia/panelia-server:latest && docker push gcr.io/panelia/panelia-server:latest && gcloud run deploy panelia-server --image gcr.io/panelia/panelia-server:latest --platform managed --region europe-west1 --allow-unauthenticated```
 
