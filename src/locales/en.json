@@ -61,6 +61,13 @@
     "closeModalComment": "Close modal when button is added",
     "fetchPreviewError": "Could not fetch link preview:"
   },
+  "chat": {
+    "title": "AI Chat",
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "sending": "Thinking...",
+    "error": "Sorry, something went wrong."
+  },
   "widgets": {
     "clock": "Clock",
     "google_search": "Search",
@@ -68,6 +75,7 @@
     "weather": "Weather",
     "bookmark": "Bookmark",
     "info": "Info",
+    "ai_chat": "AI Chat",
     "notes": "Notes",
     "spotify": "Spotify",
     "calendar": "Calendar",

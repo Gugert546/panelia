@@ -61,6 +61,13 @@
     "closeModalComment": "Lukk modalen når knapp er lagt til",
     "fetchPreviewError": "Kunne ikke hente link preview:"
   },
+  "chat": {
+    "title": "AI-chat",
+    "placeholder": "Skriv en melding...",
+    "send": "Send",
+    "sending": "Tenker...",
+    "error": "Beklager, noe gikk galt."
+  },
   "widgets": {
     "clock": "Klokke",
     "google_search": "Søk",
@@ -68,6 +75,7 @@
     "weather": "Vær",
     "bookmark": "Bokmerke",
     "info": "Info",
+    "ai_chat": "AI-chat",
     "notes": "Notater",
     "spotify": "Spotify",
     "calendar": "Kalender",

@@ -16,7 +16,6 @@ type Props = {
   widgetSurfaceColor: string;
   widgetBorderColor: string;
   widgetTextColor: string;
-  widgetOpacity: number;
   widgetBorderWidth: number;
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
   onCloseWidget: (widgetId: string) => void;
@@ -95,7 +94,6 @@ export default function DashboardGrid({
   widgetSurfaceColor,
   widgetBorderColor,
   widgetTextColor,
-  widgetOpacity,
   widgetBorderWidth,
   onLayoutChange,
   onCloseWidget,
@@ -198,7 +196,6 @@ export default function DashboardGrid({
         const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
         const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
         const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
-        const resolvedOpacity = widgetStyle?.widgetOpacity ?? widgetOpacity;
         const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
         const resolvedFontSize = widgetStyle?.widgetFontSize ?? globalFontSize;
         const surfaceAlpha = getColorAlpha(resolvedSurfaceColor);
