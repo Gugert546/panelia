@@ -4,7 +4,15 @@ import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
-import paneliaLogo  from  "../../../../../assets/logo.png"
+import paneliaLogo from "../../../../../assets/logo.png";
+
+type InfoSlide = {
+  titleKey?: string;
+  bodyKey?: string;
+  pointsKeys?: string[];
+  image?: string;
+  imageAltKey?: string;
+};
 
 export default function InfoWidget() {
   const { t } = useLanguage();
@@ -12,28 +20,42 @@ export default function InfoWidget() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const titleSize = fontSize + 2;
 
-  const slides = [
-    {image:paneliaLogo},
-    {title:"Hva siden er",
-      text: ""
+  const slides: InfoSlide[] = [
+    {
+      image: paneliaLogo,
+      imageAltKey: "widgets.infoWidget.slides.welcome.logoAlt",
+      bodyKey: "widgets.infoWidget.slides.welcome.body",
     },
-    {title:"Log inn",
-        image: "", 
-        alt:""},
-    {title:"Hvordan bruke widgets",
-        text:"",
-        text2:"",
-        text3:"",
-        text4:"",
-        text5:"",
+    {
+      titleKey: "widgets.infoWidget.slides.panelia.title",
+      bodyKey: "widgets.infoWidget.slides.panelia.body",
     },
-    {title:"hvordan gjøre...",
-        text:"",
-        text2:"",
-        text3:"",
-        text4:"",
-        text5:""
-      },
+    {
+      titleKey: "widgets.infoWidget.slides.gettingStarted.title",
+      pointsKeys: [
+        "widgets.infoWidget.slides.gettingStarted.points.signIn",
+        "widgets.infoWidget.slides.gettingStarted.points.addWidgets",
+        "widgets.infoWidget.slides.gettingStarted.points.moveResize",
+        "widgets.infoWidget.slides.gettingStarted.points.customize",
+      ],
+    },
+    {
+      titleKey: "widgets.infoWidget.slides.widgets.title",
+      pointsKeys: [
+        "widgets.infoWidget.slides.widgets.points.weather",
+        "widgets.infoWidget.slides.widgets.points.calendar",
+        "widgets.infoWidget.slides.widgets.points.news",
+        "widgets.infoWidget.slides.widgets.points.notes",
+      ],
+    },
+    {
+      titleKey: "widgets.infoWidget.slides.project.title",
+      bodyKey: "widgets.infoWidget.slides.project.body",
+      pointsKeys: [
+        "widgets.infoWidget.slides.project.points.team",
+        //"widgets.infoWidget.slides.project.points.learning",
+      ],
+    },
   ];
 
   const goToPreviousSlide = () => {
@@ -68,7 +90,7 @@ export default function InfoWidget() {
 
   return (
     <WidgetContainer>
-      <WidgetPane title="">
+      <WidgetPane title={t("widgets.info")}>
         <div
           style={{
             width: "100%",
@@ -110,62 +132,45 @@ export default function InfoWidget() {
                   fontSize,
                   width: "100%",
                   display: "flex",
-                  alignItems: "top",
-                  justifyContent: "top",
+                  alignItems: "flex-start",
+                  justifyContent: "flex-start",
                   overflowY: "auto",
-                  flexDirection:"column"
+                  flexDirection: "column",
                 }}
               >
-                {slides[currentSlide].title &&(
-                  <div> 
-                    <h2>{slides[currentSlide].title}</h2>
+                {slides[currentSlide].titleKey && (
+                  <div>
+                    <h2>{t(slides[currentSlide].titleKey)}</h2>
                   </div>
-
                 )}
                 <div
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    textAlign:"left",
-                  }}>
-                  {slides[currentSlide].text}
+                    textAlign: "left",
+                    width: "100%",
+                    gap: 12,
+                    padding: "12px 14px",
+                  }}
+                >
+                  {slides[currentSlide].bodyKey && <p style={{ margin: 0 }}>{t(slides[currentSlide].bodyKey)}</p>}
+
+                  {slides[currentSlide].pointsKeys && (
+                    <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5, display: "flex", flexDirection: "column", gap: 8 }}>
+                      {slides[currentSlide].pointsKeys.map((pointKey) => (
+                        <li key={pointKey}>{t(pointKey)}</li>
+                      ))}
+                    </ul>
+                  )}
+
                   {slides[currentSlide].image && (
                     <img
-                    src={slides[currentSlide].image}
-                    alt={slides[currentSlide].alt}
-                    style={{ alignItems:"center",maxWidth: "100%", height: "auto", borderRadius: 8 }}
+                      src={slides[currentSlide].image}
+                      alt={slides[currentSlide].imageAltKey ? t(slides[currentSlide].imageAltKey) : ""}
+                      style={{ maxWidth: "100%", height: "auto", borderRadius: 8, alignSelf: "center" }}
                     />
                   )}
-                  </div>
-                  <div
-                    style={{
-                      padding: "12px 14px",
-                      textAlign:"left"
-                    }}>
-                    {slides[currentSlide].text2}
-                  </div>
-                  <div
-                  style={{
-                      padding: "12px 14px",
-                      textAlign:"left"
-                    }}>
-                    {slides[currentSlide].text3}
-                  </div>
-                  <div
-                  style={{
-                      padding: "12px 14px",
-                      textAlign:"left"
-                    }}>
-                    {slides[currentSlide].text4}
-                  </div>
-                   <div
-                  style={{
-                      padding: "12px 14px",
-                      textAlign:"left"
-                    }}>
-                    {slides[currentSlide].text5}
-                  </div>
-                
+                </div>
               </div>
             </div>
           </div>
@@ -185,13 +190,13 @@ export default function InfoWidget() {
                 fontWeight: 500,
               }}
             >
-              {currentSlide + 1}/{slides.length}
+              {t("widgets.infoWidget.slideCounter")} {currentSlide + 1}/{slides.length}
             </span>
 
             <button
               type="button"
               onClick={goToPreviousSlide}
-              aria-label="Previous slide"
+              aria-label={t("widgets.infoWidget.previousSlide")}
               style={{
                 border: "1px solid #ddd",
                 background: "#fff",
@@ -207,7 +212,7 @@ export default function InfoWidget() {
             <button
               type="button"
               onClick={goToNextSlide}
-              aria-label="Next slide"
+              aria-label={t("widgets.infoWidget.nextSlide")}
               style={{
                 border: "1px solid #ddd",
                 background: "#fff",
