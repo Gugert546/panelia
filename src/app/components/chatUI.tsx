@@ -63,6 +63,15 @@ export default function Chat({ variant = "widget", autoFocus = false }: ChatProp
           minHeight: isPanel ? 0 : 180,
         }}
       >
+        <div
+          style={{
+            ...styles.message,
+            ...styles.welcomeMessage,
+          }}
+        >
+          {t("chat.welcome")}
+        </div>
+
         {messages.map((message) => {
           const isUserMessage = message.sender === "user";
 
@@ -169,8 +178,13 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.4,
     color: "#111827",
     overflowWrap: "anywhere",
+    whiteSpace: "pre-line",
     backdropFilter: "blur(8px)",
     boxShadow: "0 6px 18px rgba(15, 23, 42, 0.08)",
+  },
+  welcomeMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(229, 229, 234, 0.68)",
   },
   pendingMessage: {
     alignSelf: "flex-start",
