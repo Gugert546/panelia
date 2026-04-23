@@ -41,6 +41,9 @@
     "applyPreset": "Apply",
     "deletePreset": "Delete",
     "noPresets": "No themes yet. Save your current setup to create one.",
+    "widgetStyleThis": "Style this widget",
+    "widgetStyleOpen": "Customize this widget",
+    "widgetStyleResetThis": "Reset this",
     "fontSize": "Font Size",
     "small": "Small",
     "medium": "Medium",
@@ -58,6 +61,13 @@
     "closeModalComment": "Close modal when button is added",
     "fetchPreviewError": "Could not fetch link preview:"
   },
+  "chat": {
+    "title": "AI Chat",
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "sending": "Thinking...",
+    "error": "Sorry, something went wrong."
+  },
   "widgets": {
     "clock": "Clock",
     "google_search": "Search",
@@ -65,6 +75,7 @@
     "weather": "Weather",
     "bookmark": "Bookmark",
     "info": "Info",
+    "ai_chat": "AI Chat",
     "notes": "Notes",
     "spotify": "Spotify",
     "calendar": "Calendar",

@@ -6,8 +6,8 @@ import EventEditModal from "./EventEditModal";
 import CalendarSelector from "./CalendarSelector";
 import { useGoogleCalendars } from "./useGoogleCalendars"; // or ./useGoogleCalendars if you renamed
 import type { CalendarEvent } from "../../../../../types/firestore";
-import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
 
 export type CalendarWidgetVariant = "popup" | "widget";
@@ -142,7 +142,7 @@ export default function CalendarWidget({
   variant = "popup",
 }: CalendarWidgetProps) {
   const isPopup = variant === "popup";
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerWheelDeltaRef = useRef(0);
   const [topVisibleTime, setTopVisibleTime] = useState<string | null>(null);

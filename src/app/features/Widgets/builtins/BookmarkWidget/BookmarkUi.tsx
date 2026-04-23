@@ -5,8 +5,8 @@ import WidgetPane from "../../components/WidgetPane";
 import { useBookmark } from "./BookmarkLogic";
 import BookmarkForm from "./BookmarkForm";
 import CategoryForm from "./CategoryForm";
-import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 
 export default function BookmarkUi() {
@@ -30,7 +30,7 @@ export default function BookmarkUi() {
 
   const categorySelectorRef = useRef<HTMLDivElement | null>(null);
 
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
 
   const activeCategory = useMemo(() => {

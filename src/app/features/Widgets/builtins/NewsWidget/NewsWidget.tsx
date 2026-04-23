@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
-import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 import { useWeatherWidget } from "../WeatherWidget/WeatherWidgetLogic";
 import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 
@@ -60,7 +60,7 @@ export default function NewsWidget() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
   const { state: weatherState } = useWeatherWidget();
 

@@ -2,8 +2,8 @@ import { useState, type CSSProperties, type FocusEvent } from "react";
 import { useWeatherWidget } from "./WeatherWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
-import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
 type WeatherVisualMode = "clear" | "cloudy" | "rain" | "fog" | "snow";
 type WeatherCloudTone = "normal" | "rain" | "storm";
@@ -103,7 +103,7 @@ function WeatherAtmosphere({ mode, cloudTone }: { mode: WeatherVisualMode; cloud
 
 export default function WeatherWidgetUI() {
   const { state } = useWeatherWidget();
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
   const [humidityIsEnabled, setHumidityIsEnabled] = useState(false);
   const [windIsEnabled, setWindIsEnabled] = useState(false);

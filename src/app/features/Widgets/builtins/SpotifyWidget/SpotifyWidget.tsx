@@ -1,5 +1,5 @@
-import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 import { useSpotifyWidgetLogic } from "./SpotifyWidgetLogic";
 import {
   SpotifyConnectView,
@@ -8,7 +8,7 @@ import {
 } from "./SpotifyWidgetUI";
 
 export default function SpotifyWidget() {
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
   const {
     token,

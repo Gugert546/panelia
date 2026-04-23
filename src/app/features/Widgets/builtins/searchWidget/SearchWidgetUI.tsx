@@ -3,13 +3,13 @@ import { createPortal } from "react-dom";
 import { useSearchWidget } from "./SearchWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
-import { useFontSize } from "../../../../providers/themeProviders";
 import { useLanguage } from "../../../../providers/languageProvider";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
 export default function SearchWidgetUI() {
 
   const { state, actions } = useSearchWidget();
-  const { fontSize } = useFontSize();
+  const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
 
   const menuRef = useRef<HTMLDivElement | null>(null);
