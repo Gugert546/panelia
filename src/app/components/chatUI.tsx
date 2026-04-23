@@ -16,18 +16,29 @@ export default function Chat({ variant = "widget" }: ChatProps) {
   const { t } = useLanguage();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const isPanel = variant === "panel";
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages, isSending]);
 
+  useEffect(() => {
+    const inputElement = inputRef.current;
+    if (!inputElement) return;
+
+    inputElement.style.height = "42px";
+    inputElement.style.height = `${inputElement.scrollHeight}px`;
+  }, [input]);
+
   const handleSend = async () => {
     const messageText = input.trim();
     if (!messageText || isSending) return;
 
     setInput("");
+    requestAnimationFrame(() => inputRef.current?.focus());
     await sendMessage(messageText, t("chat.error"));
+    inputRef.current?.focus();
   };
 
   const chatContent = (
@@ -75,19 +86,19 @@ export default function Chat({ variant = "widget" }: ChatProps) {
       </div>
 
       <div style={styles.inputContainer}>
-        <input
-          type="text"
+        <textarea
+          ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") {
+            if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
               void handleSend();
             }
           }}
           placeholder={t("chat.placeholder")}
-          disabled={isSending}
           maxLength={MAX_INPUT_CHARS}
+          rows={1}
           style={styles.input}
         />
         <button
@@ -159,7 +170,7 @@ const styles: Record<string, CSSProperties> = {
   },
   inputContainer: {
     display: "flex",
-    alignItems: "center",
+    alignItems: "flex-end",
     gap: 8,
     width: "100%",
     minHeight: 42,
@@ -167,9 +178,11 @@ const styles: Record<string, CSSProperties> = {
   input: {
     flex: 1,
     minWidth: 0,
-    height: 42,
-    padding: "0 12px",
+    minHeight: 42,
+    maxHeight: 156,
+    padding: "10px 12px",
     fontSize: 14,
+    lineHeight: 1.4,
     border: "1px solid rgba(15, 23, 42, 0.16)",
     borderRadius: 8,
     backgroundColor: "rgba(255, 255, 255, 0.42)",
@@ -177,6 +190,8 @@ const styles: Record<string, CSSProperties> = {
     color: "inherit",
     outline: "none",
     boxSizing: "border-box",
+    resize: "none",
+    overflowY: "auto",
   },
   sendButton: {
     width: 42,
