@@ -1149,6 +1149,7 @@ export function useWidgetsState() {
     customBackgroundType,
     dashboardPresets,
     isLoading,
+    reloadLayout: loadLayout,
     toggleWidget,
     updateLayout,
     addCustomButton,

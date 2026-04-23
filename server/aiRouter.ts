@@ -10,8 +10,25 @@ dotenv.config();
 export const aiRouter = express.Router();
 
 const MAX_INPUT_CHARS = 3000;
+const MAX_HISTORY_MESSAGES = 12;
+const MAX_HISTORY_MESSAGE_CHARS = 1200;
+const MAX_TOOL_ROUNDS = 5;
 const DEFAULT_MAX_OUTPUT_TOKENS = 700;
 const DEFAULT_DAILY_MESSAGE_LIMIT = 50;
+
+type ChatHistoryItem = {
+  sender: "user" | "ai";
+  text: string;
+};
+
+type ChatToolCall = {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
 
 function getPositiveIntegerEnv(key: string, fallback: number) {
   const rawValue = process.env[key]?.trim();
@@ -111,6 +128,12 @@ Intent-mapping for kalender:
 - "slett/fjern avtal(e)" => deleteCalendarEvent (kun etter bekreftelse)
 - "vis/list kommende avtaler" => listCalendarEvents
 
+Intent-mapping for egendefinerte knapper:
+- "legg til/opprett custom button/knapp/snarvei" => addCustomButton
+- "vis/list knappene mine" => listCustomButtons
+- "slett/fjern knapp" => removeCustomButton (kun etter bekreftelse)
+- Hvis brukeren vil fjerne en knapp og id mangler, bruk listCustomButtons for å finne kandidater. Spør hvis flere kan passe.
+
 Regler for å gjette manglende data ved opprettelse:
 - Hvis tittel mangler, bruk "Møte".
 - Hvis sluttid mangler, bruk varighet 1 time.
@@ -128,6 +151,35 @@ function getOpenAIClient(): OpenAI | null {
   return new OpenAI({ apiKey });
 }
 
+function parseChatHistory(value: unknown): ChatHistoryItem[] {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .slice(-MAX_HISTORY_MESSAGES)
+    .flatMap((item): ChatHistoryItem[] => {
+      if (!item || typeof item !== "object") return [];
+
+      const sender = (item as Record<string, unknown>).sender;
+      const text = (item as Record<string, unknown>).text;
+
+      if ((sender !== "user" && sender !== "ai") || typeof text !== "string") {
+        return [];
+      }
+
+      const trimmedText = text.trim().slice(0, MAX_HISTORY_MESSAGE_CHARS);
+      if (!trimmedText) return [];
+
+      return [{ sender, text: trimmedText }];
+    });
+}
+
+function toOpenAIHistoryMessages(history: ChatHistoryItem[]) {
+  return history.map((item) => ({
+    role: item.sender === "user" ? "user" : "assistant",
+    content: item.text,
+  }));
+}
+
 function toOpenAITools() {
   return tools.map((t) => ({
     type: "function" as const,
@@ -137,6 +189,14 @@ function toOpenAITools() {
       parameters: t.parameters as any,
     },
   }));
+}
+
+function parseToolArguments(rawArguments: string) {
+  try {
+    return rawArguments ? JSON.parse(rawArguments) : {};
+  } catch {
+    return {};
+  }
 }
 
 function getBearerToken(req: express.Request) {
@@ -173,6 +233,7 @@ aiRouter.post("/chat", async (req, res) => {
   }
 
   const trimmedUserInput = userInput.trim();
+  const history = parseChatHistory(req.body?.history);
 
   if (!trimmedUserInput) {
     return res.status(400).json({ error: "Missing userInput" });
@@ -208,46 +269,48 @@ aiRouter.post("/chat", async (req, res) => {
 
   const messages: any[] = [
     { role: "system", content: buildSystemPrompt() },
+    ...toOpenAIHistoryMessages(history),
     { role: "user", content: trimmedUserInput },
   ];
 
   const toolSpecs = toOpenAITools();
+  const executedTools: Array<{ name: string; result: unknown }> = [];
 
   try {
-    const first = await openai.chat.completions.create({
-      model: "gpt-4.1",
-      messages,
-      tools: toolSpecs,
-      max_tokens: getAiMaxOutputTokens(),
-    });
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4.1",
+        messages,
+        tools: toolSpecs,
+        max_tokens: getAiMaxOutputTokens(),
+      });
 
-    const firstMsg = first.choices[0]?.message;
-    if (!firstMsg) {
-      return res.status(500).json({ error: "No message returned from model" });
-    }
+      const message = completion.choices[0]?.message;
+      if (!message) {
+        return res.status(500).json({ error: "No message returned from model" });
+      }
 
-    messages.push(firstMsg);
+      messages.push(message);
 
-    const toolCalls = (firstMsg as any).tool_calls as
-      | Array<{
-          id: string;
-          type: "function";
-          function: { name: string; arguments: string };
-        }>
-      | undefined;
+      const toolCalls = (message as any).tool_calls as ChatToolCall[] | undefined;
 
-    if (toolCalls?.length) {
+      if (!toolCalls?.length) {
+        return res.json({
+          output: typeof message.content === "string" ? message.content : "",
+          executedTools,
+          usage: {
+            dailyLimit: quota.limit,
+            remaining: quota.remaining,
+          },
+        });
+      }
+
       for (const call of toolCalls) {
         const name = call.function.name;
-
-        let args: any = {};
-        try {
-          args = call.function.arguments ? JSON.parse(call.function.arguments) : {};
-        } catch {
-          args = {};
-        }
+        const args = parseToolArguments(call.function.arguments);
 
         const result = await runTool(name, args, { uid, requestId });
+        executedTools.push({ name, result });
 
         messages.push({
           role: "tool",
@@ -255,26 +318,11 @@ aiRouter.post("/chat", async (req, res) => {
           content: JSON.stringify(result),
         });
       }
-
-      const second = await openai.chat.completions.create({
-        model: "gpt-4.1",
-        messages,
-        tools: toolSpecs,
-        max_tokens: getAiMaxOutputTokens(),
-      });
-
-      const secondMsg = second.choices[0]?.message;
-      return res.json({
-        output: secondMsg?.content ?? "",
-        usage: {
-          dailyLimit: quota.limit,
-          remaining: quota.remaining,
-        },
-      });
     }
 
     return res.json({
-      output: firstMsg.content ?? "",
+      output: "Jeg måtte stoppe fordi handlingen krevde for mange verktøysteg. Prøv igjen med en litt mer spesifikk beskjed.",
+      executedTools,
       usage: {
         dailyLimit: quota.limit,
         remaining: quota.remaining,

@@ -6,7 +6,8 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "../features/auth/useAuth";
-import { sendMessageToAI } from "./aiLogic";
+import { useWidgets } from "../features/dashboard/hooks/WidgetsContext";
+import { sendMessageToAI, type AiChatHistoryItem } from "./aiLogic";
 import {
   AiChatContext,
   type AiChatContextValue,
@@ -16,6 +17,8 @@ import {
 type Props = {
   children: ReactNode;
 };
+
+const MAX_HISTORY_MESSAGES = 12;
 
 function createMessageId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -27,6 +30,7 @@ function createMessageId() {
 
 export function AiChatProvider({ children }: Props) {
   const { user } = useAuth();
+  const { reloadLayout } = useWidgets();
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
 
@@ -46,7 +50,21 @@ export function AiChatProvider({ children }: Props) {
     setIsSending(true);
 
     try {
-      const aiResponse = await sendMessageToAI(trimmedText);
+      const history: AiChatHistoryItem[] = messages
+        .slice(-MAX_HISTORY_MESSAGES)
+        .map((message) => ({
+          sender: message.sender,
+          text: message.text,
+        }));
+      const aiResponse = await sendMessageToAI(trimmedText, history);
+      const shouldReloadLayout = aiResponse.executedTools.some((tool) =>
+        ["addCustomButton", "removeCustomButton"].includes(tool.name)
+      );
+
+      if (shouldReloadLayout) {
+        await reloadLayout();
+      }
+
       setMessages((prev) => [
         ...prev,
         {
@@ -64,7 +82,7 @@ export function AiChatProvider({ children }: Props) {
     } finally {
       setIsSending(false);
     }
-  }, []);
+  }, [messages, reloadLayout]);
 
   const value = useMemo<AiChatContextValue>(
     () => ({
