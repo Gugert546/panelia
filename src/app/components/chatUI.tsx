@@ -7,11 +7,12 @@ type ChatVariant = "panel" | "widget";
 
 type ChatProps = {
   variant?: ChatVariant;
+  autoFocus?: boolean;
 };
 
 const MAX_INPUT_CHARS = 3000;
 
-export default function Chat({ variant = "widget" }: ChatProps) {
+export default function Chat({ variant = "widget", autoFocus = false }: ChatProps) {
   const { messages, isSending, sendMessage } = useAiChat();
   const { t } = useLanguage();
   const [input, setInput] = useState("");
@@ -30,6 +31,14 @@ export default function Chat({ variant = "widget" }: ChatProps) {
     inputElement.style.height = "42px";
     inputElement.style.height = `${inputElement.scrollHeight}px`;
   }, [input]);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+  }, [autoFocus]);
 
   const handleSend = async () => {
     const messageText = input.trim();

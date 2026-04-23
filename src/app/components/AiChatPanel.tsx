@@ -45,7 +45,7 @@ export default function AiChatPanel({
       </div>
 
       <div style={styles.content}>
-        <Chat variant="panel" />
+        <Chat variant="panel" autoFocus={open} />
       </div>
     </aside>
   );
