@@ -134,6 +134,22 @@ Intent-mapping for egendefinerte knapper:
 - "slett/fjern knapp" => removeCustomButton (kun etter bekreftelse)
 - Hvis brukeren vil fjerne en knapp og id mangler, bruk listCustomButtons for å finne kandidater. Spør hvis flere kan passe.
 
+Intent-mapping for vanlige dashboard-widgets:
+- "legg til/vis/slå på widget" => addDashboardWidget
+- "fjern/skjul/slå av widget" => removeDashboardWidget
+- "hvilke widgets har jeg" => listDashboardWidgets
+- Dette gjelder kun vanlige widgets: clock, calendar, google_search, weather, news, spotify, minesweeper, bookmark, info, ai_chat, email.
+- Ikke bruk disse for notes/notater eller custom buttons/egendefinerte knapper.
+- Å slå vanlige widgets av/på trenger ikke ekstra bekreftelse.
+
+Intent-mapping for klokke:
+- "sett/bytt klokke til analog" => setClockMode med mode "analog"
+- "sett/bytt klokke til digital" => setClockMode med mode "digital"
+- "switch/toggle/bytt klokkemodus" uten spesifikk modus => toggleClockMode
+- Hvis brukeren sier "bytt tilbake", "switch back" eller lignende rett etter en samtale om klokkemodus, bruk toggleClockMode.
+- setClockMode/toggleClockMode legger til clock-widgeten hvis den ikke allerede er på dashboardet.
+- Ikke si at klokkemodus er endret uten at setClockMode eller toggleClockMode faktisk er kjørt.
+
 Regler for å gjette manglende data ved opprettelse:
 - Hvis tittel mangler, bruk "Møte".
 - Hvis sluttid mangler, bruk varighet 1 time.
@@ -178,6 +194,42 @@ function toOpenAIHistoryMessages(history: ChatHistoryItem[]) {
     role: item.sender === "user" ? "user" : "assistant",
     content: item.text,
   }));
+}
+
+function isClockSwitchBackRequest(userInput: string, history: ChatHistoryItem[]) {
+  const normalizedInput = userInput.toLocaleLowerCase("nb");
+  const asksToSwitchBack =
+    normalizedInput.includes("bytt tilbake") ||
+    normalizedInput.includes("tilbake") ||
+    normalizedInput.includes("switch back") ||
+    normalizedInput.includes("change back");
+
+  if (!asksToSwitchBack) return false;
+
+  const recentText = history
+    .slice(-6)
+    .map((item) => item.text)
+    .join("\n")
+    .toLocaleLowerCase("nb");
+
+  return (
+    recentText.includes("klokke") ||
+    recentText.includes("clock") ||
+    recentText.includes("analog") ||
+    recentText.includes("digital")
+  );
+}
+
+function buildContextualToolHint(userInput: string, history: ChatHistoryItem[]) {
+  if (isClockSwitchBackRequest(userInput, history)) {
+    return {
+      role: "system",
+      content:
+        "Konteksthint: Brukeren sier trolig at klokkemodusen skal byttes tilbake. Du må kalle toggleClockMode før du svarer.",
+    };
+  }
+
+  return null;
 }
 
 function toOpenAITools() {
@@ -267,8 +319,10 @@ aiRouter.post("/chat", async (req, res) => {
     (req.headers["x-request-id"] as string | undefined) ??
     `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
+  const contextualToolHint = buildContextualToolHint(trimmedUserInput, history);
   const messages: any[] = [
     { role: "system", content: buildSystemPrompt() },
+    ...(contextualToolHint ? [contextualToolHint] : []),
     ...toOpenAIHistoryMessages(history),
     { role: "user", content: trimmedUserInput },
   ];

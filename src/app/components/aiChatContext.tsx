@@ -58,7 +58,14 @@ export function AiChatProvider({ children }: Props) {
         }));
       const aiResponse = await sendMessageToAI(trimmedText, history);
       const shouldReloadLayout = aiResponse.executedTools.some((tool) =>
-        ["addCustomButton", "removeCustomButton"].includes(tool.name)
+        [
+          "addCustomButton",
+          "removeCustomButton",
+          "addDashboardWidget",
+          "removeDashboardWidget",
+          "setClockMode",
+          "toggleClockMode",
+        ].includes(tool.name)
       );
 
       if (shouldReloadLayout) {

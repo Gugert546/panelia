@@ -10,6 +10,12 @@ import {
   removeCustomButtonTool,
   listCustomButtonsTool,
 } from "./customButtons";
+import {
+  addDashboardWidgetTool,
+  removeDashboardWidgetTool,
+  listDashboardWidgetsTool,
+} from "./dashboardWidgets";
+import { setClockModeTool, toggleClockModeTool } from "./clockMode";
 
 export const tools = [
   makeBookmarkTool,
@@ -20,6 +26,11 @@ export const tools = [
   addCustomButtonTool,
   removeCustomButtonTool,
   listCustomButtonsTool,
+  addDashboardWidgetTool,
+  removeDashboardWidgetTool,
+  listDashboardWidgetsTool,
+  setClockModeTool,
+  toggleClockModeTool,
 ] as const;
 
 export const toolMap = new Map(tools.map((t) => [t.name, t]));
