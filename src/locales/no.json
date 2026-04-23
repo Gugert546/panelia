@@ -79,6 +79,7 @@
     "notes": "Notater",
     "spotify": "Spotify",
     "calendar": "Kalender",
+    "email": "E-post",
     "minesweeper": "Minesweeper",
     "bookmarkWidget": {
       "title": "Bokmerker",
@@ -170,6 +171,29 @@
       "refreshFromGoogle": "Oppdater fra Google",
       "time": "Tid",
       "today": "I dag"
+    },
+    "emailWidget": {
+      "title": "E-post",
+      "checking": "Sjekker e-posttilkobling...",
+      "soon": "snart",
+      "refresh": "Oppdater e-post",
+      "connectGmailHelp": "Koble til Gmail for å vise nye meldinger fra innboksen her.",
+      "connectOutlookHelp": "Koble til Outlook for å vise nye meldinger fra innboksen her.",
+      "connectGmail": "Koble til Gmail",
+      "connectOutlook": "Koble til Outlook",
+      "connecting": "Kobler til...",
+      "disconnect": "Koble fra",
+      "unreadFirst": "Ulest først",
+      "unread": "Ulest",
+      "empty": "Ingen nye meldinger i innboksen.",
+      "signInRequired": "Logg inn for å koble til e-post.",
+      "providerUnavailable": "Denne leverandøren er planlagt, men Gmail og Outlook støttes nå.",
+      "statusError": "Kunne ikke sjekke e-poststatus.",
+      "messagesError": "Kunne ikke laste e-postmeldinger.",
+      "connectError": "Kunne ikke starte e-posttilkobling.",
+      "disconnectError": "Kunne ikke koble fra e-post.",
+      "oauthConnected": "E-post er koblet til. Laster innboks...",
+      "oauthError": "E-posttilkoblingen feilet. Sjekk serverterminalen for OAuth-feilen."
     },
     "infoWidget":{
       "title":"Velkommen til Panelia",

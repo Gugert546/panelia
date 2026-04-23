@@ -4,6 +4,7 @@ import { db } from "../../../../lib/firebase/client";
 import { useAuth } from "../../auth/useAuth";
 import { useFontSize } from "../../../providers/themeProviders";
 
+// Representer posisjonen og størrelsen på en widget i rutenett
 type LayoutItem = {
   x: number;
   y: number;
@@ -11,23 +12,28 @@ type LayoutItem = {
   h: number;
 };
 
-const GRID_COLUMNS = 40; // Brukes for å plassere widget ved spawn
-const GRID_ROWS = 20;
+// Rutenett-dimensjoner for dashboard-layoutet
+const GRID_COLUMNS = 40; // Horisontale spalter for widget-plassering
+const GRID_ROWS = 20; // Vertikale rader tilgjengelige i dashboard
 
+// Konfigurasjonsalternativer for egendefinert knapp-widget
 export type CustomButtonConfig = {
   label: string;
   url: string;
   favicon: string;
 };
 
+// Displaymodus for klokke-widget
 export type ClockMode = "digital" | "analog";
 
+// En instans av en widget med sitt unike ID, type og konfigurasjonsdata
 export type WidgetInstance = {
-  id: string;
-  type: string;
-  config: Record<string, unknown>;
+  id: string; // Unikt ID (format: "type:uuid" eller bare "type")
+  type: string; // Widget-type (f.eks. "notes", "calendar", "clock")
+  config: Record<string, unknown>; // Widget-spesifikk konfigurasjonsdata
 };
 
+// Størrelse-preset for widgets (påvirker padding, tekststørrelse osv.)
 export type WidgetSizeMode = "small" | "medium" | "large";
 export type WidgetStyleOverrides = {
   widgetSurfaceColor?: string;
@@ -39,14 +45,17 @@ export type WidgetStyleOverrides = {
   lockSnapshot?: boolean;
 };
 export type CustomBackgroundMediaType = "image" | "video";
+
+// Tilgjengelige forhåndsinnstillinger for dashboard-bakgrunn
+// "sol1-3" = dagtidskonfigurasjoner, "natt1-3" = nattidskonfigurasjoner
 export type DashboardBackgroundId =
-  | "defaultbg"
+  | "defaultbg" // Standard lysegrå bakgrunn
   | "sol1"
   | "sol2"
   | "sol3"
-  | "natt1"
-  | "natt2"
-  | "natt3"
+  | "natt1" // Første nattidsbakgrunn
+  | "natt2" // Andre nattidsbakgrunn
+  | "natt3" // Tredje nattidsbakgrunn
   | "customMedia";
 
 export type DashboardPreset = {
@@ -70,6 +79,8 @@ export type DashboardPreset = {
   createdAt: number;
 };
 
+// Skjema for widget-layout-dokumentet fra Firestore
+// Alle felter er valgfrie for fleksibilitet ved migrering av gamle data
 type WidgetLayoutDocument = {
   activeWidgets?: string[];
   layouts?: Record<string, LayoutItem>;
@@ -88,11 +99,13 @@ type WidgetLayoutDocument = {
   customBackgroundType?: CustomBackgroundMediaType;
   customVideoBackgroundUrl?: string;
   dashboardPresets?: DashboardPreset[];
-  updatedAt?: unknown;
+  updatedAt?: unknown; // Firebase serverTimestamp
 };
 
+// Widgets som vises for ikke-autentiserte brukere (offentlig visning)
 const PUBLIC_WIDGET_IDS = ["info", "google_search", "weather","clock"] as const;
 
+// Standard layout for offentlige widgets (brukes når bruker ikke er logget inn)
 const PUBLIC_LAYOUTS: Record<string, LayoutItem> = {
   info: { x: 1, y: 2, w: 12, h: 12 },
   google_search: { x: 13, y: 14, w: 14, h: 3 },
@@ -100,7 +113,7 @@ const PUBLIC_LAYOUTS: Record<string, LayoutItem> = {
   clock:{x:17,y:10,w:4,h:3}
 };
 
-// Available widgets for the dashboard
+// Liste over alle tilgjengelige widgets som kan legges til dashboardet
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke", icon: "schedule" },
   { id: "calendar", label: "Kalender", icon: "calendar_month" },
@@ -110,6 +123,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
   { id: "info", label: "Info", icon: "info" },
   { id: "ai_chat", label: "AI Chat", icon: "smart_toy" },
+  { id: "email", label: "E-post", icon: "mail" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
   { id: "minesweeper", label: "Minesweeper", icon: "bomb" },
@@ -127,6 +141,7 @@ const MAX_WIDGET_FONT_SIZE = 22;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
 const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "defaultbg";
 
+// Validerer at en verdi er en gyldig bakgrunns-ID
 function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
   return (
     value === "defaultbg" ||
@@ -140,11 +155,13 @@ function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId
   );
 }
 
+// Normaliserer bakgrunns-ID fra Firestore (håndterer legacy verdier)
 function normalizeDashboardBackgroundId(value: unknown): DashboardBackgroundId {
   if (value === "videoCustom") return "customMedia";
   return isDashboardBackgroundId(value) ? value : DEFAULT_DASHBOARD_BACKGROUND_ID;
 }
 
+// Genererer unikt preset-ID ved hjelp av crypto.randomUUID eller fallback
 function createDashboardPresetId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `preset:${crypto.randomUUID()}`;
@@ -152,6 +169,7 @@ function createDashboardPresetId() {
   return `preset:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+// Genererer unikt ID for notater-widget (tillater flere notater-instanser)
 function createNotesWidgetId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `notes:${crypto.randomUUID()}`;
@@ -160,6 +178,8 @@ function createNotesWidgetId() {
   return `notes:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+// Validerer og normaliserer layout-data fra Firestore
+// Brukes ved innlasting for å sikre at alle layout-verdier er gyldige tall
 function normalizeLayouts(value: unknown): Record<string, LayoutItem> {
   if (!value || typeof value !== "object") return {};
 
@@ -175,6 +195,7 @@ function normalizeLayouts(value: unknown): Record<string, LayoutItem> {
     const w = Number(layout.w);
     const h = Number(layout.h);
 
+    // Validerer at alle verdier er endelige tall før de inkluderes
     if (
       Number.isFinite(x) &&
       Number.isFinite(y) &&
@@ -418,7 +439,8 @@ function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset 
   };
 }
 
-// Default layouts for new widgets (aligned with WidgetRegistry defaultGrid sizes)
+// Standard layout-størrelser når nye widgets legges til dashboardet
+// Justert i henhold til WidgetRegistry defaultGrid-størrelser
 const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   clock: { x: 0, y: 0, w: 5, h: 3 },
   notes: { x: 0, y: 0, w: 8, h: 8 },
@@ -431,9 +453,11 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   bookmark: { x: 0, y: 0, w: 4, h: 4 },
   info: { x: 0, y: 0, w: 6, h: 6 },
   ai_chat: { x: 0, y: 0, w: 6, h: 8 },
+  email: { x: 0, y: 0, w: 8, h: 8 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
 
+// Sjekker om to rektangler overlapper hverandre
 function rectsOverlap(a: LayoutItem, b: LayoutItem) {
   return (
     a.x < b.x + b.w &&
@@ -443,6 +467,8 @@ function rectsOverlap(a: LayoutItem, b: LayoutItem) {
   );
 }
 
+// Plasserer en widget sentralt i dashboardet, og utenom overlappende widgets
+// Hvis sentralt ikke funker, forsøk å stappe ned i små trinn
 function createCenteredLayout(
   widgetType: string,
   existingLayouts: Record<string, LayoutItem>
@@ -478,7 +504,7 @@ function createCenteredLayout(
   return candidate;
 }
 
-// Generate a unique ID for custom buttons
+// Genererer unikt ID for egendefinert knapp-widget
 function createCustomButtonId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `customButton:${crypto.randomUUID()}`;
@@ -486,7 +512,8 @@ function createCustomButtonId() {
   return `customButton:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// Legacy migration functions (for backward compatibility)
+// Migreringsfunksjoner for bakoverkompatibilitet med gamle ID-formater
+// Gamle custom buttons brukte "customButton__uuid", nye bruker "customButton:uuid"
 function migrateLegacyCustomButtonId(id: string) {
   if (!id.startsWith("customButton__")) return id;
   return `customButton:${id.slice("customButton__".length)}`;
@@ -498,6 +525,7 @@ function migrateLegacyMap<T>(input: Record<string, T>) {
   );
 }
 
+// Returnerer standard dashboard-state for offentlige (ikke-autentiserte) brukere
 function applyPublicDashboardDefaults() {
   return {
     activeWidgets: [...PUBLIC_WIDGET_IDS],
@@ -707,7 +735,8 @@ export function useWidgetsState() {
     void loadLayout();
   }, [loadLayout]);
 
-  // Auto-save changes to Firestore with debouncing
+  // Autosave-effekt: lagrer endringer til Firestore med debounce-forsinkelse
+  // Dette minimerer antall Firestore-writes under rask oppfølging av endringer (f.eks. drag/resize)
   useEffect(() => {
     if (!user || isLoading || !hasLoadedRef.current) return;
 
@@ -893,7 +922,8 @@ export function useWidgetsState() {
     void persistPresetsImmediately(nextPresets);
   }, [dashboardPresets, persistPresetsImmediately]);
 
-  // Toggle a widget on/off
+  // Slår widget av/på, eller legger til ny notater-instans hvis det er notater
+  // Notater er spesiell: hver gang man trykker på "legg til notater" får man ny instans
   const toggleWidget = useCallback((id: string) => {
     if (id === "notes") {
       const noteId = createNotesWidgetId();
@@ -940,12 +970,12 @@ export function useWidgetsState() {
     });
   }, []);
 
-  // Update widget layouts (e.g., after dragging/resizing)
+  // Oppdaterer widget-layouter etter drag/resize-operasjoner i rutenett
   const updateLayout = useCallback((newLayouts: Record<string, LayoutItem>) => {
     setLayouts(newLayouts);
   }, []);
 
-  // Add a new custom button
+  // Legger til ny egendefinert knapp-widget med gitt konfigurasjon
   const addCustomButton = useCallback((config: CustomButtonConfig) => {
     const id = createCustomButtonId();
 
@@ -960,7 +990,7 @@ export function useWidgetsState() {
     return id;
   }, []);
 
-  // Remove a custom button
+  // Fjerner egendefinert knapp-widget og sletter dens layout, konfig og eventuelle låser
   const removeCustomButton = useCallback((id: string) => {
     setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
     setCustomButtonConfigs((prev) => {
