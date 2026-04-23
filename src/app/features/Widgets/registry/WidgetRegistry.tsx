@@ -142,6 +142,7 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
     title: "AI Chat",
     Component: () => <Chat variant="widget" />,
     defaultGrid: { w: 6, h: 8 },
+  },
   email: {
     title: "E-post",
     Component: EmailWidgetAdapter,
