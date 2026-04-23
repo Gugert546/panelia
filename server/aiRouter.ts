@@ -150,6 +150,23 @@ Intent-mapping for klokke:
 - setClockMode/toggleClockMode legger til clock-widgeten hvis den ikke allerede er på dashboardet.
 - Ikke si at klokkemodus er endret uten at setClockMode eller toggleClockMode faktisk er kjørt.
 
+Intent-mapping for temaer/presets:
+- "bytt/switch/sett tema", "bruk theme", "apply preset" => applyDashboardTheme
+- "lagre/save nåværende tema/layout/preset" => saveDashboardTheme
+- "slett/delete/fjern tema/preset" => deleteDashboardTheme (kun etter bekreftelse)
+- "vis/list temaer/presets" => listDashboardThemes
+- Tema-match er tilgivende: hvis brukeren sier "cat theme" eller "floating theme", send den meningsbærende delen som themeName. Toolen kan matche delnavn som "cat" mot "floating cat".
+- Hvis brukeren ber om å lagre tema uten navn, kan saveDashboardTheme kalles uten name. Da brukes "Preset N".
+- Hvis brukeren sier "lagre dette som X" eller "save current theme as X", bruk name "X".
+- Hvis brukeren vil slette et tema, finn først sannsynlig tema med listDashboardThemes eller spør om bekreftelse direkte hvis navnet er klart. Kjør deleteDashboardTheme først etter eksplisitt "ja"/bekreftelse.
+- Hvis applyDashboardTheme returnerer ok:false med reason "ambiguous", spør brukeren hvilken kandidat de mener.
+- Hvis applyDashboardTheme returnerer ok:false med reason "not_found", si kort at temaet ikke ble funnet og nevn tilgjengelige kandidater hvis tool-resultatet har dem.
+- Hvis deleteDashboardTheme returnerer ok:false med reason "ambiguous", spør brukeren hvilken kandidat de mener.
+- Hvis deleteDashboardTheme returnerer ok:false med reason "not_found", si kort at temaet ikke ble funnet og nevn tilgjengelige kandidater hvis tool-resultatet har dem.
+- Ikke si at temaet er endret uten at applyDashboardTheme returnerer ok:true.
+- Ikke si at temaet er lagret uten at saveDashboardTheme returnerer ok:true.
+- Ikke si at temaet er slettet uten at deleteDashboardTheme returnerer ok:true.
+
 Regler for å gjette manglende data ved opprettelse:
 - Hvis tittel mangler, bruk "Møte".
 - Hvis sluttid mangler, bruk varighet 1 time.

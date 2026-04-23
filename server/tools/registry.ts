@@ -16,6 +16,12 @@ import {
   listDashboardWidgetsTool,
 } from "./dashboardWidgets";
 import { setClockModeTool, toggleClockModeTool } from "./clockMode";
+import {
+  applyDashboardThemeTool,
+  saveDashboardThemeTool,
+  deleteDashboardThemeTool,
+  listDashboardThemesTool,
+} from "./dashboardThemes";
 
 export const tools = [
   makeBookmarkTool,
@@ -31,6 +37,10 @@ export const tools = [
   listDashboardWidgetsTool,
   setClockModeTool,
   toggleClockModeTool,
+  applyDashboardThemeTool,
+  saveDashboardThemeTool,
+  deleteDashboardThemeTool,
+  listDashboardThemesTool,
 ] as const;
 
 export const toolMap = new Map(tools.map((t) => [t.name, t]));
