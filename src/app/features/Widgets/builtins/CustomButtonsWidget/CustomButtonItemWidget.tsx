@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 //import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
 
 type Props = {
@@ -16,6 +17,10 @@ export default function CustomButtonItemWidget({
   favicon,
 }: Props) {
   //const { widgetSurfaceColor, widgetBorderColor, widgetBorderWidth } = useWidgets();
+  const fontSize = useResolvedWidgetFontSize();
+  const iconLetterFontSize = Math.max(fontSize - 1, 13);
+  const iconLetterMaxFontSize = Math.max(fontSize + 8, 22);
+  const labelMaxFontSize = Math.max(fontSize + 12, 26);
   const [isDragging, setIsDragging] = useState(false);
   const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const faviconCandidates = useMemo(
@@ -113,7 +118,7 @@ export default function CustomButtonItemWidget({
                   justifyContent: "center",
                   borderRadius: 999,
                   background: "rgba(0,0,0,0.08)",
-                  fontSize: "clamp(13px, 8cqw, 22px)",
+                  fontSize: `clamp(${iconLetterFontSize}px, 8cqw, ${iconLetterMaxFontSize}px)`,
                   fontWeight: 700,
                   flexShrink: 0,
                 }}
@@ -128,7 +133,7 @@ export default function CustomButtonItemWidget({
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
                 fontWeight: 500,
-                fontSize: "clamp(14px, 9cqw, 26px)",
+                fontSize: `clamp(${fontSize}px, 9cqw, ${labelMaxFontSize}px)`,
               }}
             >
               {label}

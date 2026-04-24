@@ -554,6 +554,7 @@ export function useWidgetsState() {
   const [isLoading, setIsLoading] = useState(true);
 
   const hasLoadedRef = useRef(false);
+  const previousFontSizeRef = useRef(fontSize);
 
   const createLockSnapshotStyle = useCallback((styles: Record<string, WidgetStyleOverrides>, widgetId: string) => {
     const existingStyle = styles[widgetId];
@@ -1074,6 +1075,13 @@ export function useWidgetsState() {
     });
   }, [widgetLocks]);
 
+  const clearAllWidgetStyles = useCallback(() => {
+    setWidgetStyles((prevStyles) => {
+      if (Object.keys(prevStyles).length === 0) return prevStyles;
+      return {};
+    });
+  }, []);
+
   const updateWidgetSurfaceColor = useCallback((value: string) => {
     setWidgetSurfaceColor(value);
     clearUnlockedWidgetStyles();
@@ -1098,6 +1106,40 @@ export function useWidgetsState() {
     setWidgetBorderWidth(value);
     clearUnlockedWidgetStyles();
   }, [clearUnlockedWidgetStyles]);
+
+  useEffect(() => {
+    if (previousFontSizeRef.current === fontSize) {
+      return;
+    }
+
+    previousFontSizeRef.current = fontSize;
+
+    if (isLoading) {
+      return;
+    }
+
+    setWidgetStyles((prevStyles) => {
+      let hasChanges = false;
+      const nextStyles: Record<string, WidgetStyleOverrides> = {};
+
+      for (const [widgetId, style] of Object.entries(prevStyles)) {
+        if (widgetLocks[widgetId] || style.widgetFontSize === undefined) {
+          nextStyles[widgetId] = style;
+          continue;
+        }
+
+        const { widgetFontSize: _widgetFontSize, ...restStyle } = style;
+
+        if (Object.keys(restStyle).length > 0) {
+          nextStyles[widgetId] = restStyle;
+        }
+
+        hasChanges = true;
+      }
+
+      return hasChanges ? nextStyles : prevStyles;
+    });
+  }, [fontSize, isLoading, widgetLocks]);
 
   return {
     activeWidgets,
@@ -1125,6 +1167,8 @@ export function useWidgetsState() {
     toggleClockMode,
     setWidgetStyle,
     resetWidgetStyle,
+    clearUnlockedWidgetStyles,
+    clearAllWidgetStyles,
     setWidgetSurfaceColor: updateWidgetSurfaceColor,
     setWidgetBorderColor: updateWidgetBorderColor,
     setWidgetTextColor: updateWidgetTextColor,

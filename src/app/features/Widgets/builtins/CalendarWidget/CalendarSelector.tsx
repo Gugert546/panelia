@@ -4,6 +4,7 @@ import type { GoogleCalendarMeta } from "../../../../../types/firestore";
 type Props = {
   calendars: GoogleCalendarMeta[];
   selectedCalendarIds: string[];
+  fontSize: number;
   loading?: boolean;
   saving?: boolean;
   onToggle: (calendarId: string) => void;
@@ -13,12 +14,15 @@ type Props = {
 export default function CalendarSelector({
   calendars,
   selectedCalendarIds,
+  fontSize,
   loading = false,
   saving = false,
   onToggle,
   onSave,
 }: Props) {
   const [open, setOpen] = useState(false);
+  const controlFontSize = Math.max(fontSize - 1, 12);
+  const menuTitleFontSize = Math.max(fontSize, 12);
 
   const sortedCalendars = useMemo(
     () =>
@@ -42,7 +46,7 @@ export default function CalendarSelector({
           padding: "8px 12px",
           background: "rgba(255,255,255,0.55)",
           color: "rgba(15,23,42,0.95)",
-          fontSize: "12px",
+          fontSize: controlFontSize,
           fontWeight: 600,
           cursor: loading || saving ? "not-allowed" : "pointer",
           opacity: loading || saving ? 0.7 : 1,
@@ -67,7 +71,7 @@ export default function CalendarSelector({
             zIndex: 2000,
           }}
         >
-          <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
+          <div style={{ fontSize: menuTitleFontSize, fontWeight: 700, marginBottom: 8 }}>
             Show calendars
           </div>
 
@@ -98,7 +102,7 @@ export default function CalendarSelector({
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ fontSize: 12, color: "rgba(15,23,42,0.95)" }}>
+                <span style={{ fontSize: controlFontSize, color: "rgba(15,23,42,0.95)" }}>
                   {calendar.summary}
                 </span>
               </label>
@@ -117,7 +121,7 @@ export default function CalendarSelector({
                 borderRadius: "9999px",
                 border: "none",
                 padding: "7px 12px",
-                fontSize: 12,
+                fontSize: controlFontSize,
                 fontWeight: 600,
                 background: "rgba(59,130,246,0.18)",
                 color: "rgba(15,23,42,0.95)",

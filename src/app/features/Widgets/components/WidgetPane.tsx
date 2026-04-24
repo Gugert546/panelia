@@ -1,6 +1,7 @@
 import React from "react";
 import { useWidgets } from "../../dashboard/hooks/WidgetsContext";
 import { useWidgetInstance } from "./WidgetInstanceContext";
+import { useResolvedWidgetFontSize } from "../hooks/useResolvedWidgetFontSize";
 
 type WidgetPaneProps = {
   title?: string;
@@ -19,6 +20,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
   } = useWidgets();
   const widgetInstance = useWidgetInstance();
   const widgetStyle = widgetInstance ? widgetStyles[widgetInstance.widgetId] : undefined;
+  const resolvedFontSize = useResolvedWidgetFontSize();
 
   const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
   const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
@@ -39,6 +41,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         border: `${resolvedBorderWidth}px solid ${resolvedBorderColor}`,
         color: resolvedTextColor,
         opacity: resolvedOpacity,
+        fontSize: resolvedFontSize,
         backdropFilter: "blur(10px)",
 
         display: "flex",
@@ -50,6 +53,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         <h3
           style={{
             margin: 0,
+            fontSize: Math.max(resolvedFontSize + 2, 16),
             fontWeight: 500,
             letterSpacing: 0.4,
           }}

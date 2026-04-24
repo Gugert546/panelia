@@ -131,6 +131,8 @@ function DashboardPageContent() {
     saveCurrentAsPreset,
     applyDashboardPreset,
     deleteDashboardPreset,
+    clearUnlockedWidgetStyles,
+    clearAllWidgetStyles,
   } = useWidgets();
 
   const translatedAvailableWidgets = AVAILABLE_WIDGETS.map(widget => ({
@@ -469,6 +471,8 @@ function DashboardPageContent() {
         saveCurrentAsPreset={saveCurrentAsPreset}
         applyDashboardPreset={applyDashboardPreset}
         deleteDashboardPreset={deleteDashboardPreset}
+        clearUnlockedWidgetStyles={clearUnlockedWidgetStyles}
+        clearAllWidgetStyles={clearAllWidgetStyles}
       />
 
       <main
