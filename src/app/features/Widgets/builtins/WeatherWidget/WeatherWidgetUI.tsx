@@ -104,6 +104,12 @@ function WeatherAtmosphere({ mode, cloudTone }: { mode: WeatherVisualMode; cloud
 export default function WeatherWidgetUI() {
   const { state } = useWeatherWidget();
   const fontSize = useResolvedWidgetFontSize();
+  const weatherControlIconSize = Math.max(fontSize, 14);
+  const weatherControlIconMaxSize = Math.max(fontSize + 4, 18);
+  const locationFontSize = Math.max(fontSize - 2, 12);
+  const locationFontMaxSize = Math.max(Math.round(fontSize * 1.6), 22);
+  const temperatureFontSize = Math.max(Math.round(fontSize * 2.6), 36);
+  const temperatureFontMaxSize = Math.max(Math.round(fontSize * 5.5), 88);
   const { t } = useLanguage();
   const [humidityIsEnabled, setHumidityIsEnabled] = useState(false);
   const [windIsEnabled, setWindIsEnabled] = useState(false);
@@ -201,7 +207,7 @@ export default function WeatherWidgetUI() {
                   <span
                     className="material-symbols-rounded"
                     aria-hidden="true"
-                    style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+                    style={{ fontSize: `clamp(${weatherControlIconSize}px, 3.8cqw, ${weatherControlIconMaxSize}px)`, lineHeight: 1 }}
                   >
                     air
                   </span>
@@ -230,7 +236,7 @@ export default function WeatherWidgetUI() {
                   <span
                     className="material-symbols-rounded"
                     aria-hidden="true"
-                    style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+                    style={{ fontSize: `clamp(${weatherControlIconSize}px, 3.8cqw, ${weatherControlIconMaxSize}px)`, lineHeight: 1 }}
                   >
                     humidity_percentage
                   </span>
@@ -259,7 +265,7 @@ export default function WeatherWidgetUI() {
                   <span
                     className="material-symbols-rounded"
                     aria-hidden="true"
-                    style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+                    style={{ fontSize: `clamp(${weatherControlIconSize}px, 3.8cqw, ${weatherControlIconMaxSize}px)`, lineHeight: 1 }}
                   >
                     sunny
                   </span>
@@ -283,7 +289,7 @@ export default function WeatherWidgetUI() {
                       gap: "clamp(6px, 1.8cqw, 16px)",
                     }}
                     >
-                    <div style={{ fontSize: "clamp(12px, 4.2cqw, 22px)", opacity: 0.8 }}>
+                    <div style={{ fontSize: `clamp(${locationFontSize}px, 4.2cqw, ${locationFontMaxSize}px)`, opacity: 0.8 }}>
                       {state.data.placeLabel}
                     </div>
 
@@ -296,7 +302,7 @@ export default function WeatherWidgetUI() {
                       >
                         <div
                             style={{
-                              fontSize: "clamp(36px, 14cqw, 88px)",
+                              fontSize: `clamp(${temperatureFontSize}px, 14cqw, ${temperatureFontMaxSize}px)`,
                               fontWeight: 900,
                               lineHeight: 1
                             }}

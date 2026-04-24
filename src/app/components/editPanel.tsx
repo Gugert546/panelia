@@ -52,6 +52,8 @@ type EditPanelProps = {
   saveCurrentAsPreset: (name?: string) => string;
   applyDashboardPreset: (presetId: string) => boolean;
   deleteDashboardPreset: (presetId: string) => void;
+  clearUnlockedWidgetStyles: () => void;
+  clearAllWidgetStyles: () => void;
 };
 
 const BACKGROUND_OPTIONS: Array<{
@@ -151,8 +153,11 @@ export default function EditPanel({
   saveCurrentAsPreset,
   applyDashboardPreset,
   deleteDashboardPreset,
+  clearUnlockedWidgetStyles,
+  clearAllWidgetStyles,
 }: EditPanelProps) {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"widgets" | "background">("widgets");
   const [presetName, setPresetName] = useState("");
   const customBackgroundInputRef = useRef<HTMLInputElement | null>(null);
@@ -807,7 +812,7 @@ export default function EditPanel({
 
               }}>     
               <button
-                onClick={handleResetWidgetStyle}
+                onClick={() => setResetConfirmOpen(true)}
                 style={{
                   marginTop: 8,
                   width: "100%",
@@ -1116,7 +1121,101 @@ export default function EditPanel({
       </div>
 
       <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} />
-      
+
+      {resetConfirmOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            background: "rgba(0,0,0,0.45)",
+          }}
+          onClick={() => setResetConfirmOpen(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              borderRadius: 16,
+              padding: "28px 32px",
+              minWidth: 320,
+              maxWidth: 420,
+              boxShadow: "0 8px 40px rgba(0,0,0,0.22)",
+              display: "flex",
+              flexDirection: "column",
+              gap: 16,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
+              {t('editPanel.resetWidgetStyle')}
+            </h2>
+            <p style={{ margin: 0, fontSize: 14, color: "#475569" }}>
+              {t('editPanel.resetConfirmDescription')}
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
+              <button
+                onClick={() => {
+                  handleResetWidgetStyle();
+                  clearUnlockedWidgetStyles();
+                  setResetConfirmOpen(false);
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 10,
+                  border: "1px solid #e2e8f0",
+                  background: "#f8fafc",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "#0f172a",
+                  textAlign: "left",
+                }}
+              >
+                {t('editPanel.resetUnlockedWidgets')}
+              </button>
+              <button
+                onClick={() => {
+                  handleResetWidgetStyle();
+                  clearAllWidgetStyles();
+                  setResetConfirmOpen(false);
+                }}
+                style={{
+                  padding: "10px 16px",
+                  borderRadius: 10,
+                  border: "1px solid #fca5a5",
+                  background: "#fff1f1",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: 14,
+                  color: "#b91c1c",
+                  textAlign: "left",
+                }}
+              >
+                {t('editPanel.resetAllWidgets')}
+              </button>
+              <button
+                onClick={() => setResetConfirmOpen(false)}
+                style={{
+                  padding: "8px 16px",
+                  borderRadius: 10,
+                  border: "none",
+                  background: "transparent",
+                  cursor: "pointer",
+                  fontSize: 14,
+                  color: "#64748b",
+                  textAlign: "center",
+                }}
+              >
+                {t('editPanel.cancel')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
 
     </div>
   );

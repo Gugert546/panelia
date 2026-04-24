@@ -33,8 +33,12 @@
     "widgetBorderWidth": "Thickness",
     "widgetSize": "Widget size",
     "resetWidgetStyle": "Reset widget style",
+    "resetConfirmDescription": "Choose which widgets to reset to their default style.",
+    "resetUnlockedWidgets": "Reset all unlocked widgets",
+    "resetAllWidgets": "Reset all widgets (incl. locked)",
+    "cancel": "Cancel",
     "reset":"Reset",
-    "addCustomButton": "Add custom button",
+    "addCustomButton": "Custom buttons",
     "customPresets": "Custom themes",
     "presetNamePlaceholder": "Theme name",
     "savePreset": "Save theme",
@@ -66,7 +70,8 @@
     "placeholder": "Type a message...",
     "send": "Send",
     "sending": "Thinking...",
-    "error": "Sorry, something went wrong."
+    "error": "Sorry, something went wrong.",
+    "welcome": "Hi! I can help you work with Panelia and your dashboard.\n\nI can answer questions, help you plan widgets and layouts, and use connected tools when they are available, such as calendar, email, weather, search, notes, bookmarks, Spotify, and dashboard settings. Ask me what you want to do."
   },
   "widgets": {
     "clock": "Clock",

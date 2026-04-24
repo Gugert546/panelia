@@ -12,6 +12,20 @@ type ChatProps = {
 
 const MAX_INPUT_CHARS = 3000;
 
+function isConfirmationPrompt(text: string) {
+  const normalized = text.toLocaleLowerCase("nb");
+
+  return (
+    normalized.includes("bekrefter du") ||
+    normalized.includes("skriv \"ja\"") ||
+    normalized.includes("skriv ja") ||
+    normalized.includes("er du sikker") ||
+    normalized.includes("are you sure") ||
+    normalized.includes("confirm") ||
+    normalized.includes("bekreft")
+  );
+}
+
 export default function Chat({ variant = "widget", autoFocus = false }: ChatProps) {
   const { messages, isSending, sendMessage } = useAiChat();
   const { t } = useLanguage();
@@ -50,6 +64,14 @@ export default function Chat({ variant = "widget", autoFocus = false }: ChatProp
     inputRef.current?.focus();
   };
 
+  const handleQuickReply = async (reply: "ja" | "nei") => {
+    if (isSending) return;
+
+    setInput("");
+    await sendMessage(reply, t("chat.error"));
+    inputRef.current?.focus();
+  };
+
   const chatContent = (
     <div
       style={{
@@ -63,8 +85,22 @@ export default function Chat({ variant = "widget", autoFocus = false }: ChatProp
           minHeight: isPanel ? 0 : 180,
         }}
       >
-        {messages.map((message) => {
+        <div
+          style={{
+            ...styles.message,
+            ...styles.welcomeMessage,
+          }}
+        >
+          {t("chat.welcome")}
+        </div>
+
+        {messages.map((message, index) => {
           const isUserMessage = message.sender === "user";
+          const showConfirmationActions =
+            !isUserMessage &&
+            index === messages.length - 1 &&
+            !isSending &&
+            isConfirmationPrompt(message.text);
 
           return (
             <div
@@ -77,7 +113,28 @@ export default function Chat({ variant = "widget", autoFocus = false }: ChatProp
                   : "rgba(229, 229, 234, 0.68)",
               }}
             >
-              {message.text}
+              <div>{message.text}</div>
+              {showConfirmationActions && (
+                <div style={styles.confirmActions}>
+                  <button
+                    type="button"
+                    onClick={() => void handleQuickReply("ja")}
+                    style={{
+                      ...styles.confirmButton,
+                      ...styles.confirmPrimaryButton,
+                    }}
+                  >
+                    Ja
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleQuickReply("nei")}
+                    style={styles.confirmButton}
+                  >
+                    Nei
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -169,13 +226,41 @@ const styles: Record<string, CSSProperties> = {
     lineHeight: 1.4,
     color: "#111827",
     overflowWrap: "anywhere",
+    whiteSpace: "pre-line",
     backdropFilter: "blur(8px)",
     boxShadow: "0 6px 18px rgba(15, 23, 42, 0.08)",
+  },
+  welcomeMessage: {
+    alignSelf: "flex-start",
+      backgroundColor: "rgba(229, 229, 234, 0.68)",
   },
   pendingMessage: {
     alignSelf: "flex-start",
     backgroundColor: "rgba(229, 229, 234, 0.48)",
     fontStyle: "italic",
+  },
+  confirmActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  confirmButton: {
+    minWidth: 68,
+    minHeight: 34,
+    padding: "7px 12px",
+    borderRadius: 8,
+    border: "1px solid rgba(15, 23, 42, 0.16)",
+    backgroundColor: "rgba(255, 255, 255, 0.62)",
+    color: "#111827",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  confirmPrimaryButton: {
+    border: "1px solid rgba(37, 99, 235, 0.34)",
+    backgroundColor: "rgba(37, 99, 235, 0.86)",
+    color: "#fff",
   },
   inputContainer: {
     display: "flex",

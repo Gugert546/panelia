@@ -199,6 +199,8 @@ export default function DashboardGrid({
         const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
         const resolvedFontSize = widgetStyle?.widgetFontSize ?? globalFontSize;
         const surfaceAlpha = getColorAlpha(resolvedSurfaceColor);
+        const widgetControlBackground = "rgba(15, 23, 42, 0.58)";
+        const widgetControlActiveBackground = "rgba(15, 23, 42, 0.78)";
 
         type SafeLayout = { x?: number; y?: number; w: number; h: number };
         const currentLayout: SafeLayout = storedLayout
@@ -211,6 +213,7 @@ export default function DashboardGrid({
           : baseGrid;
         const isClockWidget = widgetType === "clock";
         const clockMode = clockModes[widgetId] ?? "digital";
+        const isStyleEditorOpen = styleEditorWidgetId === widgetId;
         return (
           <div
             key={widgetId}
@@ -222,7 +225,11 @@ export default function DashboardGrid({
               minH: baseGrid.h,
               static: isLocked,
             }}
-            style={{ position: "relative" }}
+            style={{
+              position: "relative",
+              overflow: "visible",
+              zIndex: isStyleEditorOpen ? 50 : hoveredWidgetId === widgetId ? 10 : 1,
+            }}
             onMouseEnter={() => setHoveredWidgetId(widgetId)}
             onMouseLeave={() => setHoveredWidgetId((prev) => (prev === widgetId ? null : prev))}
           >
@@ -254,8 +261,8 @@ export default function DashboardGrid({
                       border: "1px solid rgba(255,255,255,0.35)",
                       background:
                         styleEditorWidgetId === widgetId
-                          ? "rgba(32, 32, 32, 0.75)"
-                          : "rgba(255,255,255,0.22)",
+                          ? widgetControlActiveBackground
+                          : widgetControlBackground,
                       backdropFilter: "blur(6px)",
                       display: "flex",
                       alignItems: "center",
@@ -286,8 +293,8 @@ export default function DashboardGrid({
                       border: "1px solid rgba(255,255,255,0.35)",
                       background:
                         clockMode === "analog"
-                          ? "rgba(32, 32, 32, 0.75)"
-                          : "rgba(255,255,255,0.22)",
+                          ? widgetControlActiveBackground
+                          : widgetControlBackground,
                       backdropFilter: "blur(6px)",
                       display: "flex",
                       alignItems: "center",
@@ -323,8 +330,8 @@ export default function DashboardGrid({
                     borderRadius: 999,
                     border: "1px solid rgba(255,255,255,0.35)",
                     background: isLocked
-                      ? "rgba(32, 32, 32, 0.75)"
-                      : "rgba(255,255,255,0.22)",
+                      ? widgetControlActiveBackground
+                      : widgetControlBackground,
                     backdropFilter: "blur(6px)",
                     display: "flex",
                     alignItems: "center",
@@ -343,13 +350,13 @@ export default function DashboardGrid({
               </div>
             )}
 
-            {isInteractive && !isLocked && styleEditorWidgetId === widgetId && (
+            {isInteractive && !isLocked && isStyleEditorOpen && (
               <div
                 className="widget-style-control"
                 style={{
                   position: "absolute",
-                  top: 38,
-                  right: 8,
+                  top: 0,
+                  left: "calc(100% + 8px)",
                   width: 220,
                   padding: 10,
                   borderRadius: 12,
@@ -357,7 +364,7 @@ export default function DashboardGrid({
                   background: "rgba(20, 20, 20, 0.78)",
                   backdropFilter: "blur(8px)",
                   color: "#fff",
-                  zIndex: 3,
+                  zIndex: 20,
                   display: "flex",
                   flexDirection: "column",
                   gap: 8,

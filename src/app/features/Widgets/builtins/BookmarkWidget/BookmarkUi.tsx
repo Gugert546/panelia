@@ -8,6 +8,35 @@ import CategoryForm from "./CategoryForm";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
+import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
+import { useWidgetInstance } from "../../components/WidgetInstanceContext";
+
+function toRgba(color: string, alpha: number) {
+  const trimmed = color.trim();
+  const rgbaMatch = trimmed.match(
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    const [, red, green, blue] = rgbaMatch;
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  const hexMatch = trimmed.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (hexMatch) {
+    const hex = hexMatch[1].length === 3
+      ? hexMatch[1].split("").map((char) => char + char).join("")
+      : hexMatch[1];
+
+    const red = Number.parseInt(hex.slice(0, 2), 16);
+    const green = Number.parseInt(hex.slice(2, 4), 16);
+    const blue = Number.parseInt(hex.slice(4, 6), 16);
+
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  return color;
+}
 
 export default function BookmarkUi() {
   const {
@@ -32,6 +61,15 @@ export default function BookmarkUi() {
 
   const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
+  const { widgetSurfaceColor, widgetBorderColor, widgetTextColor, widgetStyles } = useWidgets();
+  const widgetInstance = useWidgetInstance();
+  const widgetStyle = widgetInstance ? widgetStyles[widgetInstance.widgetId] : undefined;
+  const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
+  const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
+  const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
+  const raisedSurface = toRgba(resolvedSurfaceColor, 0.22);
+  const inputSurface = toRgba(resolvedSurfaceColor, 0.42);
+  const strongSurface = toRgba(resolvedSurfaceColor, 0.3);
 
   const activeCategory = useMemo(() => {
     if (categories.length === 0) return null;
@@ -168,9 +206,9 @@ export default function BookmarkUi() {
               style={{
                 padding: "7px 10px",
                 borderRadius: 10,
-                background: "rgba(255,255,255,0.18)",
-                color: "inherit",
-                border: "none",
+                background: raisedSurface,
+                color: resolvedTextColor,
+                border: `1px solid ${resolvedBorderColor}`,
                 cursor: "pointer",
                 fontSize,
                 fontWeight: 500,
@@ -181,9 +219,10 @@ export default function BookmarkUi() {
           ) : (
             <div
               style={{
-                background: "rgba(255,255,255,0.18)",
+                background: raisedSurface,
                 padding: 10,
                 borderRadius: 12,
+                border: `1px solid ${resolvedBorderColor}`,
               }}
             >
               <CategoryForm
@@ -192,6 +231,9 @@ export default function BookmarkUi() {
                   setShowCategoryForm(false);
                 }}
                 isLoading={false}
+                textColor={resolvedTextColor}
+                surfaceColor={inputSurface}
+                borderColor={resolvedBorderColor}
               />
               <button
                 onClick={() => setShowCategoryForm(false)}
@@ -199,9 +241,9 @@ export default function BookmarkUi() {
                   marginTop: 8,
                   padding: "4px 8px",
                   fontSize: 12,
-                  background: "rgba(17, 24, 39, 0.18)",
-                  color: "inherit",
-                  border: "none",
+                  background: strongSurface,
+                  color: resolvedTextColor,
+                  border: `1px solid ${resolvedBorderColor}`,
                   borderRadius: 8,
                   cursor: "pointer",
                   fontWeight: 500,
@@ -225,11 +267,12 @@ export default function BookmarkUi() {
               <div
                 style={{
                   fontSize,
-                  color: "inherit",
+                  color: resolvedTextColor,
                   textAlign: "center",
                   padding: 16,
-                  background: "rgba(255,255,255,0.2)",
+                  background: raisedSurface,
                   borderRadius: 12,
+                  border: `1px solid ${resolvedBorderColor}`,
                 }}
               >
                 {t("widgets.bookmarkWidget.noCategories")}
@@ -269,7 +312,7 @@ export default function BookmarkUi() {
                       style={{
                         border: "none",
                         background: "transparent",
-                        color: "inherit",
+                        color: resolvedTextColor,
                         display: "inline-flex",
                         alignItems: "center",
                         gap: 6,
@@ -295,8 +338,8 @@ export default function BookmarkUi() {
                           maxHeight: 180,
                           overflowY: "auto",
                           borderRadius: 10,
-                          background: "rgba(255, 255, 255, 0.97)",
-                          border: "1px solid rgba(17,24,39,0.14)",
+                          background: inputSurface,
+                          border: `1px solid ${resolvedBorderColor}`,
                           boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
                           padding: 6,
                           zIndex: 20,
@@ -322,9 +365,9 @@ export default function BookmarkUi() {
                                 cursor: "pointer",
                                 fontSize: 13,
                                 fontWeight: isSelected ? 600 : 500,
-                                color: "inherit",
+                                color: resolvedTextColor,
                                 background: isSelected
-                                  ? "rgba(59,130,246,0.20)"
+                                  ? strongSurface
                                   : "transparent",
                               }}
                             >
@@ -352,10 +395,10 @@ export default function BookmarkUi() {
                         : t("widgets.bookmarkWidget.addBookmark")
                     }
                     style={{
-                      border: "none",
+                      border: `1px solid ${resolvedBorderColor}`,
                       borderRadius: 8,
-                      background: "rgba(255,255,255,0.22)",
-                      color: "inherit",
+                      background: raisedSurface,
+                      color: resolvedTextColor,
                       fontSize: 12,
                       fontWeight: 600,
                       padding: "4px 8px",
@@ -370,9 +413,10 @@ export default function BookmarkUi() {
                 {selectedCategoryForBookmark === activeCategory?.id ? (
                   <div
                     style={{
-                      background: "rgba(255,255,255,0.2)",
+                      background: raisedSurface,
                       padding: 10,
                       borderRadius: 12,
+                      border: `1px solid ${resolvedBorderColor}`,
                       marginTop: 2,
                     }}
                   >
@@ -382,6 +426,9 @@ export default function BookmarkUi() {
                         await handleAddBookmark(activeCategory.id, title, url);
                         setSelectedCategoryForBookmark(null);
                       }}
+                      textColor={resolvedTextColor}
+                      surfaceColor={inputSurface}
+                      borderColor={resolvedBorderColor}
                     />
                     <button
                       onClick={() => setSelectedCategoryForBookmark(null)}
@@ -389,9 +436,9 @@ export default function BookmarkUi() {
                         marginTop: 8,
                         padding: "6px 8px",
                         fontSize: 12,
-                        background: "rgba(17,24,39,0.16)",
-                        color: "inherit",
-                        border: "none",
+                        background: strongSurface,
+                        color: resolvedTextColor,
+                        border: `1px solid ${resolvedBorderColor}`,
                         borderRadius: 8,
                         cursor: "pointer",
                         width: "100%",
@@ -407,10 +454,11 @@ export default function BookmarkUi() {
                   <div
                     style={{
                       fontSize: 12,
-                      color: "inherit",
+                      color: resolvedTextColor,
                       padding: 10,
                       borderRadius: 12,
-                      background: "rgba(255,255,255,0.22)",
+                      background: raisedSurface,
+                      border: `1px solid ${resolvedBorderColor}`,
                       textAlign: "center",
                     }}
                   >
@@ -434,12 +482,11 @@ export default function BookmarkUi() {
                             display: "flex",
                             alignItems: "center",
                             gap: 10,
-                            background:
-                              "linear-gradient(180deg, rgba(255,255,255,0.26) 0%, rgba(255,255,255,0.18) 100%)",
-                            border: "1px solid rgba(255,255,255,0.28)",
+                            background: raisedSurface,
+                            border: `1px solid ${resolvedBorderColor}`,
                             borderRadius: 10,
                             padding: "8px 10px",
-                            color:"inherit",
+                            color: resolvedTextColor,
                           }}
                         >
                           <a
@@ -485,9 +532,9 @@ export default function BookmarkUi() {
                           <button
                             onClick={() => handleDeleteBookmark(bookmark.id)}
                             style={{
-                              border: "none",
-                              background: "rgba(17,24,39,0.16)",
-                              color: "inherit",
+                              border: `1px solid ${resolvedBorderColor}`,
+                              background: strongSurface,
+                              color: resolvedTextColor,
                               borderRadius: 7,
                               padding: "3px 8px",
                               fontSize: 11,
@@ -512,10 +559,10 @@ export default function BookmarkUi() {
             style={{
               marginTop: 8,
               alignSelf: "flex-end",
-              border: "none",
+              border: `1px solid ${resolvedBorderColor}`,
               borderRadius: 8,
-              background: "rgba(17,24,39,0.16)",
-              color: "inherit",
+              background: strongSurface,
+              color: resolvedTextColor,
               padding: "4px 8px",
               fontSize: 11,
               fontWeight: 500,

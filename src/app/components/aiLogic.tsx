@@ -1,6 +1,19 @@
 import { auth } from "../../lib/firebase/client";
 
-export async function sendMessageToAI(userInput: string) {
+export type AiToolExecution = {
+  name: string;
+  result: unknown;
+};
+
+export type AiChatHistoryItem = {
+  sender: "user" | "ai";
+  text: string;
+};
+
+export async function sendMessageToAI(
+  userInput: string,
+  history: AiChatHistoryItem[] = []
+) {
   try {
     const currentUser = auth.currentUser;
     if (!currentUser) {
@@ -15,7 +28,7 @@ export async function sendMessageToAI(userInput: string) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${idToken}`,
       },
-      body: JSON.stringify({ userInput }),
+      body: JSON.stringify({ userInput, history }),
     });
 
     if (!response.ok) {
@@ -23,7 +36,12 @@ export async function sendMessageToAI(userInput: string) {
     }
 
     const data = await response.json();
-    return { output_text: data.output };
+    return {
+      output_text: typeof data.output === "string" ? data.output : "",
+      executedTools: Array.isArray(data.executedTools)
+        ? (data.executedTools as AiToolExecution[])
+        : [],
+    };
   } catch (error) {
     console.error("Error communicating with the backend:", error);
     throw error;

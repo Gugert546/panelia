@@ -6,7 +6,8 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "../features/auth/useAuth";
-import { sendMessageToAI } from "./aiLogic";
+import { useWidgets } from "../features/dashboard/hooks/WidgetsContext";
+import { sendMessageToAI, type AiChatHistoryItem } from "./aiLogic";
 import {
   AiChatContext,
   type AiChatContextValue,
@@ -15,6 +16,13 @@ import {
 
 type Props = {
   children: ReactNode;
+};
+
+const MAX_HISTORY_MESSAGES = 12;
+
+type DashboardWidgetToolResult = {
+  widgetId?: string;
+  active?: boolean;
 };
 
 function createMessageId() {
@@ -27,6 +35,7 @@ function createMessageId() {
 
 export function AiChatProvider({ children }: Props) {
   const { user } = useAuth();
+  const { reloadLayout, syncDashboardWidgetState } = useWidgets();
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
 
@@ -46,7 +55,45 @@ export function AiChatProvider({ children }: Props) {
     setIsSending(true);
 
     try {
-      const aiResponse = await sendMessageToAI(trimmedText);
+      const history: AiChatHistoryItem[] = messages
+        .slice(-MAX_HISTORY_MESSAGES)
+        .map((message) => ({
+          sender: message.sender,
+          text: message.text,
+        }));
+      const aiResponse = await sendMessageToAI(trimmedText, history);
+      for (const tool of aiResponse.executedTools) {
+        if (tool.name !== "addDashboardWidget" && tool.name !== "removeDashboardWidget") {
+          continue;
+        }
+
+        const result = tool.result as DashboardWidgetToolResult;
+
+        if (typeof result.widgetId === "string" && typeof result.active === "boolean") {
+          syncDashboardWidgetState(result.widgetId, result.active);
+        }
+      }
+
+      const shouldReloadLayout = aiResponse.executedTools.some((tool) =>
+        [
+          "addCustomButton",
+          "removeCustomButton",
+          "addDashboardWidget",
+          "removeDashboardWidget",
+          "setClockMode",
+          "toggleClockMode",
+          "applyDashboardTheme",
+          "saveDashboardTheme",
+          "deleteDashboardTheme",
+          "updateDashboardStyle",
+          "updateDashboardWidgetStyle",
+        ].includes(tool.name)
+      );
+
+      if (shouldReloadLayout) {
+        await reloadLayout();
+      }
+
       setMessages((prev) => [
         ...prev,
         {
@@ -64,7 +111,7 @@ export function AiChatProvider({ children }: Props) {
     } finally {
       setIsSending(false);
     }
-  }, []);
+  }, [messages, reloadLayout, syncDashboardWidgetState]);
 
   const value = useMemo<AiChatContextValue>(
     () => ({
