@@ -52,6 +52,7 @@ type DashboardPreset = {
   widgetTextColor: string;
   widgetOpacity: number;
   widgetBorderWidth: number;
+  widgetFontSize: number;
   widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
   customBackgroundUrl: string;
@@ -71,6 +72,7 @@ type WidgetLayoutDocument = {
   widgetTextColor?: unknown;
   widgetOpacity?: unknown;
   widgetBorderWidth?: unknown;
+  widgetFontSize?: unknown;
   widgetSizeMode?: unknown;
   dashboardBackgroundId?: unknown;
   customBackgroundUrl?: unknown;
@@ -323,6 +325,10 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         widgetTextColor: typeof preset.widgetTextColor === "string" ? preset.widgetTextColor : "#000000",
         widgetOpacity: typeof preset.widgetOpacity === "number" ? preset.widgetOpacity : 1,
         widgetBorderWidth: typeof preset.widgetBorderWidth === "number" ? preset.widgetBorderWidth : 1,
+        widgetFontSize:
+          typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
+            ? Math.min(22, Math.max(10, Math.round(preset.widgetFontSize)))
+            : 14,
         widgetSizeMode: normalizeWidgetSizeMode(preset.widgetSizeMode),
         dashboardBackgroundId: normalizeDashboardBackgroundId(preset.dashboardBackgroundId),
         customBackgroundUrl:
@@ -368,6 +374,10 @@ function createDashboardPresetFromCurrentLayout(
     widgetTextColor: typeof data.widgetTextColor === "string" ? data.widgetTextColor : "#000000",
     widgetOpacity: typeof data.widgetOpacity === "number" ? data.widgetOpacity : 1,
     widgetBorderWidth: typeof data.widgetBorderWidth === "number" ? data.widgetBorderWidth : 1,
+    widgetFontSize:
+      typeof data.widgetFontSize === "number" && Number.isFinite(data.widgetFontSize)
+        ? Math.min(22, Math.max(10, Math.round(data.widgetFontSize)))
+        : 14,
     widgetSizeMode: normalizeWidgetSizeMode(data.widgetSizeMode),
     dashboardBackgroundId: normalizeDashboardBackgroundId(data.dashboardBackgroundId),
     customBackgroundUrl: typeof data.customBackgroundUrl === "string" ? data.customBackgroundUrl : "",
@@ -470,6 +480,7 @@ function createPresetPatch(preset: DashboardPreset) {
     widgetTextColor: preset.widgetTextColor,
     widgetOpacity: preset.widgetOpacity,
     widgetBorderWidth: preset.widgetBorderWidth,
+    widgetFontSize: preset.widgetFontSize,
     widgetSizeMode: preset.widgetSizeMode,
     dashboardBackgroundId: preset.dashboardBackgroundId,
     customBackgroundUrl: preset.customBackgroundUrl,

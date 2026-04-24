@@ -72,6 +72,7 @@ export type DashboardPreset = {
   widgetTextColor: string;
   widgetOpacity: number;
   widgetBorderWidth: number;
+  widgetFontSize: number;
   widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
   customBackgroundUrl: string;
@@ -93,6 +94,7 @@ type WidgetLayoutDocument = {
   widgetTextColor?: string;
   widgetOpacity?: number;
   widgetBorderWidth?: number;
+  widgetFontSize?: number;
   widgetSizeMode?: WidgetSizeMode;
   dashboardBackgroundId?: DashboardBackgroundId | "videoCustom";
   customBackgroundUrl?: string;
@@ -136,6 +138,7 @@ const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
 const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
+const DEFAULT_WIDGET_FONT_SIZE = 14;
 const MIN_WIDGET_FONT_SIZE = 10;
 const MAX_WIDGET_FONT_SIZE = 22;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
@@ -376,6 +379,10 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
           : DEFAULT_WIDGET_TEXT_COLOR,
       widgetOpacity,
       widgetBorderWidth,
+      widgetFontSize:
+        typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
+          ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(preset.widgetFontSize)))
+          : DEFAULT_WIDGET_FONT_SIZE,
       widgetSizeMode:
         preset.widgetSizeMode === "small" ||
         preset.widgetSizeMode === "medium" ||
@@ -539,6 +546,7 @@ function applyPublicDashboardDefaults() {
     widgetTextColor: DEFAULT_WIDGET_TEXT_COLOR,
     widgetOpacity: DEFAULT_WIDGET_OPACITY,
     widgetBorderWidth: DEFAULT_WIDGET_BORDER_WIDTH,
+    widgetFontSize: DEFAULT_WIDGET_FONT_SIZE,
     widgetSizeMode: DEFAULT_WIDGET_SIZE_MODE,
     dashboardBackgroundId: DEFAULT_DASHBOARD_BACKGROUND_ID,
     customBackgroundUrl: "",
@@ -549,7 +557,7 @@ function applyPublicDashboardDefaults() {
 
 export function useWidgetsState() {
   const { user, loading } = useAuth();
-  const { fontSize } = useFontSize();
+  const { fontSize, setFontSize } = useFontSize();
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
@@ -617,6 +625,7 @@ export function useWidgetsState() {
       setWidgetTextColor(publicDefaults.widgetTextColor);
       setWidgetOpacity(publicDefaults.widgetOpacity);
       setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+      setFontSize(publicDefaults.widgetFontSize);
       setWidgetSizeMode(publicDefaults.widgetSizeMode);
       setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
       setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
@@ -645,6 +654,7 @@ export function useWidgetsState() {
         setWidgetTextColor(publicDefaults.widgetTextColor);
         setWidgetOpacity(publicDefaults.widgetOpacity);
         setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+        setFontSize(publicDefaults.widgetFontSize);
         setWidgetSizeMode(publicDefaults.widgetSizeMode);
         setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
         setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
@@ -697,6 +707,11 @@ export function useWidgetsState() {
           ? Math.min(12, Math.max(0, Math.round(data.widgetBorderWidth)))
           : DEFAULT_WIDGET_BORDER_WIDTH
       );
+      setFontSize(
+        typeof data.widgetFontSize === "number" && Number.isFinite(data.widgetFontSize)
+          ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(data.widgetFontSize)))
+          : DEFAULT_WIDGET_FONT_SIZE
+      );
       setWidgetSizeMode(
         data.widgetSizeMode === "small" ||
           data.widgetSizeMode === "medium" ||
@@ -729,7 +744,7 @@ export function useWidgetsState() {
     } finally {
       setIsLoading(false);
     }
-  }, [loading, user]);
+  }, [loading, setFontSize, user]);
 
   useEffect(() => {
     void loadLayout();
@@ -755,6 +770,7 @@ export function useWidgetsState() {
           widgetTextColor,
           widgetOpacity,
           widgetBorderWidth,
+          widgetFontSize: fontSize,
           widgetSizeMode,
           dashboardBackgroundId,
           customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
@@ -781,6 +797,7 @@ export function useWidgetsState() {
     widgetTextColor,
     widgetOpacity,
     widgetBorderWidth,
+    fontSize,
     widgetSizeMode,
     dashboardBackgroundId,
     customBackgroundUrl,
@@ -856,6 +873,7 @@ export function useWidgetsState() {
       widgetTextColor,
       widgetOpacity,
       widgetBorderWidth,
+      widgetFontSize: fontSize,
       widgetSizeMode,
       dashboardBackgroundId,
       customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
@@ -885,6 +903,7 @@ export function useWidgetsState() {
     widgetTextColor,
     widgetOpacity,
     widgetBorderWidth,
+    fontSize,
     widgetSizeMode,
     widgetSurfaceColor,
   ]);
@@ -908,13 +927,14 @@ export function useWidgetsState() {
     setWidgetTextColor(preset.widgetTextColor);
     setWidgetOpacity(preset.widgetOpacity);
     setWidgetBorderWidth(preset.widgetBorderWidth);
+    setFontSize(preset.widgetFontSize);
     setWidgetSizeMode(preset.widgetSizeMode);
     setDashboardBackgroundId(preset.dashboardBackgroundId);
     setCustomBackgroundUrl(preset.customBackgroundUrl);
     setCustomBackgroundType(preset.customBackgroundType);
 
     return true;
-  }, [dashboardPresets]);
+  }, [dashboardPresets, setFontSize]);
 
   const deleteDashboardPreset = useCallback((presetId: string) => {
     const nextPresets = dashboardPresets.filter((preset) => preset.id !== presetId);

@@ -22,6 +22,7 @@ import {
   deleteDashboardThemeTool,
   listDashboardThemesTool,
 } from "./dashboardThemes";
+import { updateDashboardStyleTool, updateDashboardWidgetStyleTool } from "./dashboardStyles";
 
 export const tools = [
   makeBookmarkTool,
@@ -41,6 +42,8 @@ export const tools = [
   saveDashboardThemeTool,
   deleteDashboardThemeTool,
   listDashboardThemesTool,
+  updateDashboardStyleTool,
+  updateDashboardWidgetStyleTool,
 ] as const;
 
 export const toolMap = new Map(tools.map((t) => [t.name, t]));

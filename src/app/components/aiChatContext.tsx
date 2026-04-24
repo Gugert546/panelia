@@ -85,6 +85,8 @@ export function AiChatProvider({ children }: Props) {
           "applyDashboardTheme",
           "saveDashboardTheme",
           "deleteDashboardTheme",
+          "updateDashboardStyle",
+          "updateDashboardWidgetStyle",
         ].includes(tool.name)
       );
 

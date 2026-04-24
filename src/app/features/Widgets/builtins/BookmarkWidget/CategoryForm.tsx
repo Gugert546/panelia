@@ -4,9 +4,18 @@ import { useLanguage } from "../../../../providers/languageProvider";
 type CategoryFormProps = {
   onSubmit: (categoryName: string) => Promise<void>;
   isLoading?: boolean;
+  textColor?: string;
+  surfaceColor?: string;
+  borderColor?: string;
 };
 
-export default function CategoryForm({ onSubmit, isLoading = false }: CategoryFormProps) {
+export default function CategoryForm({
+  onSubmit,
+  isLoading = false,
+  textColor = "inherit",
+  surfaceColor = "rgba(255,255,255,0.22)",
+  borderColor = "rgba(17,24,39,0.2)",
+}: CategoryFormProps) {
   const [categoryName, setCategoryName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { t } = useLanguage();
@@ -32,7 +41,7 @@ export default function CategoryForm({ onSubmit, isLoading = false }: CategoryFo
       {error && (
         <div
           style={{
-            color: "#111827",
+            color: textColor,
             fontSize: 12,
             padding: "7px 9px",
             borderRadius: 8,
@@ -53,10 +62,10 @@ export default function CategoryForm({ onSubmit, isLoading = false }: CategoryFo
           width: "100%",
           padding: "7px 10px",
           borderRadius: 8,
-          border: "1px solid rgba(17,24,39,0.2)",
+          border: `1px solid ${borderColor}`,
           fontSize: 13,
-          background: "rgba(255,255,255,0.6)",
-          color: "#0b1320",
+          background: surfaceColor,
+          color: textColor,
           outline: "none",
         }}
       />
@@ -67,9 +76,9 @@ export default function CategoryForm({ onSubmit, isLoading = false }: CategoryFo
         style={{
           padding: "7px 10px",
           borderRadius: 8,
-          background: "rgba(255,255,255,0.22)",
-          color: "#0b1320",
-          border: "none",
+          background: surfaceColor,
+          color: textColor,
+          border: `1px solid ${borderColor}`,
           cursor: isLoading ? "not-allowed" : "pointer",
           opacity: isLoading ? 0.6 : 1,
           fontSize: 13,
