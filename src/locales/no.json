@@ -33,8 +33,12 @@
     "widgetBorderWidth": "Tykkelse",
     "widgetSize": "Widget-størrelse",
     "resetWidgetStyle": "Tilbakestill widget-stil",
+    "resetConfirmDescription": "Velg hvilke widgets du vil tilbakestille til standardstil.",
+    "resetUnlockedWidgets": "Tilbakestill alle ulåste widgets",
+    "resetAllWidgets": "Tilbakestill alle widgets (inkl. låste)",
+    "cancel": "Avbryt",
     "reset":"Reset",
-    "addCustomButton": "Legg til egendefinert knapp",
+    "addCustomButton": "Egendefinerte knapper",
     "customPresets": "Egendefinerte temaer",
     "presetNamePlaceholder": "Navn på tema",
     "savePreset": "Lagre tema",
@@ -66,7 +70,8 @@
     "placeholder": "Skriv en melding...",
     "send": "Send",
     "sending": "Tenker...",
-    "error": "Beklager, noe gikk galt."
+    "error": "Beklager, noe gikk galt.",
+    "welcome": "Hei! Jeg kan hjelpe deg med Panelia og dashbordet ditt.\n\nJeg kan svare på spørsmål, hjelpe deg med å legge til eller fjerne widgets, knapper og bruke tilkoblede verktøy som kalender, bokmerker og med å endre tema. Spør meg om det du vil gjøre."
   },
   "widgets": {
     "clock": "Klokke",

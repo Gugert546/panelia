@@ -72,6 +72,7 @@ export type DashboardPreset = {
   widgetTextColor: string;
   widgetOpacity: number;
   widgetBorderWidth: number;
+  widgetFontSize: number;
   widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
   customBackgroundUrl: string;
@@ -93,6 +94,7 @@ type WidgetLayoutDocument = {
   widgetTextColor?: string;
   widgetOpacity?: number;
   widgetBorderWidth?: number;
+  widgetFontSize?: number;
   widgetSizeMode?: WidgetSizeMode;
   dashboardBackgroundId?: DashboardBackgroundId | "videoCustom";
   customBackgroundUrl?: string;
@@ -136,10 +138,12 @@ const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
 const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
+const DEFAULT_WIDGET_FONT_SIZE = 14;
 const MIN_WIDGET_FONT_SIZE = 10;
 const MAX_WIDGET_FONT_SIZE = 22;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
 const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "defaultbg";
+const CUSTOM_BUTTON_PREFIX = "customButton:";
 
 // Validerer at en verdi er en gyldig bakgrunns-ID
 function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
@@ -167,6 +171,10 @@ function createDashboardPresetId() {
     return `preset:${crypto.randomUUID()}`;
   }
   return `preset:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function isCustomButtonWidgetId(id: string) {
+  return id.startsWith(CUSTOM_BUTTON_PREFIX);
 }
 
 // Genererer unikt ID for notater-widget (tillater flere notater-instanser)
@@ -263,6 +271,52 @@ function normalizeClockModes(value: unknown): Record<string, ClockMode> {
   return next;
 }
 
+function withAlpha(color: string, alpha: number) {
+  const trimmed = color.trim();
+  const rgbaMatch = trimmed.match(
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    const [, red, green, blue] = rgbaMatch;
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  const hexMatch = trimmed.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (hexMatch) {
+    const hex = hexMatch[1].length === 3
+      ? hexMatch[1].split("").map((char) => char + char).join("")
+      : hexMatch[1];
+
+    const red = Number.parseInt(hex.slice(0, 2), 16);
+    const green = Number.parseInt(hex.slice(2, 4), 16);
+    const blue = Number.parseInt(hex.slice(4, 6), 16);
+
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  return color;
+}
+
+function colorHasExplicitAlpha(color: string) {
+  return /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i.test(
+    color.trim()
+  );
+}
+
+function normalizeBackgroundOpacity(color: string, opacity: unknown) {
+  if (typeof opacity !== "number" || !Number.isFinite(opacity)) {
+    return color;
+  }
+
+  if (colorHasExplicitAlpha(color)) {
+    return color;
+  }
+
+  const normalizedOpacity = Math.min(1, Math.max(0.2, Number(opacity.toFixed(2))));
+  return withAlpha(color, normalizedOpacity);
+}
+
 function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   if (!value || typeof value !== "object") return {};
 
@@ -282,7 +336,10 @@ function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   }
 
   if (typeof rawStyle.widgetOpacity === "number" && Number.isFinite(rawStyle.widgetOpacity)) {
-    normalized.widgetOpacity = Math.min(1, Math.max(0.2, Number(rawStyle.widgetOpacity.toFixed(2))));
+    normalized.widgetSurfaceColor = normalizeBackgroundOpacity(
+      normalized.widgetSurfaceColor ?? DEFAULT_WIDGET_SURFACE_COLOR,
+      rawStyle.widgetOpacity
+    );
   }
 
   if (typeof rawStyle.widgetBorderWidth === "number" && Number.isFinite(rawStyle.widgetBorderWidth)) {
@@ -350,7 +407,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         ? Math.min(1, Math.max(0.2, Number(preset.widgetOpacity.toFixed(2))))
         : DEFAULT_WIDGET_OPACITY;
 
-    presets.push({
+    const normalizedPreset = {
       id:
         typeof preset.id === "string" && preset.id
           ? preset.id
@@ -376,6 +433,10 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
           : DEFAULT_WIDGET_TEXT_COLOR,
       widgetOpacity,
       widgetBorderWidth,
+      widgetFontSize:
+        typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
+          ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(preset.widgetFontSize)))
+          : DEFAULT_WIDGET_FONT_SIZE,
       widgetSizeMode:
         preset.widgetSizeMode === "small" ||
         preset.widgetSizeMode === "medium" ||
@@ -403,7 +464,9 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         typeof preset.createdAt === "number" && Number.isFinite(preset.createdAt)
           ? preset.createdAt
           : Date.now(),
-    });
+    } satisfies DashboardPreset;
+
+    presets.push(reconcileCustomButtonState(normalizedPreset));
   }
 
   return presets;
@@ -429,13 +492,70 @@ function normalizeCustomBackgroundType(
 }
 
 function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
+  const sanitizedPreset = reconcileCustomButtonState(preset);
+
   return {
-    ...preset,
-    customBackgroundUrl: normalizeCustomBackgroundUrl(preset.customBackgroundUrl),
+    ...sanitizedPreset,
+    customBackgroundUrl: normalizeCustomBackgroundUrl(sanitizedPreset.customBackgroundUrl),
     customBackgroundType: normalizeCustomBackgroundType(
-      preset.customBackgroundType,
+      sanitizedPreset.customBackgroundType,
       "image"
     ),
+  };
+}
+
+function reconcileCustomButtonState<T extends {
+  activeWidgets: string[];
+  customButtonConfigs: Record<string, CustomButtonConfig>;
+  layouts: Record<string, LayoutItem>;
+  widgetLocks: Record<string, boolean>;
+  widgetStyles: Record<string, WidgetStyleOverrides>;
+  clockModes?: Record<string, ClockMode>;
+}>(state: T): T {
+  const activeCustomButtonIds = new Set(
+    state.activeWidgets.filter(isCustomButtonWidgetId)
+  );
+  const validCustomButtonIds = new Set(
+    Object.keys(state.customButtonConfigs).filter((id) => activeCustomButtonIds.has(id))
+  );
+
+  const activeWidgets = state.activeWidgets.filter(
+    (id) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+  );
+  const customButtonConfigs = Object.fromEntries(
+    Object.entries(state.customButtonConfigs).filter(([id]) => validCustomButtonIds.has(id))
+  );
+  const layouts = Object.fromEntries(
+    Object.entries(state.layouts).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const widgetLocks = Object.fromEntries(
+    Object.entries(state.widgetLocks).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const widgetStyles = Object.fromEntries(
+    Object.entries(state.widgetStyles).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const clockModes = state.clockModes
+    ? Object.fromEntries(
+        Object.entries(state.clockModes).filter(
+          ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+        )
+      )
+    : undefined;
+
+  return {
+    ...state,
+    activeWidgets,
+    customButtonConfigs,
+    layouts,
+    widgetLocks,
+    widgetStyles,
+    ...(clockModes ? { clockModes } : {}),
   };
 }
 
@@ -539,6 +659,7 @@ function applyPublicDashboardDefaults() {
     widgetTextColor: DEFAULT_WIDGET_TEXT_COLOR,
     widgetOpacity: DEFAULT_WIDGET_OPACITY,
     widgetBorderWidth: DEFAULT_WIDGET_BORDER_WIDTH,
+    widgetFontSize: DEFAULT_WIDGET_FONT_SIZE,
     widgetSizeMode: DEFAULT_WIDGET_SIZE_MODE,
     dashboardBackgroundId: DEFAULT_DASHBOARD_BACKGROUND_ID,
     customBackgroundUrl: "",
@@ -549,7 +670,7 @@ function applyPublicDashboardDefaults() {
 
 export function useWidgetsState() {
   const { user, loading } = useAuth();
-  const { fontSize } = useFontSize();
+  const { fontSize, setFontSize } = useFontSize();
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
@@ -584,6 +705,7 @@ export function useWidgetsState() {
   const [isLoading, setIsLoading] = useState(true);
 
   const hasLoadedRef = useRef(false);
+  const previousFontSizeRef = useRef(fontSize);
 
   const createLockSnapshotStyle = useCallback((styles: Record<string, WidgetStyleOverrides>, widgetId: string) => {
     const existingStyle = styles[widgetId];
@@ -617,6 +739,7 @@ export function useWidgetsState() {
       setWidgetTextColor(publicDefaults.widgetTextColor);
       setWidgetOpacity(publicDefaults.widgetOpacity);
       setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+      setFontSize(publicDefaults.widgetFontSize);
       setWidgetSizeMode(publicDefaults.widgetSizeMode);
       setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
       setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
@@ -645,6 +768,7 @@ export function useWidgetsState() {
         setWidgetTextColor(publicDefaults.widgetTextColor);
         setWidgetOpacity(publicDefaults.widgetOpacity);
         setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+        setFontSize(publicDefaults.widgetFontSize);
         setWidgetSizeMode(publicDefaults.widgetSizeMode);
         setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
         setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
@@ -666,16 +790,28 @@ export function useWidgetsState() {
       const migratedClockModes = migrateLegacyMap(normalizeClockModes(data.clockModes));
       const migratedWidgetStyles = migrateLegacyMap(normalizeWidgetStyles(data.widgetStyles));
 
-      setActiveWidgets(migratedActiveWidgets);
-      setCustomButtonConfigs(migratedCustomButtonConfigs);
-      setLayouts(migratedLayouts);
-      setWidgetLocks(migratedWidgetLocks);
-      setClockModes(migratedClockModes);
-      setWidgetStyles(migratedWidgetStyles);
+      const reconciledState = reconcileCustomButtonState({
+        activeWidgets: migratedActiveWidgets,
+        customButtonConfigs: migratedCustomButtonConfigs,
+        layouts: migratedLayouts,
+        widgetLocks: migratedWidgetLocks,
+        clockModes: migratedClockModes,
+        widgetStyles: migratedWidgetStyles,
+      });
+
+      setActiveWidgets(reconciledState.activeWidgets);
+      setCustomButtonConfigs(reconciledState.customButtonConfigs);
+      setLayouts(reconciledState.layouts);
+      setWidgetLocks(reconciledState.widgetLocks);
+      setClockModes(reconciledState.clockModes ?? {});
+      setWidgetStyles(reconciledState.widgetStyles);
       setWidgetSurfaceColor(
-        typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
-          ? data.widgetSurfaceColor
-          : DEFAULT_WIDGET_SURFACE_COLOR
+        normalizeBackgroundOpacity(
+          typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
+            ? data.widgetSurfaceColor
+            : DEFAULT_WIDGET_SURFACE_COLOR,
+          data.widgetOpacity
+        )
       );
       setWidgetBorderColor(
         typeof data.widgetBorderColor === "string" && data.widgetBorderColor
@@ -687,15 +823,16 @@ export function useWidgetsState() {
           ? data.widgetTextColor
           : DEFAULT_WIDGET_TEXT_COLOR
       );
-      setWidgetOpacity(
-        typeof data.widgetOpacity === "number" && Number.isFinite(data.widgetOpacity)
-          ? Math.min(1, Math.max(0.2, Number(data.widgetOpacity.toFixed(2))))
-          : DEFAULT_WIDGET_OPACITY
-      );
+      setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
       setWidgetBorderWidth(
         typeof data.widgetBorderWidth === "number" && Number.isFinite(data.widgetBorderWidth)
           ? Math.min(12, Math.max(0, Math.round(data.widgetBorderWidth)))
           : DEFAULT_WIDGET_BORDER_WIDTH
+      );
+      setFontSize(
+        typeof data.widgetFontSize === "number" && Number.isFinite(data.widgetFontSize)
+          ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(data.widgetFontSize)))
+          : DEFAULT_WIDGET_FONT_SIZE
       );
       setWidgetSizeMode(
         data.widgetSizeMode === "small" ||
@@ -729,7 +866,7 @@ export function useWidgetsState() {
     } finally {
       setIsLoading(false);
     }
-  }, [loading, user]);
+  }, [loading, setFontSize, user]);
 
   useEffect(() => {
     void loadLayout();
@@ -743,18 +880,28 @@ export function useWidgetsState() {
     const timeout = setTimeout(async () => {
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
-        await setDoc(docRef, {
+        const reconciledState = reconcileCustomButtonState({
           activeWidgets,
           customButtonConfigs,
           layouts,
           widgetLocks,
           clockModes,
           widgetStyles,
+        });
+
+        await setDoc(docRef, {
+          activeWidgets: reconciledState.activeWidgets,
+          customButtonConfigs: reconciledState.customButtonConfigs,
+          layouts: reconciledState.layouts,
+          widgetLocks: reconciledState.widgetLocks,
+          clockModes: reconciledState.clockModes,
+          widgetStyles: reconciledState.widgetStyles,
           widgetSurfaceColor,
           widgetBorderColor,
           widgetTextColor,
           widgetOpacity,
           widgetBorderWidth,
+          widgetFontSize: fontSize,
           widgetSizeMode,
           dashboardBackgroundId,
           customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
@@ -781,6 +928,7 @@ export function useWidgetsState() {
     widgetTextColor,
     widgetOpacity,
     widgetBorderWidth,
+    fontSize,
     widgetSizeMode,
     dashboardBackgroundId,
     customBackgroundUrl,
@@ -840,7 +988,7 @@ export function useWidgetsState() {
   const saveCurrentAsPreset = useCallback((name?: string) => {
     const trimmedName = name?.trim() ?? "";
 
-    const newPreset: DashboardPreset = {
+    const newPreset = reconcileCustomButtonState({
       id: createDashboardPresetId(),
       name: trimmedName || `Preset ${dashboardPresets.length + 1}`,
       activeWidgets: [...activeWidgets],
@@ -856,12 +1004,13 @@ export function useWidgetsState() {
       widgetTextColor,
       widgetOpacity,
       widgetBorderWidth,
+      widgetFontSize: fontSize,
       widgetSizeMode,
       dashboardBackgroundId,
       customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
       customBackgroundType,
       createdAt: Date.now(),
-    };
+    } satisfies DashboardPreset);
 
     const nextPresets = [newPreset, ...dashboardPresets].slice(0, 30);
     setDashboardPresets(nextPresets);
@@ -885,6 +1034,7 @@ export function useWidgetsState() {
     widgetTextColor,
     widgetOpacity,
     widgetBorderWidth,
+    fontSize,
     widgetSizeMode,
     widgetSurfaceColor,
   ]);
@@ -893,34 +1043,86 @@ export function useWidgetsState() {
     const preset = dashboardPresets.find((item) => item.id === presetId);
     if (!preset) return false;
 
-    setActiveWidgets([...preset.activeWidgets]);
-    setLayouts({ ...preset.layouts });
-    setWidgetLocks({ ...preset.widgetLocks });
-    setClockModes({ ...preset.clockModes });
-    setCustomButtonConfigs({ ...preset.customButtonConfigs });
+    const reconciledPreset = reconcileCustomButtonState(preset);
+
+    setActiveWidgets([...reconciledPreset.activeWidgets]);
+    setLayouts({ ...reconciledPreset.layouts });
+    setWidgetLocks({ ...reconciledPreset.widgetLocks });
+    setClockModes({ ...reconciledPreset.clockModes });
+    setCustomButtonConfigs({ ...reconciledPreset.customButtonConfigs });
     setWidgetStyles(
       Object.fromEntries(
-        Object.entries(preset.widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
+        Object.entries(reconciledPreset.widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
       )
     );
-    setWidgetSurfaceColor(preset.widgetSurfaceColor);
-    setWidgetBorderColor(preset.widgetBorderColor);
-    setWidgetTextColor(preset.widgetTextColor);
-    setWidgetOpacity(preset.widgetOpacity);
-    setWidgetBorderWidth(preset.widgetBorderWidth);
-    setWidgetSizeMode(preset.widgetSizeMode);
-    setDashboardBackgroundId(preset.dashboardBackgroundId);
-    setCustomBackgroundUrl(preset.customBackgroundUrl);
-    setCustomBackgroundType(preset.customBackgroundType);
+    setWidgetSurfaceColor(reconciledPreset.widgetSurfaceColor);
+    setWidgetBorderColor(reconciledPreset.widgetBorderColor);
+    setWidgetTextColor(reconciledPreset.widgetTextColor);
+    setWidgetOpacity(reconciledPreset.widgetOpacity);
+    setWidgetBorderWidth(reconciledPreset.widgetBorderWidth);
+    setFontSize(reconciledPreset.widgetFontSize);
+    setWidgetSizeMode(reconciledPreset.widgetSizeMode);
+    setDashboardBackgroundId(reconciledPreset.dashboardBackgroundId);
+    setCustomBackgroundUrl(reconciledPreset.customBackgroundUrl);
+    setCustomBackgroundType(reconciledPreset.customBackgroundType);
 
     return true;
-  }, [dashboardPresets]);
+  }, [dashboardPresets, setFontSize]);
 
   const deleteDashboardPreset = useCallback((presetId: string) => {
     const nextPresets = dashboardPresets.filter((preset) => preset.id !== presetId);
     setDashboardPresets(nextPresets);
     void persistPresetsImmediately(nextPresets);
   }, [dashboardPresets, persistPresetsImmediately]);
+
+  const syncDashboardWidgetState = useCallback((id: string, isActive: boolean) => {
+    if (id === "notes") {
+      return;
+    }
+
+    if (isActive) {
+      setActiveWidgets((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setWidgetLocks((prev) => ({ ...prev, [id]: false }));
+      setWidgetStyles((prev) => {
+        if (!prev[id]) return prev;
+
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setLayouts((prev) => {
+        if (prev[id]) return prev;
+        const defaultLayout = DEFAULT_LAYOUTS[id]
+          ? createCenteredLayout(id, prev)
+          : undefined;
+        return defaultLayout ? { ...prev, [id]: defaultLayout } : prev;
+      });
+      return;
+    }
+
+    setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
+    setLayouts((prev) => {
+      if (!prev[id]) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setWidgetLocks((prev) => {
+      if (!(id in prev)) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setWidgetStyles((prev) => {
+      if (!prev[id]) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
 
   // Slår widget av/på, eller legger til ny notater-instans hvis det er notater
   // Notater er spesiell: hver gang man trykker på "legg til notater" får man ny instans
@@ -1106,6 +1308,13 @@ export function useWidgetsState() {
     });
   }, [widgetLocks]);
 
+  const clearAllWidgetStyles = useCallback(() => {
+    setWidgetStyles((prevStyles) => {
+      if (Object.keys(prevStyles).length === 0) return prevStyles;
+      return {};
+    });
+  }, []);
+
   const updateWidgetSurfaceColor = useCallback((value: string) => {
     setWidgetSurfaceColor(value);
     clearUnlockedWidgetStyles();
@@ -1131,6 +1340,40 @@ export function useWidgetsState() {
     clearUnlockedWidgetStyles();
   }, [clearUnlockedWidgetStyles]);
 
+  useEffect(() => {
+    if (previousFontSizeRef.current === fontSize) {
+      return;
+    }
+
+    previousFontSizeRef.current = fontSize;
+
+    if (isLoading) {
+      return;
+    }
+
+    setWidgetStyles((prevStyles) => {
+      let hasChanges = false;
+      const nextStyles: Record<string, WidgetStyleOverrides> = {};
+
+      for (const [widgetId, style] of Object.entries(prevStyles)) {
+        if (widgetLocks[widgetId] || style.widgetFontSize === undefined) {
+          nextStyles[widgetId] = style;
+          continue;
+        }
+
+        const { widgetFontSize: _widgetFontSize, ...restStyle } = style;
+
+        if (Object.keys(restStyle).length > 0) {
+          nextStyles[widgetId] = restStyle;
+        }
+
+        hasChanges = true;
+      }
+
+      return hasChanges ? nextStyles : prevStyles;
+    });
+  }, [fontSize, isLoading, widgetLocks]);
+
   return {
     activeWidgets,
     customButtonConfigs,
@@ -1149,6 +1392,8 @@ export function useWidgetsState() {
     customBackgroundType,
     dashboardPresets,
     isLoading,
+    reloadLayout: loadLayout,
+    syncDashboardWidgetState,
     toggleWidget,
     updateLayout,
     addCustomButton,
@@ -1157,6 +1402,8 @@ export function useWidgetsState() {
     toggleClockMode,
     setWidgetStyle,
     resetWidgetStyle,
+    clearUnlockedWidgetStyles,
+    clearAllWidgetStyles,
     setWidgetSurfaceColor: updateWidgetSurfaceColor,
     setWidgetBorderColor: updateWidgetBorderColor,
     setWidgetTextColor: updateWidgetTextColor,

@@ -143,6 +143,14 @@ export default function CalendarWidget({
 }: CalendarWidgetProps) {
   const isPopup = variant === "popup";
   const fontSize = useResolvedWidgetFontSize();
+  const headerFontSize = Math.max(fontSize - 2, 11);
+  const headerDateFontSize = Math.max(fontSize - 1, 12);
+  const timeColumnFontSize = Math.max(fontSize - 3, 10);
+  const overflowBadgeFontSize = Math.max(fontSize - 3, 10);
+  const navButtonFontSize = Math.max(fontSize + 2, 16);
+  const rangeLabelFontSize = Math.max(fontSize + 8, 22);
+  const actionButtonFontSize = Math.max(fontSize - 1, 12);
+  const closeButtonFontSize = Math.max(fontSize + 6, 20);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerWheelDeltaRef = useRef(0);
   const [topVisibleTime, setTopVisibleTime] = useState<string | null>(null);
@@ -404,7 +412,7 @@ export default function CalendarWidget({
           backgroundColor: "rgba(255,255,255,0.15)",
           padding: "8px 6px",
           fontWeight: 600,
-          fontSize: "11px",
+          fontSize: headerFontSize,
           textAlign: "center",
         }}
       >
@@ -421,14 +429,14 @@ export default function CalendarWidget({
               backgroundColor: "rgba(255,255,255,0.15)",
               padding: "8px 6px",
               fontWeight: 600,
-              fontSize: "11px",
+              fontSize: headerFontSize,
               textAlign: "center",
               borderRight:
                 idx < displayWeekDays.length - 1 ? DAY_COLUMN_DIVIDER : "none",
             }}
           >
             <div>{day}</div>
-            <div style={{ fontSize: "12px", marginTop: "2px" }}>{dateNum}</div>
+            <div style={{ fontSize: headerDateFontSize, marginTop: "2px" }}>{dateNum}</div>
           </div>
         );
       })}
@@ -511,7 +519,7 @@ export default function CalendarWidget({
           style={{
             backgroundColor: "rgba(255, 255, 255, 0.15)",
             padding: "8px 6px",
-            fontSize: "10px",
+            fontSize: timeColumnFontSize,
             fontWeight: 600,
             textAlign: "center",
           }}
@@ -629,7 +637,7 @@ export default function CalendarWidget({
                 <div
                   style={{
                     alignSelf: "flex-start",
-                    fontSize: "10px",
+                    fontSize: overflowBadgeFontSize,
                     fontWeight: 600,
                     lineHeight: 1,
                     padding: "2px 5px",
@@ -677,7 +685,7 @@ export default function CalendarWidget({
                 borderRadius: "9999px",
                 width: 30,
                 height: 30,
-                fontSize: "16px",
+                fontSize: navButtonFontSize,
                 fontWeight: 700,
                 cursor: "pointer",
                 color: "rgba(15,23,42,0.95)",
@@ -687,7 +695,7 @@ export default function CalendarWidget({
               ←
             </button>
 
-            <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 600 }}>
+            <h2 style={{ margin: 0, fontSize: rangeLabelFontSize, fontWeight: 600 }}>
               {rangeLabel}
             </h2>
 
@@ -699,7 +707,7 @@ export default function CalendarWidget({
                 borderRadius: "9999px",
                 width: 30,
                 height: 30,
-                fontSize: "16px",
+                fontSize: navButtonFontSize,
                 fontWeight: 700,
                 cursor: "pointer",
                 color: "rgba(15,23,42,0.95)",
@@ -717,7 +725,7 @@ export default function CalendarWidget({
                   border: "none",
                   borderRadius: "9999px",
                   padding: "8px 12px",
-                  fontSize: "12px",
+                  fontSize: actionButtonFontSize,
                   fontWeight: 600,
                   cursor: "pointer",
                   color: "rgba(15,23,42,0.95)",
@@ -735,6 +743,7 @@ export default function CalendarWidget({
               <CalendarSelector
                 calendars={calendars}
                 selectedCalendarIds={selectedCalendarIds}
+                fontSize={fontSize}
                 loading={calendarsLoading}
                 saving={calendarsSaving}
                 onToggle={toggleCalendar}
@@ -748,7 +757,7 @@ export default function CalendarWidget({
                 background: "rgba(59,130,246,0.14)",
                 border: "none",
                 borderRadius: "9999px",
-                fontSize: "12px",
+                fontSize: actionButtonFontSize,
                 fontWeight: 600,
                 cursor:
                   calendarRefreshBusy ||
@@ -783,7 +792,7 @@ export default function CalendarWidget({
                     : "rgba(59,130,246,0.2)",
                 border: "none",
                 borderRadius: "9999px",
-                fontSize: "12px",
+                fontSize: actionButtonFontSize,
                 fontWeight: 600,
                 cursor:
                   calendarConnectionBusy || calendarConnectionStatus === "loading"
@@ -810,7 +819,7 @@ export default function CalendarWidget({
                   background: "rgba(255,255,255,0.25)",
                   border: "none",
                   borderRadius: "9999px",
-                  fontSize: "20px",
+                  fontSize: closeButtonFontSize,
                   cursor: "pointer",
                   width: 34,
                   height: 34,

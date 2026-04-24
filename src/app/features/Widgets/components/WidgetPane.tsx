@@ -1,6 +1,7 @@
 import React from "react";
 import { useWidgets } from "../../dashboard/hooks/WidgetsContext";
 import { useWidgetInstance } from "./WidgetInstanceContext";
+import { useResolvedWidgetFontSize } from "../hooks/useResolvedWidgetFontSize";
 
 type WidgetPaneProps = {
   title?: string;
@@ -13,17 +14,16 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
-    widgetOpacity,
     widgetBorderWidth,
     widgetStyles,
   } = useWidgets();
   const widgetInstance = useWidgetInstance();
   const widgetStyle = widgetInstance ? widgetStyles[widgetInstance.widgetId] : undefined;
+  const resolvedFontSize = useResolvedWidgetFontSize();
 
   const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
   const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
   const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
-  const resolvedOpacity = widgetStyle?.widgetOpacity ?? widgetOpacity;
   const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
 
   return (
@@ -38,7 +38,11 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         background: resolvedSurfaceColor,
         border: `${resolvedBorderWidth}px solid ${resolvedBorderColor}`,
         color: resolvedTextColor,
+<<<<<<< aiWidget1.1
+=======
         opacity: resolvedOpacity,
+        fontSize: resolvedFontSize,
+>>>>>>> editsinglewidget
         backdropFilter: "blur(10px)",
 
         display: "flex",
@@ -50,6 +54,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         <h3
           style={{
             margin: 0,
+            fontSize: Math.max(resolvedFontSize + 2, 16),
             fontWeight: 500,
             letterSpacing: 0.4,
           }}

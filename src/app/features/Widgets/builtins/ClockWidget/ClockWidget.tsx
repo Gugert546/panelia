@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
 // Legger til ledende null for enkeltsifrede tall (f.eks. 9 → "09")
 function pad(n: number) {
@@ -13,6 +14,7 @@ type ClockWidgetProps = {
 
 export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
   const [now, setNow] = useState(new Date());
+  const fontSize = useResolvedWidgetFontSize();
 
   // Oppdaterer klokkeslettet hvert sekund
   useEffect(() => {
@@ -136,7 +138,7 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
             <span
               style={{
                 fontWeight: 700,
-                fontSize: "20cqw",
+                fontSize: `clamp(${Math.max(fontSize * 2.4, 28)}px, 20cqw, ${Math.max(fontSize * 4.2, 56)}px)`,
                 fontVariantNumeric: "tabular-nums"
               }}
             >
