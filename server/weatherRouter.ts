@@ -5,6 +5,15 @@ export const weatherRouter = express.Router();
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutter
 const weatherCache = new Map();
 
+function pickFirstNumber(values: unknown[]): number | null {
+  for (const value of values) {
+    if (typeof value === "number" && Number.isFinite(value)) {
+      return value;
+    }
+  }
+  return null;
+}
+
 weatherRouter.get("/", async (req, res) => {
   const { lat, lon } = req.query;
 
@@ -20,7 +29,7 @@ weatherRouter.get("/", async (req, res) => {
     return res.json(cached.data);
   }
 
-  const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
+  const url = `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${lat}&lon=${lon}`;
 
   const r = await fetch(url, {
     headers: {
@@ -34,12 +43,21 @@ weatherRouter.get("/", async (req, res) => {
 
   const data: any = await r.json();
 
-  const ts = data?.properties?.timeseries?.[0];
+  const timeseries = Array.isArray(data?.properties?.timeseries)
+    ? data.properties.timeseries
+    : [];
+  const ts = timeseries[0];
   const details = ts?.data?.instant?.details;
-  const precipitationProbability =
-    ts?.data?.next_1_hours?.details?.probability_of_precipitation ??
-    ts?.data?.next_6_hours?.details?.probability_of_precipitation ??
-    ts?.data?.next_12_hours?.details?.probability_of_precipitation;
+  const precipitationProbability = pickFirstNumber(
+    timeseries.slice(0, 12).flatMap((step: any) => [
+      step?.data?.next_1_hours?.details?.probability_of_precipitation,
+      step?.data?.next_6_hours?.details?.probability_of_precipitation,
+      step?.data?.next_12_hours?.details?.probability_of_precipitation,
+    ])
+  );
+  const uvIndex = pickFirstNumber(
+    timeseries.slice(0, 12).map((step: any) => step?.data?.instant?.details?.ultraviolet_index_clear_sky)
+  );
 
   const result = {
     time: ts?.time,
@@ -47,7 +65,7 @@ weatherRouter.get("/", async (req, res) => {
     windSpeed: details?.wind_speed,
     windFrom: details?.wind_from_direction,
     humidity: details?.relative_humidity,
-    uvIndex: details?.ultraviolet_index_clear_sky ?? null,
+    uvIndex,
     chanceOfRain: precipitationProbability ?? null,
     symbol:
       ts?.data?.next_1_hours?.summary?.symbol_code ??
