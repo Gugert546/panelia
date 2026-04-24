@@ -4,16 +4,15 @@ import { useWidgetInstance } from "../components/WidgetInstanceContext";
 
 export function useResolvedWidgetFontSize() {
   const { fontSize } = useFontSize();
-  const { widgetLocks, widgetStyles } = useWidgets();
+  const { widgetStyles } = useWidgets();
   const widgetInstance = useWidgetInstance();
 
   if (!widgetInstance) return fontSize;
 
   const widgetId = widgetInstance.widgetId;
-  const isLocked = Boolean(widgetLocks[widgetId]);
   const widgetStyle = widgetStyles[widgetId];
 
-  if (isLocked && widgetStyle?.lockSnapshot && widgetStyle.widgetFontSize !== undefined) {
+  if (widgetStyle?.widgetFontSize !== undefined) {
     return widgetStyle.widgetFontSize;
   }
 
