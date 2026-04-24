@@ -203,7 +203,7 @@
       "slides": {
         "welcome": {
           "logoAlt": "Panelia logo",
-          "body": "Panelia is the dashboard where you gather the tools you use every day. Here you can build a start page that fits you, whether you want to focus on studies, work, a clear overview of hobbies, or everything at once."
+          "body": "Read how to use the page here."
         },
         "panelia": {
           "title": "What is Panelia?",
@@ -214,6 +214,7 @@
           "points": {
             "signIn": "Sign in to start placing widgets, save your layout, and sync preferences.",
             "addWidgets": "Open the edit panel on the left and add the widgets you want.",
+            "aiHjelp": "Use the AI assistant to change the page appearance more efficiently.",
             "moveResize": "Drag and resize widgets to build a good workflow layout. Drag the widget's bottom-right corner to resize it, and drag anywhere without content, for example along the edge, to move it.",
             "customize": "Change theme, colors, and font size in settings. Make your page look great and unique!"
           }

@@ -35,6 +35,7 @@ export default function InfoWidget() {
       pointsKeys: [
         "widgets.infoWidget.slides.gettingStarted.points.signIn",
         "widgets.infoWidget.slides.gettingStarted.points.addWidgets",
+        "widgets.infoWidget.slides.gettingStarted.points.aiHjelp",
         "widgets.infoWidget.slides.gettingStarted.points.moveResize",
         "widgets.infoWidget.slides.gettingStarted.points.customize",
       ],
@@ -153,6 +154,14 @@ export default function InfoWidget() {
                     padding: "12px 14px",
                   }}
                 >
+                  {slides[currentSlide].image && (
+                    <img
+                      src={slides[currentSlide].image}
+                      alt={slides[currentSlide].imageAltKey ? t(slides[currentSlide].imageAltKey) : ""}
+                      style={{ maxWidth: "100%", height: "auto", borderRadius: 8, alignSelf: "center" }}
+                    />
+                  )}
+
                   {slides[currentSlide].bodyKey && <p style={{ margin: 0 }}>{t(slides[currentSlide].bodyKey)}</p>}
 
                   {slides[currentSlide].pointsKeys && (
@@ -161,14 +170,6 @@ export default function InfoWidget() {
                         <li key={pointKey}>{t(pointKey)}</li>
                       ))}
                     </ul>
-                  )}
-
-                  {slides[currentSlide].image && (
-                    <img
-                      src={slides[currentSlide].image}
-                      alt={slides[currentSlide].imageAltKey ? t(slides[currentSlide].imageAltKey) : ""}
-                      style={{ maxWidth: "100%", height: "auto", borderRadius: 8, alignSelf: "center" }}
-                    />
                   )}
                 </div>
               </div>

@@ -203,7 +203,7 @@
       "slides": {
         "welcome": {
           "logoAlt": "Panelia-logo",
-          "body": "Panelia er dashboardet der du samler verktøyene du bruker hver dag. Her kan du bygge en startside som passer deg, enten du vil fokusere på studier, jobb, ren oversikt over hobby, eller alt samtidig."
+          "body": "Les hvordan du bruker siden her."
         },
         "panelia": {
           "title": "Hva er Panelia?",
@@ -214,6 +214,7 @@
           "points": {
             "signIn": "Logg inn for å begynne å plassere widgets, lagre oppsett og synkronisere preferanser.",
             "addWidgets": "Åpne redigeringspanelet til venstre, og legg til widgets du ønsker.",
+            "aiHjelp": "Bruk AI-assistenten til å endre sidens utseende mer effektivt.",
             "moveResize": "Dra og endre størrelse på widgets for å bygge et godt arbeidsflyt-oppsett. Du drar widgetens nedre-høyre hjørne for å endre størrelse, og hvor som helst uten innhold, f.eks. langs kanten, for å flytte den.",
             "customize": "Bytt tema, farger og skriftstørrelse i innstillingene. Gjør din side flott og unik!"
           }
