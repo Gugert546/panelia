@@ -38,11 +38,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         background: resolvedSurfaceColor,
         border: `${resolvedBorderWidth}px solid ${resolvedBorderColor}`,
         color: resolvedTextColor,
-<<<<<<< aiWidget1.1
-=======
-        opacity: resolvedOpacity,
         fontSize: resolvedFontSize,
->>>>>>> editsinglewidget
         backdropFilter: "blur(10px)",
 
         display: "flex",
