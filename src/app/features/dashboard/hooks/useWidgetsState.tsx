@@ -298,8 +298,18 @@ function withAlpha(color: string, alpha: number) {
   return color;
 }
 
+function colorHasExplicitAlpha(color: string) {
+  return /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i.test(
+    color.trim()
+  );
+}
+
 function normalizeBackgroundOpacity(color: string, opacity: unknown) {
   if (typeof opacity !== "number" || !Number.isFinite(opacity)) {
+    return color;
+  }
+
+  if (colorHasExplicitAlpha(color)) {
     return color;
   }
 
