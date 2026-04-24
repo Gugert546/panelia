@@ -271,6 +271,42 @@ function normalizeClockModes(value: unknown): Record<string, ClockMode> {
   return next;
 }
 
+function withAlpha(color: string, alpha: number) {
+  const trimmed = color.trim();
+  const rgbaMatch = trimmed.match(
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    const [, red, green, blue] = rgbaMatch;
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  const hexMatch = trimmed.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (hexMatch) {
+    const hex = hexMatch[1].length === 3
+      ? hexMatch[1].split("").map((char) => char + char).join("")
+      : hexMatch[1];
+
+    const red = Number.parseInt(hex.slice(0, 2), 16);
+    const green = Number.parseInt(hex.slice(2, 4), 16);
+    const blue = Number.parseInt(hex.slice(4, 6), 16);
+
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  return color;
+}
+
+function normalizeBackgroundOpacity(color: string, opacity: unknown) {
+  if (typeof opacity !== "number" || !Number.isFinite(opacity)) {
+    return color;
+  }
+
+  const normalizedOpacity = Math.min(1, Math.max(0.2, Number(opacity.toFixed(2))));
+  return withAlpha(color, normalizedOpacity);
+}
+
 function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   if (!value || typeof value !== "object") return {};
 
@@ -290,7 +326,10 @@ function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   }
 
   if (typeof rawStyle.widgetOpacity === "number" && Number.isFinite(rawStyle.widgetOpacity)) {
-    normalized.widgetOpacity = Math.min(1, Math.max(0.2, Number(rawStyle.widgetOpacity.toFixed(2))));
+    normalized.widgetSurfaceColor = normalizeBackgroundOpacity(
+      normalized.widgetSurfaceColor ?? DEFAULT_WIDGET_SURFACE_COLOR,
+      rawStyle.widgetOpacity
+    );
   }
 
   if (typeof rawStyle.widgetBorderWidth === "number" && Number.isFinite(rawStyle.widgetBorderWidth)) {
@@ -756,9 +795,12 @@ export function useWidgetsState() {
       setClockModes(reconciledState.clockModes ?? {});
       setWidgetStyles(reconciledState.widgetStyles);
       setWidgetSurfaceColor(
-        typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
-          ? data.widgetSurfaceColor
-          : DEFAULT_WIDGET_SURFACE_COLOR
+        normalizeBackgroundOpacity(
+          typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
+            ? data.widgetSurfaceColor
+            : DEFAULT_WIDGET_SURFACE_COLOR,
+          data.widgetOpacity
+        )
       );
       setWidgetBorderColor(
         typeof data.widgetBorderColor === "string" && data.widgetBorderColor
@@ -770,11 +812,7 @@ export function useWidgetsState() {
           ? data.widgetTextColor
           : DEFAULT_WIDGET_TEXT_COLOR
       );
-      setWidgetOpacity(
-        typeof data.widgetOpacity === "number" && Number.isFinite(data.widgetOpacity)
-          ? Math.min(1, Math.max(0.2, Number(data.widgetOpacity.toFixed(2))))
-          : DEFAULT_WIDGET_OPACITY
-      );
+      setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
       setWidgetBorderWidth(
         typeof data.widgetBorderWidth === "number" && Number.isFinite(data.widgetBorderWidth)
           ? Math.min(12, Math.max(0, Math.round(data.widgetBorderWidth)))

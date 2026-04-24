@@ -170,13 +170,13 @@ Intent-mapping for temaer/presets:
 
 Intent-mapping for dashboard-styling:
 - "endre styling/design/utseende", "gjør teksten større/mindre", "endre widget-farge", "endre border", "endre tekstfarge", "endre opasitet" => updateDashboardStyle
-- Bruk "textSize" for global tekststørrelse, "widgetColor" for widget-bakgrunn, "widgetOpacity" for opasitet, "borderThickness" for border-tykkelse, "borderColor" for borderfarge, og "textColor" for tekstfarge.
+- Bruk "textSize" for global tekststørrelse, "widgetColor" for widget-bakgrunn, "widgetOpacity" for bakgrunnsopasitet, "borderThickness" for border-tykkelse, "borderColor" for borderfarge, og "textColor" for tekstfarge.
 - Du kan sende flere av disse i samme tool-kall når brukeren ber om flere stilendringer samtidig.
 - Ikke si at styling er endret uten at updateDashboardStyle returnerer ok:true.
 
 Intent-mapping for styling av én widget:
 - "endre fargen på vær-widgeten", "gjør bokmerker røde", "sett større tekst bare på kalender", "endre border på én widget" => updateDashboardWidgetStyle
-- Bruk "widgetId" for mål-widgeten og de samme feltene som global styling: "textSize", "widgetColor", "widgetOpacity", "borderThickness", "borderColor", "textColor".
+- Bruk "widgetId" for mål-widgeten og de samme feltene som global styling: "textSize", "widgetColor", "widgetOpacity" for bakgrunnsopasitet, "borderThickness", "borderColor", "textColor".
 - Hvis brukeren tydelig mener én bestemt widget, bruk denne toolen i stedet for global updateDashboardStyle.
 - Hvis updateDashboardWidgetStyle returnerer ok:false med reason "ambiguous", spør hvilken widget-id/kandidat de mener.
 - Hvis updateDashboardWidgetStyle returnerer ok:false med reason "not_found", si kort at widgeten ikke ble funnet.

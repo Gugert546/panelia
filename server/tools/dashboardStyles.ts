@@ -149,6 +149,33 @@ function normalizeColor(value: unknown, fallback: string) {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
 }
 
+function withAlpha(color: string, alpha: number) {
+  const trimmed = color.trim();
+  const rgbaMatch = trimmed.match(
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    const [, red, green, blue] = rgbaMatch;
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  const hexMatch = trimmed.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (hexMatch) {
+    const hex = hexMatch[1].length === 3
+      ? hexMatch[1].split("").map((char) => char + char).join("")
+      : hexMatch[1];
+
+    const red = Number.parseInt(hex.slice(0, 2), 16);
+    const green = Number.parseInt(hex.slice(2, 4), 16);
+    const blue = Number.parseInt(hex.slice(4, 6), 16);
+
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  return color;
+}
+
 function normalizeBooleanMap(value: unknown) {
   if (!value || typeof value !== "object") return {};
 
@@ -267,7 +294,7 @@ export const updateDashboardStyleTool: ToolDef<
 > = {
   name: "updateDashboardStyle",
   description:
-    "Update the current dashboard styling. Supports global text size, widget color, widget opacity, border thickness, border color, and text color.",
+    "Update the current dashboard styling. Supports global text size, widget color, widget background opacity, border thickness, border color, and text color.",
   parameters: {
     type: "object",
     properties: {
@@ -283,7 +310,7 @@ export const updateDashboardStyleTool: ToolDef<
       },
       widgetOpacity: {
         type: "number",
-        description: "Widget opacity from 0.2 to 1.",
+        description: "Widget background opacity from 0.2 to 1.",
         minimum: 0.2,
         maximum: 1,
       },
@@ -342,7 +369,9 @@ export const updateDashboardStyleTool: ToolDef<
 
     if (args.widgetOpacity !== undefined) {
       nextStyle.widgetOpacity = normalizeOpacity(args.widgetOpacity);
-      patch.widgetOpacity = nextStyle.widgetOpacity;
+      nextStyle.widgetSurfaceColor = withAlpha(nextStyle.widgetSurfaceColor, nextStyle.widgetOpacity);
+      patch.widgetOpacity = DEFAULT_WIDGET_OPACITY;
+      patch.widgetSurfaceColor = nextStyle.widgetSurfaceColor;
       changed.push("widgetOpacity");
     }
 
@@ -387,7 +416,7 @@ export const updateDashboardWidgetStyleTool: ToolDef<
 > = {
   name: "updateDashboardWidgetStyle",
   description:
-    "Update styling for one specific dashboard widget. Supports widget text size, widget color, widget opacity, border thickness, border color, and text color. Use the widget's visible name or exact widget ID.",
+    "Update styling for one specific dashboard widget. Supports widget text size, widget color, widget background opacity, border thickness, border color, and text color. Use the widget's visible name or exact widget ID.",
   parameters: {
     type: "object",
     properties: {
@@ -408,7 +437,7 @@ export const updateDashboardWidgetStyleTool: ToolDef<
       },
       widgetOpacity: {
         type: "number",
-        description: "Widget opacity from 0.2 to 1.",
+        description: "Widget background opacity from 0.2 to 1.",
         minimum: 0.2,
         maximum: 1,
       },
@@ -473,6 +502,10 @@ export const updateDashboardWidgetStyleTool: ToolDef<
     }
     if (args.widgetOpacity !== undefined) {
       nextStyle.widgetOpacity = normalizeOpacity(args.widgetOpacity);
+      nextStyle.widgetSurfaceColor = withAlpha(
+        nextStyle.widgetSurfaceColor ?? DEFAULT_WIDGET_SURFACE_COLOR,
+        nextStyle.widgetOpacity
+      );
       changed.push("widgetOpacity");
     }
     if (args.borderThickness !== undefined) {
