@@ -91,7 +91,7 @@ export default function InfoWidget() {
 
   return (
     <WidgetContainer>
-      <WidgetPane title={t("widgets.info")}>
+      <WidgetPane>
         <div
           style={{
             width: "100%",

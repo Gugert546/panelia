@@ -82,6 +82,7 @@ function getImageBackgroundSource(
 
 function DashboardPageContent() {
   const SIDEBAR_WIDTH = 86;
+  const GUEST_INFO_LAYOUT = { x: 1, y: 2, w: 12, h: 12 };
 
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
@@ -155,6 +156,12 @@ function DashboardPageContent() {
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
     isAuthenticated && (activePanel === "calendar" || isCalendarWidgetActive);
+  const visibleWidgets = isAuthenticated ? activeWidgets : ["info"];
+  const visibleLayouts = isAuthenticated
+    ? layouts
+    : {
+      info: layouts.info ?? GUEST_INFO_LAYOUT,
+    };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -482,8 +489,8 @@ function DashboardPageContent() {
         }}
       >
         <DashboardGrid
-          activeWidgets={activeWidgets}
-          layouts={layouts}
+          activeWidgets={visibleWidgets}
+          layouts={visibleLayouts}
           widgetLocks={widgetLocks}
           clockModes={clockModes}
           widgetStyles={widgetStyles}
@@ -499,6 +506,7 @@ function DashboardPageContent() {
           onResetWidgetStyle={resetWidgetStyle}
           sidebarWidth={SIDEBAR_WIDTH}
           isInteractive={isAuthenticated}
+          isMovable={true}
           calendarWidgetConfig={{
             calendarConnectionStatus,
             calendarConnectionBusy,
