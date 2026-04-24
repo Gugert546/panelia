@@ -922,6 +922,55 @@ export function useWidgetsState() {
     void persistPresetsImmediately(nextPresets);
   }, [dashboardPresets, persistPresetsImmediately]);
 
+  const syncDashboardWidgetState = useCallback((id: string, isActive: boolean) => {
+    if (id === "notes") {
+      return;
+    }
+
+    if (isActive) {
+      setActiveWidgets((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setWidgetLocks((prev) => ({ ...prev, [id]: false }));
+      setWidgetStyles((prev) => {
+        if (!prev[id]) return prev;
+
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setLayouts((prev) => {
+        if (prev[id]) return prev;
+        const defaultLayout = DEFAULT_LAYOUTS[id]
+          ? createCenteredLayout(id, prev)
+          : undefined;
+        return defaultLayout ? { ...prev, [id]: defaultLayout } : prev;
+      });
+      return;
+    }
+
+    setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
+    setLayouts((prev) => {
+      if (!prev[id]) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setWidgetLocks((prev) => {
+      if (!(id in prev)) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setWidgetStyles((prev) => {
+      if (!prev[id]) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
   // Slår widget av/på, eller legger til ny notater-instans hvis det er notater
   // Notater er spesiell: hver gang man trykker på "legg til notater" får man ny instans
   const toggleWidget = useCallback((id: string) => {
@@ -1150,6 +1199,7 @@ export function useWidgetsState() {
     dashboardPresets,
     isLoading,
     reloadLayout: loadLayout,
+    syncDashboardWidgetState,
     toggleWidget,
     updateLayout,
     addCustomButton,

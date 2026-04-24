@@ -20,6 +20,11 @@ type Props = {
 
 const MAX_HISTORY_MESSAGES = 12;
 
+type DashboardWidgetToolResult = {
+  widgetId?: string;
+  active?: boolean;
+};
+
 function createMessageId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return crypto.randomUUID();
@@ -30,7 +35,7 @@ function createMessageId() {
 
 export function AiChatProvider({ children }: Props) {
   const { user } = useAuth();
-  const { reloadLayout } = useWidgets();
+  const { reloadLayout, syncDashboardWidgetState } = useWidgets();
   const [messages, setMessages] = useState<AiChatMessage[]>([]);
   const [isSending, setIsSending] = useState(false);
 
@@ -57,6 +62,18 @@ export function AiChatProvider({ children }: Props) {
           text: message.text,
         }));
       const aiResponse = await sendMessageToAI(trimmedText, history);
+      for (const tool of aiResponse.executedTools) {
+        if (tool.name !== "addDashboardWidget" && tool.name !== "removeDashboardWidget") {
+          continue;
+        }
+
+        const result = tool.result as DashboardWidgetToolResult;
+
+        if (typeof result.widgetId === "string" && typeof result.active === "boolean") {
+          syncDashboardWidgetState(result.widgetId, result.active);
+        }
+      }
+
       const shouldReloadLayout = aiResponse.executedTools.some((tool) =>
         [
           "addCustomButton",
@@ -92,7 +109,7 @@ export function AiChatProvider({ children }: Props) {
     } finally {
       setIsSending(false);
     }
-  }, [messages, reloadLayout]);
+  }, [messages, reloadLayout, syncDashboardWidgetState]);
 
   const value = useMemo<AiChatContextValue>(
     () => ({

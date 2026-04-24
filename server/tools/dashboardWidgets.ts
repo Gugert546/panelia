@@ -1,3 +1,4 @@
+import { FieldValue } from "@google-cloud/firestore";
 import type { ToolDef } from "./types";
 import { adminDb } from "../firebaseAdmin";
 
@@ -238,6 +239,7 @@ export const addDashboardWidgetTool: ToolDef<
       const activeWidgets = normalizeActiveWidgets(data.activeWidgets, snap.exists);
       const layouts = normalizeLayouts(data.layouts, snap.exists);
       const widgetLocks = normalizeBooleanMap(data.widgetLocks);
+      const widgetStyles = normalizeObjectMap(data.widgetStyles);
 
       alreadyActive = activeWidgets.includes(widgetId);
 
@@ -245,20 +247,27 @@ export const addDashboardWidgetTool: ToolDef<
         layouts[widgetId] = createCenteredLayout(widgetId, layouts);
       }
 
-      if (typeof widgetLocks[widgetId] !== "boolean") {
-        widgetLocks[widgetId] = false;
-      }
+      widgetLocks[widgetId] = false;
+      delete widgetStyles[widgetId];
 
-      transaction.set(
-        ref,
-        {
+      if (!snap.exists) {
+        transaction.set(ref, {
           activeWidgets: alreadyActive ? activeWidgets : [...activeWidgets, widgetId],
           layouts,
           widgetLocks,
+          widgetStyles,
           updatedAt: new Date(),
-        },
-        { merge: true }
-      );
+        });
+        return;
+      }
+
+      transaction.update(ref, {
+        activeWidgets: alreadyActive ? activeWidgets : [...activeWidgets, widgetId],
+        layouts,
+        [`widgetLocks.${widgetId}`]: false,
+        [`widgetStyles.${widgetId}`]: FieldValue.delete(),
+        updatedAt: new Date(),
+      });
     });
 
     return {
@@ -308,17 +317,24 @@ export const removeDashboardWidgetTool: ToolDef<
       delete widgetLocks[widgetId];
       delete widgetStyles[widgetId];
 
-      transaction.set(
-        ref,
-        {
+      if (!snap.exists) {
+        transaction.set(ref, {
           activeWidgets: activeWidgets.filter((id) => id !== widgetId),
           layouts,
           widgetLocks,
           widgetStyles,
           updatedAt: new Date(),
-        },
-        { merge: true }
-      );
+        });
+        return;
+      }
+
+      transaction.update(ref, {
+        activeWidgets: activeWidgets.filter((id) => id !== widgetId),
+        layouts,
+        [`widgetLocks.${widgetId}`]: FieldValue.delete(),
+        [`widgetStyles.${widgetId}`]: FieldValue.delete(),
+        updatedAt: new Date(),
+      });
     });
 
     return {
