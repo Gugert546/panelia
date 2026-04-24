@@ -9,6 +9,6 @@ export type ToolContext = {
 export type ToolDef<TArgs, TResult> = {
   name: string;
   description: string;
-  parameters: Record<string, any>; // ✅ JSON schema-ish
+  parameters: Record<string, any>; 
   handler: (args: TArgs, ctx: ToolContext) => Promise<TResult>;
 };

@@ -14,7 +14,6 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
-    widgetOpacity,
     widgetBorderWidth,
     widgetStyles,
   } = useWidgets();
@@ -25,7 +24,6 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
   const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
   const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
   const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
-  const resolvedOpacity = widgetStyle?.widgetOpacity ?? widgetOpacity;
   const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
 
   return (
@@ -40,8 +38,11 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         background: resolvedSurfaceColor,
         border: `${resolvedBorderWidth}px solid ${resolvedBorderColor}`,
         color: resolvedTextColor,
+<<<<<<< aiWidget1.1
+=======
         opacity: resolvedOpacity,
         fontSize: resolvedFontSize,
+>>>>>>> editsinglewidget
         backdropFilter: "blur(10px)",
 
         display: "flex",

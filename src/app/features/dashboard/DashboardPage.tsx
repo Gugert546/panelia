@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
 import EditPanel from "../../components/editPanel";
-import Chat from "../../components/chatUI";
+import AiChatPanel from "../../components/AiChatPanel";
+import { AiChatProvider } from "../../components/aiChatContext";
 
 import CalendarWidget from "../Widgets/builtins/CalendarWidget/CalendarWidget";
 
@@ -33,6 +34,7 @@ import { useLanguage } from "../../providers/languageProvider";
 import { useAuth } from "../auth/useAuth";
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
+type ActivePanel = "edit" | "calendar" | "chat" | null;
 
 function resolveDashboardBackground(
   backgroundId: DashboardBackgroundId
@@ -79,11 +81,9 @@ function getImageBackgroundSource(
 }
 
 function DashboardPageContent() {
-  const SIDEBAR_WIDTH = 60;
+  const SIDEBAR_WIDTH = 86;
 
-  const [editOpen, setEditOpen] = useState(false);
-  const [isChatVisible, setIsChatVisible] = useState(false);
-  const [isCalendarVisible, setIsCalendarVisible] = useState(false);
+  const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
   const [calendarConnectionStatus, setCalendarConnectionStatus] =
     useState<CalendarConnectionStatus>("loading");
@@ -154,7 +154,7 @@ function DashboardPageContent() {
   );
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
-    isAuthenticated && (isCalendarVisible || isCalendarWidgetActive);
+    isAuthenticated && (activePanel === "calendar" || isCalendarWidgetActive);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -168,9 +168,7 @@ function DashboardPageContent() {
     if (loading) return;
     if (isAuthenticated) return;
 
-    setEditOpen(false);
-    setIsChatVisible(false);
-    setIsCalendarVisible(false);
+    setActivePanel(null);
   }, [isAuthenticated, loading]);
 
   useEffect(() => {
@@ -382,11 +380,11 @@ function DashboardPageContent() {
     if (!isAuthenticated) return;
 
     if (itemKey === "calendar") {
-      setIsCalendarVisible((prev) => !prev);
+      setActivePanel((prev) => (prev === "calendar" ? null : "calendar"));
     }
 
     if (itemKey === "chat") {
-      setIsChatVisible((prev) => !prev);
+      setActivePanel((prev) => (prev === "chat" ? null : "chat"));
     }
   };
 
@@ -428,7 +426,7 @@ function DashboardPageContent() {
         onSidebarNav={handleSidebarNavigation}
         onEditClick={() => {
           if (!isAuthenticated) return;
-          setEditOpen((prev) => !prev);
+          setActivePanel((prev) => (prev === "edit" ? null : "edit"));
         }}
       />
 
@@ -444,8 +442,8 @@ function DashboardPageContent() {
       </div>
 
       <EditPanel
-        open={editOpen}
-        onClose={() => setEditOpen(false)}
+        open={activePanel === "edit"}
+        onClose={() => setActivePanel(null)}
         availableWidgets={translatedAvailableWidgets}
         activeWidgets={activeWidgets}
         toggleWidget={toggleWidget}
@@ -492,7 +490,6 @@ function DashboardPageContent() {
           widgetSurfaceColor={widgetSurfaceColor}
           widgetBorderColor={widgetBorderColor}
           widgetTextColor={widgetTextColor}
-          widgetOpacity={widgetOpacity}
           widgetBorderWidth={widgetBorderWidth}
           onLayoutChange={updateLayout}
           onCloseWidget={removeCustomButton}
@@ -513,23 +510,15 @@ function DashboardPageContent() {
         />
       </main>
 
+      <AiChatPanel
+        open={activePanel === "chat"}
+        onClose={() => setActivePanel(null)}
+        sidebarWidth={SIDEBAR_WIDTH}
+      />
 
-
-      {isChatVisible && (
-        <div
-          style={{
-            position: "fixed",
-            bottom: 80,
-            right: 20,
-          }}
-        >
-          <Chat />
-        </div>
-      )}
-
-      {isCalendarVisible && (
+      {activePanel === "calendar" && (
         <CalendarWidget
-          onClose={() => setIsCalendarVisible(false)}
+          onClose={() => setActivePanel(null)}
           leftOffset={SIDEBAR_WIDTH + 20}
           calendarConnectionStatus={calendarConnectionStatus}
           calendarConnectionBusy={calendarConnectionBusy}
@@ -546,7 +535,9 @@ function DashboardPageContent() {
 export default function DashboardPage() {
   return (
     <WidgetsProvider>
-      <DashboardPageContent />
+      <AiChatProvider>
+        <DashboardPageContent />
+      </AiChatProvider>
     </WidgetsProvider>
   );
 }

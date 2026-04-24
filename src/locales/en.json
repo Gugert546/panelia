@@ -38,7 +38,7 @@
     "resetAllWidgets": "Reset all widgets (incl. locked)",
     "cancel": "Cancel",
     "reset":"Reset",
-    "addCustomButton": "Add custom button",
+    "addCustomButton": "Custom buttons",
     "customPresets": "Custom themes",
     "presetNamePlaceholder": "Theme name",
     "savePreset": "Save theme",
@@ -65,6 +65,14 @@
     "closeModalComment": "Close modal when button is added",
     "fetchPreviewError": "Could not fetch link preview:"
   },
+  "chat": {
+    "title": "AI Chat",
+    "placeholder": "Type a message...",
+    "send": "Send",
+    "sending": "Thinking...",
+    "error": "Sorry, something went wrong.",
+    "welcome": "Hi! I can help you work with Panelia and your dashboard.\n\nI can answer questions, help you plan widgets and layouts, and use connected tools when they are available, such as calendar, email, weather, search, notes, bookmarks, Spotify, and dashboard settings. Ask me what you want to do."
+  },
   "widgets": {
     "clock": "Clock",
     "google_search": "Search",
@@ -72,9 +80,11 @@
     "weather": "Weather",
     "bookmark": "Bookmark",
     "info": "Info",
+    "ai_chat": "AI Chat",
     "notes": "Notes",
     "spotify": "Spotify",
     "calendar": "Calendar",
+    "email": "Email",
     "minesweeper": "Minesweeper",
     "bookmarkWidget": {
       "title": "Bookmarks",
@@ -167,19 +177,70 @@
       "today": "Today"
 
     },
-    "infoWidget":{
-      "title":"Welcome to Panelia",
-      "bread":"Bruk siden vår, hvis ikke får du besøk i natt! ",
-      "aboutUs":"vi er Audun, Einar, Jonas og Sindre",
-      "aboutPanelia":"Panelia er en personelig widget-basert startside. Her kan du selv velge hvordan siden skal se ut og hvilke widgets du skal bruke",
-      "aboutTask":"vi har valgt å lage vår egen oppgave...",
-      "erfaringer":"vi skal produsere en nettside som skal brukes som det første “trappetrinnet” når brukeren skal ut på internett, her skal informasjon som brukeren trenger/ønsker samles og presenteres på en ryddig og intuitiv måte ",
-      "utbytte":"hva har vi fått ut av prosjektet:",
-      "utbytte2":"Erfaring, kompentanse og selvtillit med arbeid på større prosjekter",
-      "utbytte3":"større kompetanse på integrering av tredjeparts apier",
-      "utbytte4":"En side som vi personelig kommer til å bruke i fremtiden",
-      "challenges":"",
-      "goalTitle":"Våre mål"
+    "emailWidget": {
+      "title": "Email",
+      "checking": "Checking email connection...",
+      "soon": "soon",
+      "refresh": "Refresh email",
+      "connectGmailHelp": "Connect Gmail to show recent inbox messages here.",
+      "connectOutlookHelp": "Connect Outlook to show recent inbox messages here.",
+      "connectGmail": "Connect Gmail",
+      "connectOutlook": "Connect Outlook",
+      "connecting": "Connecting...",
+      "disconnect": "Disconnect",
+      "unreadFirst": "Unread first",
+      "unread": "Unread",
+      "empty": "No recent inbox messages.",
+      "signInRequired": "Sign in to connect email.",
+      "providerUnavailable": "This provider is planned, but Gmail and Outlook are supported now.",
+      "statusError": "Could not check email status.",
+      "messagesError": "Could not load email messages.",
+      "connectError": "Could not start email connection.",
+      "disconnectError": "Could not disconnect email.",
+      "oauthConnected": "Email connected. Loading inbox...",
+      "oauthError": "Email connection failed. Check the server terminal for the OAuth error."
+    },
+    "infoWidget": {
+      "title": "Welcome to Panelia",
+      "slideCounter": "Slide",
+      "previousSlide": "Previous slide",
+      "nextSlide": "Next slide",
+      "slides": {
+        "welcome": {
+          "logoAlt": "Panelia logo",
+          "body": "Panelia is the dashboard where you gather the tools you use every day. Here you can build a start page that fits you, whether you want to focus on studies, work, a clear overview of hobbies, or everything at once."
+        },
+        "panelia": {
+          "title": "What is Panelia?",
+          "body": "Panelia is a personal widget-based start page. You can choose which widgets you want to use, place them where you want, and adjust the appearance so the dashboard becomes your own. You build your own start page."
+        },
+        "gettingStarted": {
+          "title": "Get started!",
+          "points": {
+            "signIn": "Sign in to start placing widgets, save your layout, and sync preferences.",
+            "addWidgets": "Open the edit panel on the left and add the widgets you want.",
+            "moveResize": "Drag and resize widgets to build a good workflow layout. Drag the widget's bottom-right corner to resize it, and drag anywhere without content, for example along the edge, to move it.",
+            "customize": "Change theme, colors, and font size in settings. Make your page look great and unique!"
+          }
+        },
+        "widgets": {
+          "title": "Widget examples",
+          "points": {
+            "weather": "The weather widget gives you a quick overview of current conditions.",
+            "calendar": "The calendar widget helps you keep track of plans and deadlines.",
+            "news": "The news widget fetches updated headlines in seconds.",
+            "notes": "The notes widget makes it easy to capture ideas and reminders."
+          }
+        },
+        "project": {
+          "title": "About the project",
+          "body": "Panelia was developed as a bachelor project to explore design, frontend architecture, and integration with third-party services. Thank you for using Panelia!",
+          "points": {
+            "team": "We are Audun, Sindre, Jonas, and Einar, from the University of South-Eastern Norway.",
+            "learning": "..."
+          }
+        }
+      }
     }
   }
 }

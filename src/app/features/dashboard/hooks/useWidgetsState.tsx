@@ -4,6 +4,7 @@ import { db } from "../../../../lib/firebase/client";
 import { useAuth } from "../../auth/useAuth";
 import { useFontSize } from "../../../providers/themeProviders";
 
+// Representer posisjonen og størrelsen på en widget i rutenett
 type LayoutItem = {
   x: number;
   y: number;
@@ -11,23 +12,28 @@ type LayoutItem = {
   h: number;
 };
 
-const GRID_COLUMNS = 40; // Brukes for å plassere widget ved spawn
-const GRID_ROWS = 20;
+// Rutenett-dimensjoner for dashboard-layoutet
+const GRID_COLUMNS = 40; // Horisontale spalter for widget-plassering
+const GRID_ROWS = 20; // Vertikale rader tilgjengelige i dashboard
 
+// Konfigurasjonsalternativer for egendefinert knapp-widget
 export type CustomButtonConfig = {
   label: string;
   url: string;
   favicon: string;
 };
 
+// Displaymodus for klokke-widget
 export type ClockMode = "digital" | "analog";
 
+// En instans av en widget med sitt unike ID, type og konfigurasjonsdata
 export type WidgetInstance = {
-  id: string;
-  type: string;
-  config: Record<string, unknown>;
+  id: string; // Unikt ID (format: "type:uuid" eller bare "type")
+  type: string; // Widget-type (f.eks. "notes", "calendar", "clock")
+  config: Record<string, unknown>; // Widget-spesifikk konfigurasjonsdata
 };
 
+// Størrelse-preset for widgets (påvirker padding, tekststørrelse osv.)
 export type WidgetSizeMode = "small" | "medium" | "large";
 export type WidgetStyleOverrides = {
   widgetSurfaceColor?: string;
@@ -39,14 +45,17 @@ export type WidgetStyleOverrides = {
   lockSnapshot?: boolean;
 };
 export type CustomBackgroundMediaType = "image" | "video";
+
+// Tilgjengelige forhåndsinnstillinger for dashboard-bakgrunn
+// "sol1-3" = dagtidskonfigurasjoner, "natt1-3" = nattidskonfigurasjoner
 export type DashboardBackgroundId =
-  | "defaultbg"
+  | "defaultbg" // Standard lysegrå bakgrunn
   | "sol1"
   | "sol2"
   | "sol3"
-  | "natt1"
-  | "natt2"
-  | "natt3"
+  | "natt1" // Første nattidsbakgrunn
+  | "natt2" // Andre nattidsbakgrunn
+  | "natt3" // Tredje nattidsbakgrunn
   | "customMedia";
 
 export type DashboardPreset = {
@@ -63,6 +72,7 @@ export type DashboardPreset = {
   widgetTextColor: string;
   widgetOpacity: number;
   widgetBorderWidth: number;
+  widgetFontSize: number;
   widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
   customBackgroundUrl: string;
@@ -70,6 +80,8 @@ export type DashboardPreset = {
   createdAt: number;
 };
 
+// Skjema for widget-layout-dokumentet fra Firestore
+// Alle felter er valgfrie for fleksibilitet ved migrering av gamle data
 type WidgetLayoutDocument = {
   activeWidgets?: string[];
   layouts?: Record<string, LayoutItem>;
@@ -82,17 +94,20 @@ type WidgetLayoutDocument = {
   widgetTextColor?: string;
   widgetOpacity?: number;
   widgetBorderWidth?: number;
+  widgetFontSize?: number;
   widgetSizeMode?: WidgetSizeMode;
   dashboardBackgroundId?: DashboardBackgroundId | "videoCustom";
   customBackgroundUrl?: string;
   customBackgroundType?: CustomBackgroundMediaType;
   customVideoBackgroundUrl?: string;
   dashboardPresets?: DashboardPreset[];
-  updatedAt?: unknown;
+  updatedAt?: unknown; // Firebase serverTimestamp
 };
 
+// Widgets som vises for ikke-autentiserte brukere (offentlig visning)
 const PUBLIC_WIDGET_IDS = ["info", "google_search", "weather","clock"] as const;
 
+// Standard layout for offentlige widgets (brukes når bruker ikke er logget inn)
 const PUBLIC_LAYOUTS: Record<string, LayoutItem> = {
   info: { x: 1, y: 2, w: 12, h: 12 },
   google_search: { x: 13, y: 14, w: 14, h: 3 },
@@ -100,7 +115,7 @@ const PUBLIC_LAYOUTS: Record<string, LayoutItem> = {
   clock:{x:17,y:10,w:4,h:3}
 };
 
-// Available widgets for the dashboard
+// Liste over alle tilgjengelige widgets som kan legges til dashboardet
 export const AVAILABLE_WIDGETS = [
   { id: "clock", label: "Klokke", icon: "schedule" },
   { id: "calendar", label: "Kalender", icon: "calendar_month" },
@@ -109,6 +124,8 @@ export const AVAILABLE_WIDGETS = [
   { id: "weather", label: "Vær", icon: "partly_cloudy_day" },
   { id: "bookmark", label: "Bokmerke", icon: "bookmark" },
   { id: "info", label: "Info", icon: "info" },
+  { id: "ai_chat", label: "AI Chat", icon: "smart_toy" },
+  { id: "email", label: "E-post", icon: "mail" },
   { id: "notes", label: "Notater", icon: "sticky_note_2" },
   { id: "spotify", label: "Spotify", icon: "music_note" },
   { id: "minesweeper", label: "Minesweeper", icon: "bomb" },
@@ -121,11 +138,14 @@ const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
 const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
+const DEFAULT_WIDGET_FONT_SIZE = 14;
 const MIN_WIDGET_FONT_SIZE = 10;
 const MAX_WIDGET_FONT_SIZE = 22;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
 const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "defaultbg";
+const CUSTOM_BUTTON_PREFIX = "customButton:";
 
+// Validerer at en verdi er en gyldig bakgrunns-ID
 function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
   return (
     value === "defaultbg" ||
@@ -139,11 +159,13 @@ function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId
   );
 }
 
+// Normaliserer bakgrunns-ID fra Firestore (håndterer legacy verdier)
 function normalizeDashboardBackgroundId(value: unknown): DashboardBackgroundId {
   if (value === "videoCustom") return "customMedia";
   return isDashboardBackgroundId(value) ? value : DEFAULT_DASHBOARD_BACKGROUND_ID;
 }
 
+// Genererer unikt preset-ID ved hjelp av crypto.randomUUID eller fallback
 function createDashboardPresetId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `preset:${crypto.randomUUID()}`;
@@ -151,6 +173,11 @@ function createDashboardPresetId() {
   return `preset:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+function isCustomButtonWidgetId(id: string) {
+  return id.startsWith(CUSTOM_BUTTON_PREFIX);
+}
+
+// Genererer unikt ID for notater-widget (tillater flere notater-instanser)
 function createNotesWidgetId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `notes:${crypto.randomUUID()}`;
@@ -159,6 +186,8 @@ function createNotesWidgetId() {
   return `notes:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+// Validerer og normaliserer layout-data fra Firestore
+// Brukes ved innlasting for å sikre at alle layout-verdier er gyldige tall
 function normalizeLayouts(value: unknown): Record<string, LayoutItem> {
   if (!value || typeof value !== "object") return {};
 
@@ -174,6 +203,7 @@ function normalizeLayouts(value: unknown): Record<string, LayoutItem> {
     const w = Number(layout.w);
     const h = Number(layout.h);
 
+    // Validerer at alle verdier er endelige tall før de inkluderes
     if (
       Number.isFinite(x) &&
       Number.isFinite(y) &&
@@ -241,6 +271,52 @@ function normalizeClockModes(value: unknown): Record<string, ClockMode> {
   return next;
 }
 
+function withAlpha(color: string, alpha: number) {
+  const trimmed = color.trim();
+  const rgbaMatch = trimmed.match(
+    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
+  );
+
+  if (rgbaMatch) {
+    const [, red, green, blue] = rgbaMatch;
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  const hexMatch = trimmed.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
+  if (hexMatch) {
+    const hex = hexMatch[1].length === 3
+      ? hexMatch[1].split("").map((char) => char + char).join("")
+      : hexMatch[1];
+
+    const red = Number.parseInt(hex.slice(0, 2), 16);
+    const green = Number.parseInt(hex.slice(2, 4), 16);
+    const blue = Number.parseInt(hex.slice(4, 6), 16);
+
+    return `rgba(${red},${green},${blue},${alpha})`;
+  }
+
+  return color;
+}
+
+function colorHasExplicitAlpha(color: string) {
+  return /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i.test(
+    color.trim()
+  );
+}
+
+function normalizeBackgroundOpacity(color: string, opacity: unknown) {
+  if (typeof opacity !== "number" || !Number.isFinite(opacity)) {
+    return color;
+  }
+
+  if (colorHasExplicitAlpha(color)) {
+    return color;
+  }
+
+  const normalizedOpacity = Math.min(1, Math.max(0.2, Number(opacity.toFixed(2))));
+  return withAlpha(color, normalizedOpacity);
+}
+
 function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   if (!value || typeof value !== "object") return {};
 
@@ -260,7 +336,10 @@ function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   }
 
   if (typeof rawStyle.widgetOpacity === "number" && Number.isFinite(rawStyle.widgetOpacity)) {
-    normalized.widgetOpacity = Math.min(1, Math.max(0.2, Number(rawStyle.widgetOpacity.toFixed(2))));
+    normalized.widgetSurfaceColor = normalizeBackgroundOpacity(
+      normalized.widgetSurfaceColor ?? DEFAULT_WIDGET_SURFACE_COLOR,
+      rawStyle.widgetOpacity
+    );
   }
 
   if (typeof rawStyle.widgetBorderWidth === "number" && Number.isFinite(rawStyle.widgetBorderWidth)) {
@@ -328,7 +407,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         ? Math.min(1, Math.max(0.2, Number(preset.widgetOpacity.toFixed(2))))
         : DEFAULT_WIDGET_OPACITY;
 
-    presets.push({
+    const normalizedPreset = {
       id:
         typeof preset.id === "string" && preset.id
           ? preset.id
@@ -354,6 +433,10 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
           : DEFAULT_WIDGET_TEXT_COLOR,
       widgetOpacity,
       widgetBorderWidth,
+      widgetFontSize:
+        typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
+          ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(preset.widgetFontSize)))
+          : DEFAULT_WIDGET_FONT_SIZE,
       widgetSizeMode:
         preset.widgetSizeMode === "small" ||
         preset.widgetSizeMode === "medium" ||
@@ -381,7 +464,9 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         typeof preset.createdAt === "number" && Number.isFinite(preset.createdAt)
           ? preset.createdAt
           : Date.now(),
-    });
+    } satisfies DashboardPreset;
+
+    presets.push(reconcileCustomButtonState(normalizedPreset));
   }
 
   return presets;
@@ -407,17 +492,75 @@ function normalizeCustomBackgroundType(
 }
 
 function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
+  const sanitizedPreset = reconcileCustomButtonState(preset);
+
   return {
-    ...preset,
-    customBackgroundUrl: normalizeCustomBackgroundUrl(preset.customBackgroundUrl),
+    ...sanitizedPreset,
+    customBackgroundUrl: normalizeCustomBackgroundUrl(sanitizedPreset.customBackgroundUrl),
     customBackgroundType: normalizeCustomBackgroundType(
-      preset.customBackgroundType,
+      sanitizedPreset.customBackgroundType,
       "image"
     ),
   };
 }
 
-// Default layouts for new widgets (aligned with WidgetRegistry defaultGrid sizes)
+function reconcileCustomButtonState<T extends {
+  activeWidgets: string[];
+  customButtonConfigs: Record<string, CustomButtonConfig>;
+  layouts: Record<string, LayoutItem>;
+  widgetLocks: Record<string, boolean>;
+  widgetStyles: Record<string, WidgetStyleOverrides>;
+  clockModes?: Record<string, ClockMode>;
+}>(state: T): T {
+  const activeCustomButtonIds = new Set(
+    state.activeWidgets.filter(isCustomButtonWidgetId)
+  );
+  const validCustomButtonIds = new Set(
+    Object.keys(state.customButtonConfigs).filter((id) => activeCustomButtonIds.has(id))
+  );
+
+  const activeWidgets = state.activeWidgets.filter(
+    (id) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+  );
+  const customButtonConfigs = Object.fromEntries(
+    Object.entries(state.customButtonConfigs).filter(([id]) => validCustomButtonIds.has(id))
+  );
+  const layouts = Object.fromEntries(
+    Object.entries(state.layouts).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const widgetLocks = Object.fromEntries(
+    Object.entries(state.widgetLocks).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const widgetStyles = Object.fromEntries(
+    Object.entries(state.widgetStyles).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const clockModes = state.clockModes
+    ? Object.fromEntries(
+        Object.entries(state.clockModes).filter(
+          ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+        )
+      )
+    : undefined;
+
+  return {
+    ...state,
+    activeWidgets,
+    customButtonConfigs,
+    layouts,
+    widgetLocks,
+    widgetStyles,
+    ...(clockModes ? { clockModes } : {}),
+  };
+}
+
+// Standard layout-størrelser når nye widgets legges til dashboardet
+// Justert i henhold til WidgetRegistry defaultGrid-størrelser
 const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   clock: { x: 0, y: 0, w: 5, h: 3 },
   notes: { x: 0, y: 0, w: 8, h: 8 },
@@ -429,9 +572,12 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   minesweeper: { x: 0, y: 0, w: 6, h: 6 },
   bookmark: { x: 0, y: 0, w: 4, h: 4 },
   info: { x: 0, y: 0, w: 6, h: 6 },
+  ai_chat: { x: 0, y: 0, w: 6, h: 8 },
+  email: { x: 0, y: 0, w: 8, h: 8 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
 
+// Sjekker om to rektangler overlapper hverandre
 function rectsOverlap(a: LayoutItem, b: LayoutItem) {
   return (
     a.x < b.x + b.w &&
@@ -441,6 +587,8 @@ function rectsOverlap(a: LayoutItem, b: LayoutItem) {
   );
 }
 
+// Plasserer en widget sentralt i dashboardet, og utenom overlappende widgets
+// Hvis sentralt ikke funker, forsøk å stappe ned i små trinn
 function createCenteredLayout(
   widgetType: string,
   existingLayouts: Record<string, LayoutItem>
@@ -476,7 +624,7 @@ function createCenteredLayout(
   return candidate;
 }
 
-// Generate a unique ID for custom buttons
+// Genererer unikt ID for egendefinert knapp-widget
 function createCustomButtonId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `customButton:${crypto.randomUUID()}`;
@@ -484,7 +632,8 @@ function createCustomButtonId() {
   return `customButton:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// Legacy migration functions (for backward compatibility)
+// Migreringsfunksjoner for bakoverkompatibilitet med gamle ID-formater
+// Gamle custom buttons brukte "customButton__uuid", nye bruker "customButton:uuid"
 function migrateLegacyCustomButtonId(id: string) {
   if (!id.startsWith("customButton__")) return id;
   return `customButton:${id.slice("customButton__".length)}`;
@@ -496,6 +645,7 @@ function migrateLegacyMap<T>(input: Record<string, T>) {
   );
 }
 
+// Returnerer standard dashboard-state for offentlige (ikke-autentiserte) brukere
 function applyPublicDashboardDefaults() {
   return {
     activeWidgets: [...PUBLIC_WIDGET_IDS],
@@ -509,6 +659,7 @@ function applyPublicDashboardDefaults() {
     widgetTextColor: DEFAULT_WIDGET_TEXT_COLOR,
     widgetOpacity: DEFAULT_WIDGET_OPACITY,
     widgetBorderWidth: DEFAULT_WIDGET_BORDER_WIDTH,
+    widgetFontSize: DEFAULT_WIDGET_FONT_SIZE,
     widgetSizeMode: DEFAULT_WIDGET_SIZE_MODE,
     dashboardBackgroundId: DEFAULT_DASHBOARD_BACKGROUND_ID,
     customBackgroundUrl: "",
@@ -519,7 +670,7 @@ function applyPublicDashboardDefaults() {
 
 export function useWidgetsState() {
   const { user, loading } = useAuth();
-  const { fontSize } = useFontSize();
+  const { fontSize, setFontSize } = useFontSize();
 
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
@@ -588,6 +739,7 @@ export function useWidgetsState() {
       setWidgetTextColor(publicDefaults.widgetTextColor);
       setWidgetOpacity(publicDefaults.widgetOpacity);
       setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+      setFontSize(publicDefaults.widgetFontSize);
       setWidgetSizeMode(publicDefaults.widgetSizeMode);
       setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
       setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
@@ -616,6 +768,7 @@ export function useWidgetsState() {
         setWidgetTextColor(publicDefaults.widgetTextColor);
         setWidgetOpacity(publicDefaults.widgetOpacity);
         setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
+        setFontSize(publicDefaults.widgetFontSize);
         setWidgetSizeMode(publicDefaults.widgetSizeMode);
         setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
         setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
@@ -637,16 +790,28 @@ export function useWidgetsState() {
       const migratedClockModes = migrateLegacyMap(normalizeClockModes(data.clockModes));
       const migratedWidgetStyles = migrateLegacyMap(normalizeWidgetStyles(data.widgetStyles));
 
-      setActiveWidgets(migratedActiveWidgets);
-      setCustomButtonConfigs(migratedCustomButtonConfigs);
-      setLayouts(migratedLayouts);
-      setWidgetLocks(migratedWidgetLocks);
-      setClockModes(migratedClockModes);
-      setWidgetStyles(migratedWidgetStyles);
+      const reconciledState = reconcileCustomButtonState({
+        activeWidgets: migratedActiveWidgets,
+        customButtonConfigs: migratedCustomButtonConfigs,
+        layouts: migratedLayouts,
+        widgetLocks: migratedWidgetLocks,
+        clockModes: migratedClockModes,
+        widgetStyles: migratedWidgetStyles,
+      });
+
+      setActiveWidgets(reconciledState.activeWidgets);
+      setCustomButtonConfigs(reconciledState.customButtonConfigs);
+      setLayouts(reconciledState.layouts);
+      setWidgetLocks(reconciledState.widgetLocks);
+      setClockModes(reconciledState.clockModes ?? {});
+      setWidgetStyles(reconciledState.widgetStyles);
       setWidgetSurfaceColor(
-        typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
-          ? data.widgetSurfaceColor
-          : DEFAULT_WIDGET_SURFACE_COLOR
+        normalizeBackgroundOpacity(
+          typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
+            ? data.widgetSurfaceColor
+            : DEFAULT_WIDGET_SURFACE_COLOR,
+          data.widgetOpacity
+        )
       );
       setWidgetBorderColor(
         typeof data.widgetBorderColor === "string" && data.widgetBorderColor
@@ -658,15 +823,16 @@ export function useWidgetsState() {
           ? data.widgetTextColor
           : DEFAULT_WIDGET_TEXT_COLOR
       );
-      setWidgetOpacity(
-        typeof data.widgetOpacity === "number" && Number.isFinite(data.widgetOpacity)
-          ? Math.min(1, Math.max(0.2, Number(data.widgetOpacity.toFixed(2))))
-          : DEFAULT_WIDGET_OPACITY
-      );
+      setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
       setWidgetBorderWidth(
         typeof data.widgetBorderWidth === "number" && Number.isFinite(data.widgetBorderWidth)
           ? Math.min(12, Math.max(0, Math.round(data.widgetBorderWidth)))
           : DEFAULT_WIDGET_BORDER_WIDTH
+      );
+      setFontSize(
+        typeof data.widgetFontSize === "number" && Number.isFinite(data.widgetFontSize)
+          ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(data.widgetFontSize)))
+          : DEFAULT_WIDGET_FONT_SIZE
       );
       setWidgetSizeMode(
         data.widgetSizeMode === "small" ||
@@ -700,31 +866,42 @@ export function useWidgetsState() {
     } finally {
       setIsLoading(false);
     }
-  }, [loading, user]);
+  }, [loading, setFontSize, user]);
 
   useEffect(() => {
     void loadLayout();
   }, [loadLayout]);
 
-  // Auto-save changes to Firestore with debouncing
+  // Autosave-effekt: lagrer endringer til Firestore med debounce-forsinkelse
+  // Dette minimerer antall Firestore-writes under rask oppfølging av endringer (f.eks. drag/resize)
   useEffect(() => {
     if (!user || isLoading || !hasLoadedRef.current) return;
 
     const timeout = setTimeout(async () => {
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
-        await setDoc(docRef, {
+        const reconciledState = reconcileCustomButtonState({
           activeWidgets,
           customButtonConfigs,
           layouts,
           widgetLocks,
           clockModes,
           widgetStyles,
+        });
+
+        await setDoc(docRef, {
+          activeWidgets: reconciledState.activeWidgets,
+          customButtonConfigs: reconciledState.customButtonConfigs,
+          layouts: reconciledState.layouts,
+          widgetLocks: reconciledState.widgetLocks,
+          clockModes: reconciledState.clockModes,
+          widgetStyles: reconciledState.widgetStyles,
           widgetSurfaceColor,
           widgetBorderColor,
           widgetTextColor,
           widgetOpacity,
           widgetBorderWidth,
+          widgetFontSize: fontSize,
           widgetSizeMode,
           dashboardBackgroundId,
           customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
@@ -751,6 +928,7 @@ export function useWidgetsState() {
     widgetTextColor,
     widgetOpacity,
     widgetBorderWidth,
+    fontSize,
     widgetSizeMode,
     dashboardBackgroundId,
     customBackgroundUrl,
@@ -810,7 +988,7 @@ export function useWidgetsState() {
   const saveCurrentAsPreset = useCallback((name?: string) => {
     const trimmedName = name?.trim() ?? "";
 
-    const newPreset: DashboardPreset = {
+    const newPreset = reconcileCustomButtonState({
       id: createDashboardPresetId(),
       name: trimmedName || `Preset ${dashboardPresets.length + 1}`,
       activeWidgets: [...activeWidgets],
@@ -826,12 +1004,13 @@ export function useWidgetsState() {
       widgetTextColor,
       widgetOpacity,
       widgetBorderWidth,
+      widgetFontSize: fontSize,
       widgetSizeMode,
       dashboardBackgroundId,
       customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
       customBackgroundType,
       createdAt: Date.now(),
-    };
+    } satisfies DashboardPreset);
 
     const nextPresets = [newPreset, ...dashboardPresets].slice(0, 30);
     setDashboardPresets(nextPresets);
@@ -855,6 +1034,7 @@ export function useWidgetsState() {
     widgetTextColor,
     widgetOpacity,
     widgetBorderWidth,
+    fontSize,
     widgetSizeMode,
     widgetSurfaceColor,
   ]);
@@ -863,28 +1043,31 @@ export function useWidgetsState() {
     const preset = dashboardPresets.find((item) => item.id === presetId);
     if (!preset) return false;
 
-    setActiveWidgets([...preset.activeWidgets]);
-    setLayouts({ ...preset.layouts });
-    setWidgetLocks({ ...preset.widgetLocks });
-    setClockModes({ ...preset.clockModes });
-    setCustomButtonConfigs({ ...preset.customButtonConfigs });
+    const reconciledPreset = reconcileCustomButtonState(preset);
+
+    setActiveWidgets([...reconciledPreset.activeWidgets]);
+    setLayouts({ ...reconciledPreset.layouts });
+    setWidgetLocks({ ...reconciledPreset.widgetLocks });
+    setClockModes({ ...reconciledPreset.clockModes });
+    setCustomButtonConfigs({ ...reconciledPreset.customButtonConfigs });
     setWidgetStyles(
       Object.fromEntries(
-        Object.entries(preset.widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
+        Object.entries(reconciledPreset.widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
       )
     );
-    setWidgetSurfaceColor(preset.widgetSurfaceColor);
-    setWidgetBorderColor(preset.widgetBorderColor);
-    setWidgetTextColor(preset.widgetTextColor);
-    setWidgetOpacity(preset.widgetOpacity);
-    setWidgetBorderWidth(preset.widgetBorderWidth);
-    setWidgetSizeMode(preset.widgetSizeMode);
-    setDashboardBackgroundId(preset.dashboardBackgroundId);
-    setCustomBackgroundUrl(preset.customBackgroundUrl);
-    setCustomBackgroundType(preset.customBackgroundType);
+    setWidgetSurfaceColor(reconciledPreset.widgetSurfaceColor);
+    setWidgetBorderColor(reconciledPreset.widgetBorderColor);
+    setWidgetTextColor(reconciledPreset.widgetTextColor);
+    setWidgetOpacity(reconciledPreset.widgetOpacity);
+    setWidgetBorderWidth(reconciledPreset.widgetBorderWidth);
+    setFontSize(reconciledPreset.widgetFontSize);
+    setWidgetSizeMode(reconciledPreset.widgetSizeMode);
+    setDashboardBackgroundId(reconciledPreset.dashboardBackgroundId);
+    setCustomBackgroundUrl(reconciledPreset.customBackgroundUrl);
+    setCustomBackgroundType(reconciledPreset.customBackgroundType);
 
     return true;
-  }, [dashboardPresets]);
+  }, [dashboardPresets, setFontSize]);
 
   const deleteDashboardPreset = useCallback((presetId: string) => {
     const nextPresets = dashboardPresets.filter((preset) => preset.id !== presetId);
@@ -892,7 +1075,57 @@ export function useWidgetsState() {
     void persistPresetsImmediately(nextPresets);
   }, [dashboardPresets, persistPresetsImmediately]);
 
-  // Toggle a widget on/off
+  const syncDashboardWidgetState = useCallback((id: string, isActive: boolean) => {
+    if (id === "notes") {
+      return;
+    }
+
+    if (isActive) {
+      setActiveWidgets((prev) => (prev.includes(id) ? prev : [...prev, id]));
+      setWidgetLocks((prev) => ({ ...prev, [id]: false }));
+      setWidgetStyles((prev) => {
+        if (!prev[id]) return prev;
+
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      setLayouts((prev) => {
+        if (prev[id]) return prev;
+        const defaultLayout = DEFAULT_LAYOUTS[id]
+          ? createCenteredLayout(id, prev)
+          : undefined;
+        return defaultLayout ? { ...prev, [id]: defaultLayout } : prev;
+      });
+      return;
+    }
+
+    setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
+    setLayouts((prev) => {
+      if (!prev[id]) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setWidgetLocks((prev) => {
+      if (!(id in prev)) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+    setWidgetStyles((prev) => {
+      if (!prev[id]) return prev;
+
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }, []);
+
+  // Slår widget av/på, eller legger til ny notater-instans hvis det er notater
+  // Notater er spesiell: hver gang man trykker på "legg til notater" får man ny instans
   const toggleWidget = useCallback((id: string) => {
     if (id === "notes") {
       const noteId = createNotesWidgetId();
@@ -939,12 +1172,12 @@ export function useWidgetsState() {
     });
   }, []);
 
-  // Update widget layouts (e.g., after dragging/resizing)
+  // Oppdaterer widget-layouter etter drag/resize-operasjoner i rutenett
   const updateLayout = useCallback((newLayouts: Record<string, LayoutItem>) => {
     setLayouts(newLayouts);
   }, []);
 
-  // Add a new custom button
+  // Legger til ny egendefinert knapp-widget med gitt konfigurasjon
   const addCustomButton = useCallback((config: CustomButtonConfig) => {
     const id = createCustomButtonId();
 
@@ -959,7 +1192,7 @@ export function useWidgetsState() {
     return id;
   }, []);
 
-  // Remove a custom button
+  // Fjerner egendefinert knapp-widget og sletter dens layout, konfig og eventuelle låser
   const removeCustomButton = useCallback((id: string) => {
     setActiveWidgets((prev) => prev.filter((widgetId) => widgetId !== id));
     setCustomButtonConfigs((prev) => {
@@ -1159,6 +1392,8 @@ export function useWidgetsState() {
     customBackgroundType,
     dashboardPresets,
     isLoading,
+    reloadLayout: loadLayout,
+    syncDashboardWidgetState,
     toggleWidget,
     updateLayout,
     addCustomButton,

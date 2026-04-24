@@ -9,10 +9,12 @@ import NewsWidget from "../builtins/NewsWidget/NewsWidget";
 import SpotifyWidget from "../builtins/SpotifyWidget/SpotifyWidget";
 import BookmarkUi from "../builtins/BookmarkWidget/BookmarkUi";
 import InfoWidget from "../builtins/InfoWidget/InfoWidget";
+import EmailWidget from "../builtins/EmailWidget/EmailWidget";
 import MinesweeperWidgetUI from "../builtins/MinesweeperWidget/minesweeperUi";
 import CustomButtonItemWidget from "../builtins/CustomButtonsWidget/CustomButtonItemWidget";
 import type { CustomButtonConfig } from "../../dashboard/hooks/useWidgetsState";
 import { useWidgets } from "../../dashboard/hooks/WidgetsContext";
+import Chat from "../../../components/chatUI";
 
 export type WidgetType =
   | "clock"
@@ -24,6 +26,8 @@ export type WidgetType =
   | "spotify"
   | "bookmark"
   | "info"
+  | "ai_chat"
+  | "email"
   | "minesweeper"
   | "customButtons"
   | "customButton";
@@ -63,6 +67,7 @@ const NewsWidgetAdapter: FC<WidgetComponentProps> = () => <NewsWidget />;
 const SpotifyWidgetAdapter: FC<WidgetComponentProps> = () => <SpotifyWidget />;
 const BookmarkWidgetAdapter: FC<WidgetComponentProps> = () => <BookmarkUi />;
 const InfoWidgetAdapter: FC<WidgetComponentProps> = () => <InfoWidget />;
+const EmailWidgetAdapter: FC<WidgetComponentProps> = () => <EmailWidget />;
 const MinesweeperWidgetAdapter: FC<WidgetComponentProps> = () => <MinesweeperWidgetUI />;
 const CustomButtonWidgetAdapter: FC<WidgetComponentProps> = ({ widgetId }) => {
   const { customButtonConfigs } = useWidgets();
@@ -132,6 +137,16 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
     title: "Info",
     Component: InfoWidgetAdapter,
     defaultGrid: { w: 12, h: 12 },
+  },
+  ai_chat: {
+    title: "AI Chat",
+    Component: () => <Chat variant="widget" />,
+    defaultGrid: { w: 6, h: 8 },
+  },
+  email: {
+    title: "E-post",
+    Component: EmailWidgetAdapter,
+    defaultGrid: { w: 8, h: 8 },
   },
   minesweeper: {
     title: "Minesweeper",

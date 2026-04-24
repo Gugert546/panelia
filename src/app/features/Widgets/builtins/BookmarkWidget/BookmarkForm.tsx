@@ -4,11 +4,17 @@ import { useLanguage } from "../../../../providers/languageProvider";
 type BookmarkFormProps = {
   onSubmit: (title: string, url: string) => Promise<void>;
   isLoading?: boolean;
+  textColor?: string;
+  surfaceColor?: string;
+  borderColor?: string;
 };
 
 export default function BookmarkForm({
   onSubmit,
   isLoading = false,
+  textColor = "inherit",
+  surfaceColor = "rgba(255,255,255,0.22)",
+  borderColor = "rgba(17,24,39,0.2)",
 }: BookmarkFormProps) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
@@ -49,7 +55,7 @@ export default function BookmarkForm({
       {error && (
         <div
           style={{
-            color: "#111827",
+            color: textColor,
             fontSize: 12,
             padding: "7px 9px",
             borderRadius: 8,
@@ -69,10 +75,10 @@ export default function BookmarkForm({
         style={{
           padding: "7px 10px",
           borderRadius: 8,
-          border: "1px solid rgba(17,24,39,0.2)",
+          border: `1px solid ${borderColor}`,
           fontSize: 13,
-          background: "rgba(255,255,255,0.6)",
-          color: "#0b1320",
+          background: surfaceColor,
+          color: textColor,
           outline: "none",
         }}
       />
@@ -86,10 +92,10 @@ export default function BookmarkForm({
         style={{
           padding: "7px 10px",
           borderRadius: 8,
-          border: "1px solid rgba(17,24,39,0.2)",
+          border: `1px solid ${borderColor}`,
           fontSize: 13,
-          background: "rgba(255,255,255,0.6)",
-          color: "#0b1320",
+          background: surfaceColor,
+          color: textColor,
           outline: "none",
         }}
       />
@@ -100,9 +106,9 @@ export default function BookmarkForm({
         style={{
           padding: "7px 10px",
           borderRadius: 8,
-          background: "rgba(255,255,255,0.22)",
-          color: "#0b1320",
-          border: "none",
+          background: surfaceColor,
+          color: textColor,
+          border: `1px solid ${borderColor}`,
           cursor: isLoading ? "not-allowed" : "pointer",
           opacity: isLoading ? 0.6 : 1,
           fontSize: 13,

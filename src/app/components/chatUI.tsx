@@ -1,108 +1,304 @@
-import React, { useState } from 'react';
-import { sendMessageToAI } from './aiLogic';
-import WidgetPane from '../features/Widgets/components/WidgetPane';
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import WidgetPane from "../features/Widgets/components/WidgetPane";
+import { useLanguage } from "../providers/languageProvider";
+import { useAiChat } from "./useAiChat";
 
-const Chat: React.FC = () => {
-  const [messages, setMessages] = useState<{ sender: string; text: string }[]>([]);
-  const [input, setInput] = useState('');
+type ChatVariant = "panel" | "widget";
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-  };
-
-  const handleSend = async() => {
-    if (input.trim()) {
-      setMessages((prev) => [...prev, { sender: 'user', text: input }]);
-      try {
-        const aiResponse = await sendMessageToAI(input);
-        setMessages((prev) => [...prev, { sender: 'ai', text: aiResponse.output_text }]);
-      } catch (error) {
-        console.error('Error sending message to AI:', error);
-        setMessages((prev) => [...prev, { sender: 'ai', text: 'Sorry, something went wrong.' }]);
-      }
-      setInput('');
-    }
-  };
-
-  return (
-    <WidgetPane title="Chat">
-      <div style={styles.chatWindow}>
-        {messages.map((message, index) => (
-          <div
-            key={index}
-            style={{
-              ...styles.message,
-              alignSelf: message.sender === 'user' ? 'flex-end' : 'flex-start',
-              backgroundColor: message.sender === 'user' ? 'rgba(255, 255, 255, 0.93)' : 'rgba(229, 229, 234, 0.6)',
-              backdropFilter: 'blur(8px)',
-            }}
-          >
-            {message.text}
-          </div>
-        ))}
-      </div>
-      <div style={styles.inputContainer}>
-        <input
-          type="text"
-          value={input}
-          onChange={handleInputChange}
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Type a message..."
-          style={styles.input}
-        />
-        <button onClick={handleSend} style={styles.sendButton}>
-          Send
-        </button>
-      </div>
-    </WidgetPane>
-  );
+type ChatProps = {
+  variant?: ChatVariant;
+  autoFocus?: boolean;
 };
 
-const styles = {
+const MAX_INPUT_CHARS = 3000;
+
+function isConfirmationPrompt(text: string) {
+  const normalized = text.toLocaleLowerCase("nb");
+
+  return (
+    normalized.includes("bekrefter du") ||
+    normalized.includes("skriv \"ja\"") ||
+    normalized.includes("skriv ja") ||
+    normalized.includes("er du sikker") ||
+    normalized.includes("are you sure") ||
+    normalized.includes("confirm") ||
+    normalized.includes("bekreft")
+  );
+}
+
+export default function Chat({ variant = "widget", autoFocus = false }: ChatProps) {
+  const { messages, isSending, sendMessage } = useAiChat();
+  const { t } = useLanguage();
+  const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const isPanel = variant === "panel";
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ block: "end" });
+  }, [messages, isSending]);
+
+  useEffect(() => {
+    const inputElement = inputRef.current;
+    if (!inputElement) return;
+
+    inputElement.style.height = "42px";
+    inputElement.style.height = `${inputElement.scrollHeight}px`;
+  }, [input]);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    });
+  }, [autoFocus]);
+
+  const handleSend = async () => {
+    const messageText = input.trim();
+    if (!messageText || isSending) return;
+
+    setInput("");
+    requestAnimationFrame(() => inputRef.current?.focus());
+    await sendMessage(messageText, t("chat.error"));
+    inputRef.current?.focus();
+  };
+
+  const handleQuickReply = async (reply: "ja" | "nei") => {
+    if (isSending) return;
+
+    setInput("");
+    await sendMessage(reply, t("chat.error"));
+    inputRef.current?.focus();
+  };
+
+  const chatContent = (
+    <div
+      style={{
+        ...styles.root,
+        padding: isPanel ? 0 : 2,
+      }}
+    >
+      <div
+        style={{
+          ...styles.chatWindow,
+          minHeight: isPanel ? 0 : 180,
+        }}
+      >
+        <div
+          style={{
+            ...styles.message,
+            ...styles.welcomeMessage,
+          }}
+        >
+          {t("chat.welcome")}
+        </div>
+
+        {messages.map((message, index) => {
+          const isUserMessage = message.sender === "user";
+          const showConfirmationActions =
+            !isUserMessage &&
+            index === messages.length - 1 &&
+            !isSending &&
+            isConfirmationPrompt(message.text);
+
+          return (
+            <div
+              key={message.id}
+              style={{
+                ...styles.message,
+                alignSelf: isUserMessage ? "flex-end" : "flex-start",
+                backgroundColor: isUserMessage
+                  ? "rgba(255, 255, 255, 0.93)"
+                  : "rgba(229, 229, 234, 0.68)",
+              }}
+            >
+              <div>{message.text}</div>
+              {showConfirmationActions && (
+                <div style={styles.confirmActions}>
+                  <button
+                    type="button"
+                    onClick={() => void handleQuickReply("ja")}
+                    style={{
+                      ...styles.confirmButton,
+                      ...styles.confirmPrimaryButton,
+                    }}
+                  >
+                    Ja
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleQuickReply("nei")}
+                    style={styles.confirmButton}
+                  >
+                    Nei
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {isSending && (
+          <div
+            style={{
+              ...styles.message,
+              ...styles.pendingMessage,
+            }}
+          >
+            {t("chat.sending")}
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div style={styles.inputContainer}>
+        <textarea
+          ref={inputRef}
+          value={input}
+          onChange={(event) => setInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" && !event.shiftKey) {
+              event.preventDefault();
+              void handleSend();
+            }
+          }}
+          placeholder={t("chat.placeholder")}
+          maxLength={MAX_INPUT_CHARS}
+          rows={1}
+          style={styles.input}
+        />
+        <button
+          type="button"
+          onClick={() => void handleSend()}
+          disabled={isSending || !input.trim()}
+          aria-label={isSending ? t("chat.sending") : t("chat.send")}
+          title={isSending ? t("chat.sending") : t("chat.send")}
+          style={{
+            ...styles.sendButton,
+            opacity: isSending || !input.trim() ? 0.58 : 1,
+            cursor: isSending || !input.trim() ? "not-allowed" : "pointer",
+          }}
+        >
+          <span
+            className="material-symbols-rounded"
+            aria-hidden="true"
+            style={{ fontSize: 20, lineHeight: 1 }}
+          >
+            send
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+
+  if (isPanel) {
+    return chatContent;
+  }
+
+  return <WidgetPane title={t("chat.title")}>{chatContent}</WidgetPane>;
+}
+
+const styles: Record<string, CSSProperties> = {
+  root: {
+    width: "100%",
+    height: "100%",
+    minHeight: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    boxSizing: "border-box",
+  },
   chatWindow: {
-    width: '100%',
+    width: "100%",
     flex: 1,
-    display: 'flex',
-    flexDirection: 'column' as const,
-    padding: '12px',
-    gap: '8px',
-    overflowY: 'auto' as const,
-    minHeight: '300px',
+    display: "flex",
+    flexDirection: "column",
+    padding: "8px 2px",
+    gap: 8,
+    overflowY: "auto",
+    boxSizing: "border-box",
   },
   message: {
-    maxWidth: '85%',
-    padding: '10px 14px',
-    borderRadius: '16px',
-    fontSize: '14px',
-    lineHeight: '1.4',
+    maxWidth: "86%",
+    padding: "10px 13px",
+    borderRadius: 8,
+    fontSize: 14,
+    lineHeight: 1.4,
+    color: "#111827",
+    overflowWrap: "anywhere",
+    whiteSpace: "pre-line",
+    backdropFilter: "blur(8px)",
+    boxShadow: "0 6px 18px rgba(15, 23, 42, 0.08)",
+  },
+  welcomeMessage: {
+    alignSelf: "flex-start",
+      backgroundColor: "rgba(229, 229, 234, 0.68)",
+  },
+  pendingMessage: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(229, 229, 234, 0.48)",
+    fontStyle: "italic",
+  },
+  confirmActions: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 10,
+  },
+  confirmButton: {
+    minWidth: 68,
+    minHeight: 34,
+    padding: "7px 12px",
+    borderRadius: 8,
+    border: "1px solid rgba(15, 23, 42, 0.16)",
+    backgroundColor: "rgba(255, 255, 255, 0.62)",
+    color: "#111827",
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  confirmPrimaryButton: {
+    border: "1px solid rgba(37, 99, 235, 0.34)",
+    backgroundColor: "rgba(37, 99, 235, 0.86)",
+    color: "#fff",
   },
   inputContainer: {
-    display: 'flex',
-    gap: '8px',
-    width: '100%',
+    display: "flex",
+    alignItems: "flex-end",
+    gap: 8,
+    width: "100%",
+    minHeight: 42,
   },
   input: {
     flex: 1,
-    padding: '10px 14px',
-    fontSize: '14px',
-    border: 'none',
-    borderRadius: '12px',
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    backdropFilter: 'blur(8px)',
-    color: 'inherit',
-    outline: 'none',
+    minWidth: 0,
+    minHeight: 42,
+    maxHeight: 156,
+    padding: "10px 12px",
+    fontSize: 14,
+    lineHeight: 1.4,
+    border: "1px solid rgba(15, 23, 42, 0.16)",
+    borderRadius: 8,
+    backgroundColor: "rgba(255, 255, 255, 0.42)",
+    backdropFilter: "blur(8px)",
+    color: "inherit",
+    outline: "none",
+    boxSizing: "border-box",
+    resize: "none",
+    overflowY: "auto",
   },
   sendButton: {
-    padding: '10px 20px',
-    fontSize: '14px',
-    color: '#fff',
-    backgroundColor: 'rgba(0, 123, 255, 0.8)',
-    border: 'none',
-    borderRadius: '12px',
-    cursor: 'pointer',
-    backdropFilter: 'blur(8px)',
-    transition: 'background-color 0.2s',
+    width: 42,
+    height: 42,
+    flex: "0 0 42px",
+    color: "#fff",
+    backgroundColor: "rgba(37, 99, 235, 0.86)",
+    border: "1px solid rgba(255,255,255,0.22)",
+    borderRadius: 8,
+    backdropFilter: "blur(8px)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "opacity 0.2s ease, background-color 0.2s ease",
   },
 };
-
-export default Chat;

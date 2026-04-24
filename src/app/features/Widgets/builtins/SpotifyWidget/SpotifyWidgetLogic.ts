@@ -57,16 +57,27 @@ export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
   }, [isMinimized]);
 
   useEffect(() => {
-    const refresh = localStorage.getItem("spotify_refresh");
+    // Rydd opp gamle token-nøkler fra tidligere localStorage-basert løsning.
+    localStorage.removeItem("spotify_token");
+    localStorage.removeItem("spotify_refresh");
+  }, []);
 
-    if (!refresh) return;
-
+  useEffect(() => {
     const refreshToken = async () => {
-      const res = await fetch(`/api/spotify/refresh?refresh_token=${refresh}`);
+      const res = await fetch("/api/spotify/refresh", {
+        method: "POST",
+        credentials: "same-origin",
+      });
+
+      if (!res.ok) {
+        // Ingen gyldig cookie eller token ennå; da lar vi widgeten stå i frakoblet tilstand.
+        return;
+      }
+
       const data = await res.json();
 
       if (data.access_token) {
-        localStorage.setItem("spotify_token", data.access_token);
+        // Access token beholdes kun i minne for å redusere eksponering ved XSS.
         setToken(data.access_token);
       }
     };
