@@ -48,6 +48,7 @@ const GRID_COLUMNS = 40;
 const GRID_ROWS = 20;
 const DEFAULT_CUSTOM_BUTTON_LAYOUT: LayoutItem = { x: 0, y: 0, w: 2, h: 2 };
 const PUBLIC_WIDGET_IDS = ["info", "google_search", "weather", "clock"];
+const CUSTOM_BUTTON_PREFIX = "customButton:";
 const PUBLIC_LAYOUTS: Record<string, LayoutItem> = {
   info: { x: 1, y: 2, w: 12, h: 12 },
   google_search: { x: 13, y: 14, w: 14, h: 3 },
@@ -57,6 +58,10 @@ const PUBLIC_LAYOUTS: Record<string, LayoutItem> = {
 
 function dashboardLayoutRef(uid: string) {
   return adminDb.collection("users").doc(uid).collection("widgetLayout").doc("current");
+}
+
+function isCustomButtonId(id: string) {
+  return id.startsWith(CUSTOM_BUTTON_PREFIX);
 }
 
 function normalizeUrl(input: string) {
@@ -210,6 +215,17 @@ function summarizeButtons(customButtonConfigs: Record<string, CustomButtonConfig
       label: config.label,
       url: config.url,
     }));
+}
+
+function getActiveCustomButtonConfigs(
+  activeWidgets: string[],
+  customButtonConfigs: Record<string, CustomButtonConfig>
+) {
+  const activeCustomButtonIds = new Set(activeWidgets.filter(isCustomButtonId));
+
+  return Object.fromEntries(
+    Object.entries(customButtonConfigs).filter(([id]) => activeCustomButtonIds.has(id))
+  );
 }
 
 function findButtonId(args: RemoveCustomButtonArgs, customButtonConfigs: Record<string, CustomButtonConfig>) {
@@ -373,7 +389,13 @@ export const listCustomButtonsTool: ToolDef<
     const limit = Math.max(1, Math.min(100, Math.floor(args.limit ?? 50)));
     const snap = await dashboardLayoutRef(ctx.uid).get();
     const data = (snap.exists ? snap.data() : {}) as WidgetLayoutDocument;
-    const buttons = summarizeButtons(normalizeCustomButtonConfigs(data.customButtonConfigs)).slice(0, limit);
+    const activeWidgets = normalizeActiveWidgets(data.activeWidgets, snap.exists);
+    const buttons = summarizeButtons(
+      getActiveCustomButtonConfigs(
+        activeWidgets,
+        normalizeCustomButtonConfigs(data.customButtonConfigs)
+      )
+    ).slice(0, limit);
 
     return {
       ok: true,

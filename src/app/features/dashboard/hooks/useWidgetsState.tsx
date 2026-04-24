@@ -143,6 +143,7 @@ const MIN_WIDGET_FONT_SIZE = 10;
 const MAX_WIDGET_FONT_SIZE = 22;
 const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
 const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "defaultbg";
+const CUSTOM_BUTTON_PREFIX = "customButton:";
 
 // Validerer at en verdi er en gyldig bakgrunns-ID
 function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
@@ -170,6 +171,10 @@ function createDashboardPresetId() {
     return `preset:${crypto.randomUUID()}`;
   }
   return `preset:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+function isCustomButtonWidgetId(id: string) {
+  return id.startsWith(CUSTOM_BUTTON_PREFIX);
 }
 
 // Genererer unikt ID for notater-widget (tillater flere notater-instanser)
@@ -353,7 +358,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         ? Math.min(1, Math.max(0.2, Number(preset.widgetOpacity.toFixed(2))))
         : DEFAULT_WIDGET_OPACITY;
 
-    presets.push({
+    const normalizedPreset = {
       id:
         typeof preset.id === "string" && preset.id
           ? preset.id
@@ -410,7 +415,9 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         typeof preset.createdAt === "number" && Number.isFinite(preset.createdAt)
           ? preset.createdAt
           : Date.now(),
-    });
+    } satisfies DashboardPreset;
+
+    presets.push(reconcileCustomButtonState(normalizedPreset));
   }
 
   return presets;
@@ -436,13 +443,70 @@ function normalizeCustomBackgroundType(
 }
 
 function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
+  const sanitizedPreset = reconcileCustomButtonState(preset);
+
   return {
-    ...preset,
-    customBackgroundUrl: normalizeCustomBackgroundUrl(preset.customBackgroundUrl),
+    ...sanitizedPreset,
+    customBackgroundUrl: normalizeCustomBackgroundUrl(sanitizedPreset.customBackgroundUrl),
     customBackgroundType: normalizeCustomBackgroundType(
-      preset.customBackgroundType,
+      sanitizedPreset.customBackgroundType,
       "image"
     ),
+  };
+}
+
+function reconcileCustomButtonState<T extends {
+  activeWidgets: string[];
+  customButtonConfigs: Record<string, CustomButtonConfig>;
+  layouts: Record<string, LayoutItem>;
+  widgetLocks: Record<string, boolean>;
+  widgetStyles: Record<string, WidgetStyleOverrides>;
+  clockModes?: Record<string, ClockMode>;
+}>(state: T): T {
+  const activeCustomButtonIds = new Set(
+    state.activeWidgets.filter(isCustomButtonWidgetId)
+  );
+  const validCustomButtonIds = new Set(
+    Object.keys(state.customButtonConfigs).filter((id) => activeCustomButtonIds.has(id))
+  );
+
+  const activeWidgets = state.activeWidgets.filter(
+    (id) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+  );
+  const customButtonConfigs = Object.fromEntries(
+    Object.entries(state.customButtonConfigs).filter(([id]) => validCustomButtonIds.has(id))
+  );
+  const layouts = Object.fromEntries(
+    Object.entries(state.layouts).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const widgetLocks = Object.fromEntries(
+    Object.entries(state.widgetLocks).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const widgetStyles = Object.fromEntries(
+    Object.entries(state.widgetStyles).filter(
+      ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+    )
+  );
+  const clockModes = state.clockModes
+    ? Object.fromEntries(
+        Object.entries(state.clockModes).filter(
+          ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+        )
+      )
+    : undefined;
+
+  return {
+    ...state,
+    activeWidgets,
+    customButtonConfigs,
+    layouts,
+    widgetLocks,
+    widgetStyles,
+    ...(clockModes ? { clockModes } : {}),
   };
 }
 
@@ -676,12 +740,21 @@ export function useWidgetsState() {
       const migratedClockModes = migrateLegacyMap(normalizeClockModes(data.clockModes));
       const migratedWidgetStyles = migrateLegacyMap(normalizeWidgetStyles(data.widgetStyles));
 
-      setActiveWidgets(migratedActiveWidgets);
-      setCustomButtonConfigs(migratedCustomButtonConfigs);
-      setLayouts(migratedLayouts);
-      setWidgetLocks(migratedWidgetLocks);
-      setClockModes(migratedClockModes);
-      setWidgetStyles(migratedWidgetStyles);
+      const reconciledState = reconcileCustomButtonState({
+        activeWidgets: migratedActiveWidgets,
+        customButtonConfigs: migratedCustomButtonConfigs,
+        layouts: migratedLayouts,
+        widgetLocks: migratedWidgetLocks,
+        clockModes: migratedClockModes,
+        widgetStyles: migratedWidgetStyles,
+      });
+
+      setActiveWidgets(reconciledState.activeWidgets);
+      setCustomButtonConfigs(reconciledState.customButtonConfigs);
+      setLayouts(reconciledState.layouts);
+      setWidgetLocks(reconciledState.widgetLocks);
+      setClockModes(reconciledState.clockModes ?? {});
+      setWidgetStyles(reconciledState.widgetStyles);
       setWidgetSurfaceColor(
         typeof data.widgetSurfaceColor === "string" && data.widgetSurfaceColor
           ? data.widgetSurfaceColor
@@ -758,13 +831,22 @@ export function useWidgetsState() {
     const timeout = setTimeout(async () => {
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
-        await setDoc(docRef, {
+        const reconciledState = reconcileCustomButtonState({
           activeWidgets,
           customButtonConfigs,
           layouts,
           widgetLocks,
           clockModes,
           widgetStyles,
+        });
+
+        await setDoc(docRef, {
+          activeWidgets: reconciledState.activeWidgets,
+          customButtonConfigs: reconciledState.customButtonConfigs,
+          layouts: reconciledState.layouts,
+          widgetLocks: reconciledState.widgetLocks,
+          clockModes: reconciledState.clockModes,
+          widgetStyles: reconciledState.widgetStyles,
           widgetSurfaceColor,
           widgetBorderColor,
           widgetTextColor,
@@ -857,7 +939,7 @@ export function useWidgetsState() {
   const saveCurrentAsPreset = useCallback((name?: string) => {
     const trimmedName = name?.trim() ?? "";
 
-    const newPreset: DashboardPreset = {
+    const newPreset = reconcileCustomButtonState({
       id: createDashboardPresetId(),
       name: trimmedName || `Preset ${dashboardPresets.length + 1}`,
       activeWidgets: [...activeWidgets],
@@ -879,7 +961,7 @@ export function useWidgetsState() {
       customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
       customBackgroundType,
       createdAt: Date.now(),
-    };
+    } satisfies DashboardPreset);
 
     const nextPresets = [newPreset, ...dashboardPresets].slice(0, 30);
     setDashboardPresets(nextPresets);
@@ -912,26 +994,28 @@ export function useWidgetsState() {
     const preset = dashboardPresets.find((item) => item.id === presetId);
     if (!preset) return false;
 
-    setActiveWidgets([...preset.activeWidgets]);
-    setLayouts({ ...preset.layouts });
-    setWidgetLocks({ ...preset.widgetLocks });
-    setClockModes({ ...preset.clockModes });
-    setCustomButtonConfigs({ ...preset.customButtonConfigs });
+    const reconciledPreset = reconcileCustomButtonState(preset);
+
+    setActiveWidgets([...reconciledPreset.activeWidgets]);
+    setLayouts({ ...reconciledPreset.layouts });
+    setWidgetLocks({ ...reconciledPreset.widgetLocks });
+    setClockModes({ ...reconciledPreset.clockModes });
+    setCustomButtonConfigs({ ...reconciledPreset.customButtonConfigs });
     setWidgetStyles(
       Object.fromEntries(
-        Object.entries(preset.widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
+        Object.entries(reconciledPreset.widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
       )
     );
-    setWidgetSurfaceColor(preset.widgetSurfaceColor);
-    setWidgetBorderColor(preset.widgetBorderColor);
-    setWidgetTextColor(preset.widgetTextColor);
-    setWidgetOpacity(preset.widgetOpacity);
-    setWidgetBorderWidth(preset.widgetBorderWidth);
-    setFontSize(preset.widgetFontSize);
-    setWidgetSizeMode(preset.widgetSizeMode);
-    setDashboardBackgroundId(preset.dashboardBackgroundId);
-    setCustomBackgroundUrl(preset.customBackgroundUrl);
-    setCustomBackgroundType(preset.customBackgroundType);
+    setWidgetSurfaceColor(reconciledPreset.widgetSurfaceColor);
+    setWidgetBorderColor(reconciledPreset.widgetBorderColor);
+    setWidgetTextColor(reconciledPreset.widgetTextColor);
+    setWidgetOpacity(reconciledPreset.widgetOpacity);
+    setWidgetBorderWidth(reconciledPreset.widgetBorderWidth);
+    setFontSize(reconciledPreset.widgetFontSize);
+    setWidgetSizeMode(reconciledPreset.widgetSizeMode);
+    setDashboardBackgroundId(reconciledPreset.dashboardBackgroundId);
+    setCustomBackgroundUrl(reconciledPreset.customBackgroundUrl);
+    setCustomBackgroundType(reconciledPreset.customBackgroundType);
 
     return true;
   }, [dashboardPresets, setFontSize]);

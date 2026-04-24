@@ -133,6 +133,7 @@ Intent-mapping for egendefinerte knapper:
 - "vis/list knappene mine" => listCustomButtons
 - "slett/fjern knapp" => removeCustomButton (kun etter bekreftelse)
 - Hvis brukeren vil fjerne en knapp og id mangler, bruk listCustomButtons for å finne kandidater. Spør hvis flere kan passe.
+- Egendefinerte knapper skal aldri håndteres med addDashboardWidget/removeDashboardWidget.
 
 Intent-mapping for vanlige dashboard-widgets:
 - "legg til/vis/slå på widget" => addDashboardWidget
