@@ -67,8 +67,9 @@ async function reverseGeocode(
 }
 
 async function fetchWeatherFromProxy(lat: number, lon: number) {
+  const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
   const r = await fetch(
-    `https://panelia-server-1044777021142.europe-west1.run.app/api/weather?lat=${lat}&lon=${lon}`
+    `${apiBase}/api/weather?lat=${lat}&lon=${lon}`
   );
   if (!r.ok) throw new Error(`Værkall feilet (${r.status})`);
   return r.json();
@@ -104,7 +105,7 @@ export function useWeatherWidget() {
       const humidity =json?.humidity;
       const windDirection =json?.windFrom;
       const uvIndex=json?.uvIndex;
-      const chanceOR=json?.chanceOfRain;
+      const chanceOfRain = json?.chanceOfRain;
 
       if (typeof temperature !== "number") {
         throw new Error("Fant ikke temperatur i respons");
@@ -120,7 +121,7 @@ export function useWeatherWidget() {
       humidity: typeof humidity === "number" ? round1(humidity) : undefined,
       windDirection: typeof windDirection === "number" ? windDirection : undefined,
       uvIndex: typeof uvIndex === "number" ? uvIndex : undefined,
-      chanceOfRain: typeof chanceOR === "number" ? round1(chanceOR) : undefined,
+      chanceOfRain: typeof chanceOfRain === "number" ? round1(chanceOfRain) : undefined,
 };
 
       setState({ status: "success", data: view, refreshing: false });

@@ -345,7 +345,7 @@ export default function WeatherWidgetUI() {
                           <b style={{fontWeight:600}}>{t("widgets.weatherWidget.humidity")}</b>: {state.data.humidity != null ? `${state.data.humidity}%` : "—"}
                         </div>
                         <div>
-                          <b style={{fontWeight:600}}>{t("widgets.weatherWidget.chanceOfRain")}</b>: {state.data.chanceOfRain != null ? `${state.data.chanceOfRain}%` : "0"}%
+                          <b style={{fontWeight:600}}>{t("widgets.weatherWidget.chanceOfRain")}</b>: {state.data.chanceOfRain != null ? `${state.data.chanceOfRain}%` : "—"}
                         </div>
                       </div>
                     )}
