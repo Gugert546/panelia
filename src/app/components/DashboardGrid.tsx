@@ -255,22 +255,20 @@ export default function DashboardGrid({
                   zIndex: 2,
                 }}
               >
-                {!isLocked && (
+                {isClockWidget && (
                   <button
                     type="button"
-                    className="widget-style-btn"
-                    aria-label={t("editPanel.widgetStyleOpen")}
-                    title={t("editPanel.widgetStyleOpen")}
-                    onClick={() =>
-                      setStyleEditorWidgetId((prev) => (prev === widgetId ? null : widgetId))
-                    }
+                    className="widget-clock-mode-btn"
+                    aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    onClick={() => onToggleClockMode(widgetId)}
                     style={{
                       width: 24,
                       height: 24,
                       borderRadius: 999,
                       border: "1px solid rgba(255,255,255,0.35)",
                       background:
-                        styleEditorWidgetId === widgetId
+                        clockMode === "analog"
                           ? widgetControlActiveBackground
                           : widgetControlBackground,
                       backdropFilter: "blur(6px)",
@@ -285,7 +283,7 @@ export default function DashboardGrid({
                       aria-hidden="true"
                       style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
                     >
-                      palette
+                      {clockMode === "analog" ? "schedule" : "av_timer"}
                     </span>
                   </button>
                 )}
@@ -320,20 +318,22 @@ export default function DashboardGrid({
                     </span>
                   </button>
                 )}
-                {isClockWidget && (
+                {!isLocked && (
                   <button
                     type="button"
-                    className="widget-clock-mode-btn"
-                    aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
-                    title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
-                    onClick={() => onToggleClockMode(widgetId)}
+                    className="widget-style-btn"
+                    aria-label={t("editPanel.widgetStyleOpen")}
+                    title={t("editPanel.widgetStyleOpen")}
+                    onClick={() =>
+                      setStyleEditorWidgetId((prev) => (prev === widgetId ? null : widgetId))
+                    }
                     style={{
                       width: 24,
                       height: 24,
                       borderRadius: 999,
                       border: "1px solid rgba(255,255,255,0.35)",
                       background:
-                        clockMode === "analog"
+                        styleEditorWidgetId === widgetId
                           ? widgetControlActiveBackground
                           : widgetControlBackground,
                       backdropFilter: "blur(6px)",
@@ -348,7 +348,7 @@ export default function DashboardGrid({
                       aria-hidden="true"
                       style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
                     >
-                      {clockMode === "analog" ? "schedule" : "av_timer"}
+                      palette
                     </span>
                   </button>
                 )}
