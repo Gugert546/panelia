@@ -26,6 +26,7 @@ export type CustomButtonConfig = {
 
 // Displaymodus for klokke-widget
 export type ClockMode = "digital" | "analog";
+export type ClockBackgrounds = Record<string, boolean>;
 
 // En instans av en widget med sitt unike ID, type og konfigurasjonsdata
 export type WidgetInstance = {
@@ -67,6 +68,7 @@ export type DashboardPreset = {
   layouts: Record<string, LayoutItem>;
   widgetLocks: Record<string, boolean>;
   clockModes: Record<string, ClockMode>;
+  clockBackgrounds: ClockBackgrounds;
   customButtonConfigs: Record<string, CustomButtonConfig>;
   widgetStyles: Record<string, WidgetStyleOverrides>;
   widgetSurfaceColor: string;
@@ -90,6 +92,7 @@ type WidgetLayoutDocument = {
   layouts?: Record<string, LayoutItem>;
   widgetLocks?: Record<string, boolean>;
   clockModes?: Record<string, ClockMode>;
+  clockBackgrounds?: ClockBackgrounds;
   customButtonConfigs?: Record<string, CustomButtonConfig>;
   widgetStyles?: Record<string, WidgetStyleOverrides>;
   widgetSurfaceColor?: string;
@@ -435,6 +438,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
       layouts: normalizeLayouts(preset.layouts),
       widgetLocks: normalizeWidgetLocks(preset.widgetLocks),
       clockModes: normalizeClockModes(preset.clockModes),
+      clockBackgrounds: normalizeClockBackgrounds(preset.clockBackgrounds),
       customButtonConfigs: normalizeCustomButtonConfigs(preset.customButtonConfigs),
       widgetStyles: normalizeWidgetStyles(preset.widgetStyles),
       widgetSurfaceColor:
@@ -510,6 +514,16 @@ function normalizeCustomBackgroundType(
   return value === "image" || value === "video" ? value : fallback;
 }
 
+function normalizeClockBackgrounds(value: unknown): ClockBackgrounds {
+  if (!value || typeof value !== "object") return {};
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
+    )
+  );
+}
+
 function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
   const sanitizedPreset = reconcileCustomButtonState(preset);
 
@@ -530,6 +544,7 @@ function reconcileCustomButtonState<T extends {
   widgetLocks: Record<string, boolean>;
   widgetStyles: Record<string, WidgetStyleOverrides>;
   clockModes?: Record<string, ClockMode>;
+  clockBackgrounds?: ClockBackgrounds;
 }>(state: T): T {
   const activeCustomButtonIds = new Set(
     state.activeWidgets.filter(isCustomButtonWidgetId)
@@ -566,6 +581,13 @@ function reconcileCustomButtonState<T extends {
         )
       )
     : undefined;
+  const clockBackgrounds = state.clockBackgrounds
+    ? Object.fromEntries(
+        Object.entries(state.clockBackgrounds).filter(
+          ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+        )
+      )
+    : undefined;
 
   return {
     ...state,
@@ -575,6 +597,7 @@ function reconcileCustomButtonState<T extends {
     widgetLocks,
     widgetStyles,
     ...(clockModes ? { clockModes } : {}),
+    ...(clockBackgrounds ? { clockBackgrounds } : {}),
   };
 }
 
@@ -672,6 +695,7 @@ function applyPublicDashboardDefaults() {
     layouts: { ...PUBLIC_LAYOUTS },
     widgetLocks: {},
     clockModes: {},
+    clockBackgrounds: {},
     widgetStyles: {},
     widgetSurfaceColor: DEFAULT_WIDGET_SURFACE_COLOR,
     widgetBorderColor: DEFAULT_WIDGET_BORDER_COLOR,
@@ -697,6 +721,7 @@ export function useWidgetsState() {
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
   const [widgetLocks, setWidgetLocks] = useState<Record<string, boolean>>({});
   const [clockModes, setClockModes] = useState<Record<string, ClockMode>>({});
+  const [clockBackgrounds, setClockBackgrounds] = useState<ClockBackgrounds>({});
   const [widgetStyles, setWidgetStyles] = useState<Record<string, WidgetStyleOverrides>>({});
   const [widgetSurfaceColor, setWidgetSurfaceColor] = useState(
     DEFAULT_WIDGET_SURFACE_COLOR
@@ -757,6 +782,7 @@ export function useWidgetsState() {
       setLayouts(publicDefaults.layouts);
       setWidgetLocks(publicDefaults.widgetLocks);
       setClockModes(publicDefaults.clockModes);
+      setClockBackgrounds(publicDefaults.clockBackgrounds);
       setWidgetStyles(publicDefaults.widgetStyles);
       setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
       setWidgetBorderColor(publicDefaults.widgetBorderColor);
@@ -787,6 +813,7 @@ export function useWidgetsState() {
         setLayouts(publicDefaults.layouts);
         setWidgetLocks(publicDefaults.widgetLocks);
         setClockModes(publicDefaults.clockModes);
+        setClockBackgrounds(publicDefaults.clockBackgrounds);
         setWidgetStyles(publicDefaults.widgetStyles);
         setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
         setWidgetBorderColor(publicDefaults.widgetBorderColor);
@@ -814,6 +841,9 @@ export function useWidgetsState() {
       const migratedLayouts = migrateLegacyMap(data.layouts ?? {});
       const migratedWidgetLocks = migrateLegacyMap(normalizeWidgetLocks(data.widgetLocks));
       const migratedClockModes = migrateLegacyMap(normalizeClockModes(data.clockModes));
+      const migratedClockBackgrounds = migrateLegacyMap(
+        normalizeClockBackgrounds(data.clockBackgrounds)
+      );
       const migratedWidgetStyles = migrateLegacyMap(normalizeWidgetStyles(data.widgetStyles));
 
       const reconciledState = reconcileCustomButtonState({
@@ -822,6 +852,7 @@ export function useWidgetsState() {
         layouts: migratedLayouts,
         widgetLocks: migratedWidgetLocks,
         clockModes: migratedClockModes,
+        clockBackgrounds: migratedClockBackgrounds,
         widgetStyles: migratedWidgetStyles,
       });
 
@@ -830,6 +861,7 @@ export function useWidgetsState() {
       setLayouts(reconciledState.layouts);
       setWidgetLocks(reconciledState.widgetLocks);
       setClockModes(reconciledState.clockModes ?? {});
+      setClockBackgrounds(reconciledState.clockBackgrounds ?? {});
       setWidgetStyles(reconciledState.widgetStyles);
       setWidgetSurfaceColor(
         normalizeBackgroundOpacity(
@@ -922,6 +954,7 @@ export function useWidgetsState() {
           layouts,
           widgetLocks,
           clockModes,
+          clockBackgrounds,
           widgetStyles,
         });
 
@@ -931,6 +964,7 @@ export function useWidgetsState() {
           layouts: reconciledState.layouts,
           widgetLocks: reconciledState.widgetLocks,
           clockModes: reconciledState.clockModes,
+          clockBackgrounds: reconciledState.clockBackgrounds,
           widgetStyles: reconciledState.widgetStyles,
           widgetSurfaceColor,
           widgetBorderColor,
@@ -959,6 +993,7 @@ export function useWidgetsState() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
@@ -1040,6 +1075,7 @@ export function useWidgetsState() {
       layouts: { ...layouts },
       widgetLocks: { ...widgetLocks },
       clockModes: { ...clockModes },
+      clockBackgrounds: { ...clockBackgrounds },
       customButtonConfigs: { ...customButtonConfigs },
       widgetStyles: Object.fromEntries(
         Object.entries(widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
@@ -1074,6 +1110,7 @@ export function useWidgetsState() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     persistPresetsImmediately,
     widgetBorderColor,
@@ -1096,6 +1133,7 @@ export function useWidgetsState() {
     setLayouts({ ...reconciledPreset.layouts });
     setWidgetLocks({ ...reconciledPreset.widgetLocks });
     setClockModes({ ...reconciledPreset.clockModes });
+    setClockBackgrounds({ ...reconciledPreset.clockBackgrounds });
     setCustomButtonConfigs({ ...reconciledPreset.customButtonConfigs });
     setWidgetStyles(
       Object.fromEntries(
@@ -1338,6 +1376,13 @@ export function useWidgetsState() {
     }));
   }, []);
 
+  const toggleClockBackground = useCallback((widgetId: string) => {
+    setClockBackgrounds((prev) => ({
+      ...prev,
+      [widgetId]: !(prev[widgetId] ?? (clockModes[widgetId] === "analog")),
+    }));
+  }, [clockModes]);
+
   const clearUnlockedWidgetStyles = useCallback(() => {
     setWidgetStyles((prevStyles) => {
       let hasChanges = false;
@@ -1433,6 +1478,7 @@ export function useWidgetsState() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
@@ -1454,6 +1500,7 @@ export function useWidgetsState() {
     removeCustomButton,
     toggleWidgetLock,
     toggleClockMode,
+    toggleClockBackground,
     setWidgetStyle,
     resetWidgetStyle,
     clearUnlockedWidgetStyles,

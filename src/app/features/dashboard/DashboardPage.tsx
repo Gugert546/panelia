@@ -102,6 +102,7 @@ function DashboardPageContent() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
@@ -119,6 +120,7 @@ function DashboardPageContent() {
     removeCustomButton,
     toggleWidgetLock,
     toggleClockMode,
+    toggleClockBackground,
     setWidgetStyle,
     resetWidgetStyle,
     setWidgetSurfaceColor,
@@ -497,6 +499,7 @@ function DashboardPageContent() {
           layouts={visibleLayouts}
           widgetLocks={widgetLocks}
           clockModes={clockModes}
+          clockBackgrounds={clockBackgrounds}
           widgetStyles={widgetStyles}
           widgetSurfaceColor={widgetSurfaceColor}
           widgetBorderColor={widgetBorderColor}
@@ -507,6 +510,7 @@ function DashboardPageContent() {
           onCloseWidget={removeCustomButton}
           onToggleWidgetLock={toggleWidgetLock}
           onToggleClockMode={toggleClockMode}
+          onToggleClockBackground={toggleClockBackground}
           onSetWidgetStyle={setWidgetStyle}
           onResetWidgetStyle={resetWidgetStyle}
           sidebarWidth={SIDEBAR_WIDTH}

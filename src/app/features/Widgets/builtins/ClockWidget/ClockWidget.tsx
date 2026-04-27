@@ -10,9 +10,13 @@ function pad(n: number) {
 
 type ClockWidgetProps = {
   mode?: "digital" | "analog";
+  showBackground?: boolean;
 };
 
-export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
+export default function ClockWidget({
+  mode = "digital",
+  showBackground = mode === "analog",
+}: ClockWidgetProps) {
   const [now, setNow] = useState(new Date());
   const fontSize = useResolvedWidgetFontSize();
 
@@ -39,6 +43,13 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
   const hourAngle = hours * 30 + minutes * 0.5 + seconds * (0.5 / 60);
   const minuteAngle = minutes * 6 + seconds * 0.1;
   const secondAngle = seconds * 6;
+  const clockBackgroundStyle = {
+    borderRadius: 16,
+    border: "1.5px solid rgba(255,255,255,0.5)",
+    background:
+      "linear-gradient(160deg, rgba(255,255,255,0.2), rgba(255,255,255,0.06))",
+    boxShadow: "inset 0 1px 10px rgba(0,0,0,0.28)",
+  };
 
   // Hjelpefunksjon som returnerer stilobjekt for en viser.
   // Dreiepunktet er 2px fra bunnen av elementet, og translateY kompenserer for dette
@@ -75,13 +86,9 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
               style={{
                 width: "96%",
                 height: "90%",
-                borderRadius: 16,
-                border: "1.5px solid rgba(255,255,255,0.5)",
-                background:
-                  "linear-gradient(160deg, rgba(255,255,255,0.2), rgba(255,255,255,0.06))",
-                boxShadow: "inset 0 1px 10px rgba(0,0,0,0.28)",
                 position: "relative",
                 overflow: "hidden",
+                ...(showBackground ? clockBackgroundStyle : {}),
               }}
             >
               {/* 12 timemerker – større for hvert kvartal (3, 6, 9, 12) */}
@@ -137,9 +144,15 @@ export default function ClockWidget({ mode = "digital" }: ClockWidgetProps) {
             // Digital visning – skalerer med container-bredden via cqw
             <span
               style={{
+                ...(showBackground ? clockBackgroundStyle : {}),
                 fontWeight: 700,
                 fontSize: `clamp(${Math.max(fontSize * 2.4, 28)}px, 20cqw, ${Math.max(fontSize * 4.2, 56)}px)`,
-                fontVariantNumeric: "tabular-nums"
+                fontVariantNumeric: "tabular-nums",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                minWidth: showBackground ? "96%" : undefined,
+                minHeight: showBackground ? "90%" : undefined,
               }}
             >
               {h}:{m}:{s}
