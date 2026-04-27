@@ -16,6 +16,7 @@ type Props = {
   widgetSurfaceColor: string;
   widgetBorderColor: string;
   widgetTextColor: string;
+  widgetBlur: number;
   widgetBorderWidth: number;
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
   onCloseWidget: (widgetId: string) => void;
@@ -95,6 +96,7 @@ export default function DashboardGrid({
   widgetSurfaceColor,
   widgetBorderColor,
   widgetTextColor,
+  widgetBlur,
   widgetBorderWidth,
   onLayoutChange,
   onCloseWidget,
@@ -198,6 +200,7 @@ export default function DashboardGrid({
         const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
         const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
         const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
+        const resolvedBlur = widgetStyle?.widgetBlur ?? widgetBlur;
         const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
         const resolvedFontSize = widgetStyle?.widgetFontSize ?? globalFontSize;
         const surfaceAlpha = getColorAlpha(resolvedSurfaceColor);
@@ -384,6 +387,22 @@ export default function DashboardGrid({
                     onChange={(event) =>
                       onSetWidgetStyle(widgetId, {
                         widgetSurfaceColor: withAlpha(event.target.value, surfaceAlpha),
+                      })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetBlur")}: {resolvedBlur}px
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={1}
+                    value={resolvedBlur}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, {
+                        widgetBlur: Number(event.target.value),
                       })
                     }
                   />

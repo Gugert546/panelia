@@ -40,6 +40,7 @@ export type WidgetStyleOverrides = {
   widgetBorderColor?: string;
   widgetTextColor?: string;
   widgetOpacity?: number;
+  widgetBlur?: number;
   widgetBorderWidth?: number;
   widgetFontSize?: number;
   lockSnapshot?: boolean;
@@ -71,6 +72,7 @@ export type DashboardPreset = {
   widgetBorderColor: string;
   widgetTextColor: string;
   widgetOpacity: number;
+  widgetBlur: number;
   widgetBorderWidth: number;
   widgetFontSize: number;
   widgetSizeMode: WidgetSizeMode;
@@ -93,6 +95,7 @@ type WidgetLayoutDocument = {
   widgetBorderColor?: string;
   widgetTextColor?: string;
   widgetOpacity?: number;
+  widgetBlur?: number;
   widgetBorderWidth?: number;
   widgetFontSize?: number;
   widgetSizeMode?: WidgetSizeMode;
@@ -137,6 +140,7 @@ const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
 const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
+const DEFAULT_WIDGET_BLUR = 10;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_FONT_SIZE = 14;
 const MIN_WIDGET_FONT_SIZE = 10;
@@ -317,6 +321,14 @@ function normalizeBackgroundOpacity(color: string, opacity: unknown) {
   return withAlpha(color, normalizedOpacity);
 }
 
+function normalizeWidgetBlur(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_WIDGET_BLUR;
+  }
+
+  return Math.min(20, Math.max(0, Math.round(value)));
+}
+
 function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   if (!value || typeof value !== "object") return {};
 
@@ -340,6 +352,10 @@ function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
       normalized.widgetSurfaceColor ?? DEFAULT_WIDGET_SURFACE_COLOR,
       rawStyle.widgetOpacity
     );
+  }
+
+  if (typeof rawStyle.widgetBlur === "number" && Number.isFinite(rawStyle.widgetBlur)) {
+    normalized.widgetBlur = normalizeWidgetBlur(rawStyle.widgetBlur);
   }
 
   if (typeof rawStyle.widgetBorderWidth === "number" && Number.isFinite(rawStyle.widgetBorderWidth)) {
@@ -406,6 +422,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
       typeof preset.widgetOpacity === "number" && Number.isFinite(preset.widgetOpacity)
         ? Math.min(1, Math.max(0.2, Number(preset.widgetOpacity.toFixed(2))))
         : DEFAULT_WIDGET_OPACITY;
+    const widgetBlur = normalizeWidgetBlur(preset.widgetBlur);
 
     const normalizedPreset = {
       id:
@@ -432,6 +449,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
           ? preset.widgetTextColor
           : DEFAULT_WIDGET_TEXT_COLOR,
       widgetOpacity,
+      widgetBlur,
       widgetBorderWidth,
       widgetFontSize:
         typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
@@ -658,6 +676,7 @@ function applyPublicDashboardDefaults() {
     widgetBorderColor: DEFAULT_WIDGET_BORDER_COLOR,
     widgetTextColor: DEFAULT_WIDGET_TEXT_COLOR,
     widgetOpacity: DEFAULT_WIDGET_OPACITY,
+    widgetBlur: DEFAULT_WIDGET_BLUR,
     widgetBorderWidth: DEFAULT_WIDGET_BORDER_WIDTH,
     widgetFontSize: DEFAULT_WIDGET_FONT_SIZE,
     widgetSizeMode: DEFAULT_WIDGET_SIZE_MODE,
@@ -690,6 +709,9 @@ export function useWidgetsState() {
   const [widgetOpacity, setWidgetOpacity] = useState(
     DEFAULT_WIDGET_OPACITY
   );
+  const [widgetBlur, setWidgetBlur] = useState(
+    DEFAULT_WIDGET_BLUR
+  );
   const [widgetBorderWidth, setWidgetBorderWidth] = useState(
     DEFAULT_WIDGET_BORDER_WIDTH
   );
@@ -715,11 +737,12 @@ export function useWidgetsState() {
       widgetBorderColor: existingStyle?.widgetBorderColor ?? widgetBorderColor,
       widgetTextColor: existingStyle?.widgetTextColor ?? widgetTextColor,
       widgetOpacity: existingStyle?.widgetOpacity ?? widgetOpacity,
+      widgetBlur: existingStyle?.widgetBlur ?? widgetBlur,
       widgetBorderWidth: existingStyle?.widgetBorderWidth ?? widgetBorderWidth,
       widgetFontSize: existingStyle?.widgetFontSize ?? fontSize,
       lockSnapshot: true,
     } satisfies WidgetStyleOverrides;
-  }, [fontSize, widgetBorderColor, widgetBorderWidth, widgetOpacity, widgetSurfaceColor, widgetTextColor]);
+  }, [fontSize, widgetBlur, widgetBorderColor, widgetBorderWidth, widgetOpacity, widgetSurfaceColor, widgetTextColor]);
 
   // Load widget layout from Firestore
   const loadLayout = useCallback(async () => {
@@ -738,6 +761,7 @@ export function useWidgetsState() {
       setWidgetBorderColor(publicDefaults.widgetBorderColor);
       setWidgetTextColor(publicDefaults.widgetTextColor);
       setWidgetOpacity(publicDefaults.widgetOpacity);
+      setWidgetBlur(publicDefaults.widgetBlur);
       setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
       setFontSize(publicDefaults.widgetFontSize);
       setWidgetSizeMode(publicDefaults.widgetSizeMode);
@@ -767,6 +791,7 @@ export function useWidgetsState() {
         setWidgetBorderColor(publicDefaults.widgetBorderColor);
         setWidgetTextColor(publicDefaults.widgetTextColor);
         setWidgetOpacity(publicDefaults.widgetOpacity);
+        setWidgetBlur(publicDefaults.widgetBlur);
         setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
         setFontSize(publicDefaults.widgetFontSize);
         setWidgetSizeMode(publicDefaults.widgetSizeMode);
@@ -824,6 +849,7 @@ export function useWidgetsState() {
           : DEFAULT_WIDGET_TEXT_COLOR
       );
       setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
+      setWidgetBlur(normalizeWidgetBlur(data.widgetBlur));
       setWidgetBorderWidth(
         typeof data.widgetBorderWidth === "number" && Number.isFinite(data.widgetBorderWidth)
           ? Math.min(12, Math.max(0, Math.round(data.widgetBorderWidth)))
@@ -900,6 +926,7 @@ export function useWidgetsState() {
           widgetBorderColor,
           widgetTextColor,
           widgetOpacity,
+          widgetBlur,
           widgetBorderWidth,
           widgetFontSize: fontSize,
           widgetSizeMode,
@@ -927,6 +954,7 @@ export function useWidgetsState() {
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     fontSize,
     widgetSizeMode,
@@ -1003,6 +1031,7 @@ export function useWidgetsState() {
       widgetBorderColor,
       widgetTextColor,
       widgetOpacity,
+      widgetBlur,
       widgetBorderWidth,
       widgetFontSize: fontSize,
       widgetSizeMode,
@@ -1033,6 +1062,7 @@ export function useWidgetsState() {
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     fontSize,
     widgetSizeMode,
@@ -1059,6 +1089,7 @@ export function useWidgetsState() {
     setWidgetBorderColor(reconciledPreset.widgetBorderColor);
     setWidgetTextColor(reconciledPreset.widgetTextColor);
     setWidgetOpacity(reconciledPreset.widgetOpacity);
+    setWidgetBlur(reconciledPreset.widgetBlur);
     setWidgetBorderWidth(reconciledPreset.widgetBorderWidth);
     setFontSize(reconciledPreset.widgetFontSize);
     setWidgetSizeMode(reconciledPreset.widgetSizeMode);
@@ -1335,6 +1366,11 @@ export function useWidgetsState() {
     clearUnlockedWidgetStyles();
   }, [clearUnlockedWidgetStyles]);
 
+  const updateWidgetBlur = useCallback((value: number) => {
+    setWidgetBlur(normalizeWidgetBlur(value));
+    clearUnlockedWidgetStyles();
+  }, [clearUnlockedWidgetStyles]);
+
   const updateWidgetBorderWidth = useCallback((value: number) => {
     setWidgetBorderWidth(value);
     clearUnlockedWidgetStyles();
@@ -1385,6 +1421,7 @@ export function useWidgetsState() {
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -1408,6 +1445,7 @@ export function useWidgetsState() {
     setWidgetBorderColor: updateWidgetBorderColor,
     setWidgetTextColor: updateWidgetTextColor,
     setWidgetOpacity: updateWidgetOpacity,
+    setWidgetBlur: updateWidgetBlur,
     setWidgetBorderWidth: updateWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,

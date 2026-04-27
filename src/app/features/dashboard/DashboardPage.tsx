@@ -107,6 +107,7 @@ function DashboardPageContent() {
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -124,6 +125,7 @@ function DashboardPageContent() {
     setWidgetBorderColor,
     setWidgetTextColor,
     setWidgetOpacity,
+    setWidgetBlur,
     setWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,
@@ -464,6 +466,8 @@ function DashboardPageContent() {
         setWidgetTextColor={setWidgetTextColor}
         widgetOpacity={widgetOpacity}
         setWidgetOpacity={setWidgetOpacity}
+        widgetBlur={widgetBlur}
+        setWidgetBlur={setWidgetBlur}
         widgetBorderWidth={widgetBorderWidth}
         setWidgetBorderWidth={setWidgetBorderWidth}
         widgetSizeMode={widgetSizeMode}
@@ -497,6 +501,7 @@ function DashboardPageContent() {
           widgetSurfaceColor={widgetSurfaceColor}
           widgetBorderColor={widgetBorderColor}
           widgetTextColor={widgetTextColor}
+          widgetBlur={widgetBlur}
           widgetBorderWidth={widgetBorderWidth}
           onLayoutChange={updateLayout}
           onCloseWidget={removeCustomButton}
