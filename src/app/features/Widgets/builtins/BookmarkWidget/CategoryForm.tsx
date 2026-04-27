@@ -13,12 +13,35 @@ export default function CategoryForm({
   onSubmit,
   isLoading = false,
   textColor = "inherit",
-  surfaceColor = "rgba(255,255,255,0.22)",
-  borderColor = "rgba(17,24,39,0.2)",
 }: CategoryFormProps) {
   const [categoryName, setCategoryName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const { t } = useLanguage();
+  const readableInputStyle = {
+    width: "100%",
+    padding: "8px 10px",
+    borderRadius: 12,
+    border: "1px solid rgba(20, 26, 41, 0.16)",
+    fontSize: 13,
+    background: "rgba(255,255,255,0.76)",
+    color: "#0f172a",
+    outline: "none",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
+  } as const;
+  const editPanelButtonStyle = {
+    padding: "8px 12px",
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.54)",
+    color: "#0f172a",
+    border: "1px solid rgba(20, 26, 41, 0.16)",
+    cursor: isLoading ? "not-allowed" : "pointer",
+    opacity: isLoading ? 0.6 : 1,
+    fontSize: 13,
+    whiteSpace: "nowrap",
+    fontWeight: 600,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
+  } as const;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -51,40 +74,20 @@ export default function CategoryForm({
           {error}
         </div>
       )}
-
+      <label style={{fontWeight:600}}>{t("widgets.bookmarkWidget.newCategoryName")}:</label>
       <input
         type="text"
         placeholder={t("widgets.bookmarkWidget.newCategoryName")}
         value={categoryName}
         onChange={(e) => setCategoryName(e.target.value)}
         disabled={isLoading}
-        style={{
-          width: "100%",
-          padding: "7px 10px",
-          borderRadius: 8,
-          border: `1px solid ${borderColor}`,
-          fontSize: 13,
-          background: surfaceColor,
-          color: textColor,
-          outline: "none",
-        }}
+        style={readableInputStyle}
       />
 
       <button
         type="submit"
         disabled={isLoading}
-        style={{
-          padding: "7px 10px",
-          borderRadius: 8,
-          background: surfaceColor,
-          color: textColor,
-          border: `1px solid ${borderColor}`,
-          cursor: isLoading ? "not-allowed" : "pointer",
-          opacity: isLoading ? 0.6 : 1,
-          fontSize: 13,
-          whiteSpace: "nowrap",
-          fontWeight: 600,
-        }}
+        style={editPanelButtonStyle}
       >
         {isLoading ? t("widgets.bookmarkWidget.adding") : t("widgets.bookmarkWidget.addCategory")}
       </button>

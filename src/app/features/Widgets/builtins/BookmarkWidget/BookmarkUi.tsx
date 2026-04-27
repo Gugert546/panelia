@@ -100,6 +100,17 @@ export default function BookmarkUi() {
   const raisedSurface = toRgba(resolvedSurfaceColor, 0.22);
   const inputSurface = toRgba(resolvedSurfaceColor, 0.42);
   const strongSurface = toRgba(resolvedSurfaceColor, 0.3);
+  const editPanelButtonStyle = {
+    padding: "8px 12px",
+    fontSize: 13,
+    background: "rgba(255,255,255,0.54)",
+    color: "#0f172a",
+    border: "1px solid rgba(20, 26, 41, 0.16)",
+    borderRadius: 12,
+    cursor: "pointer",
+    fontWeight: 600,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
+  } as const;
 
   const activeCategory = useMemo(() => {
     if (categories.length === 0) return null;
@@ -248,15 +259,8 @@ export default function BookmarkUi() {
               <button
                 onClick={() => setShowCategoryForm(false)}
                 style={{
+                  ...editPanelButtonStyle,
                   marginTop: 8,
-                  padding: "4px 8px",
-                  fontSize: 12,
-                  background: strongSurface,
-                  color: resolvedTextColor,
-                  border: `1px solid ${resolvedBorderColor}`,
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontWeight: 500,
                 }}
               >
                 {t("widgets.bookmarkWidget.cancel")}
@@ -443,16 +447,9 @@ export default function BookmarkUi() {
                     <button
                       onClick={() => setSelectedCategoryForBookmark(null)}
                       style={{
+                        ...editPanelButtonStyle,
                         marginTop: 8,
-                        padding: "6px 8px",
-                        fontSize: 12,
-                        background: strongSurface,
-                        color: resolvedTextColor,
-                        border: `1px solid ${resolvedBorderColor}`,
-                        borderRadius: 8,
-                        cursor: "pointer",
                         width: "100%",
-                        fontWeight: 500,
                       }}
                     >
                       {t("widgets.bookmarkWidget.cancel")}

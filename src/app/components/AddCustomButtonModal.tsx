@@ -115,8 +115,9 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
         >
           {t('addCustomButtonModal.title')}
         </h3>
-
+        
         <div style={{ flex: 1 }}>
+          <label> {t("addCustomButtonModal.buttonName")}:</label>
           <input
             type="text"
             placeholder={t('addCustomButtonModal.buttonName')}
@@ -130,6 +131,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
               border: "1px solid #ccc",
             }}
           />
+          <label> {t('addCustomButtonModal.link')}:</label>
           <input
             type="text"
             placeholder={t('addCustomButtonModal.link')}
