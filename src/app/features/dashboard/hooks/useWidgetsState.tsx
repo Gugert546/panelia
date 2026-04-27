@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../lib/firebase/client";
+import { isUserDataDeletionInProgress } from "../../../../lib/firebase/userDataDeletion";
 import { useAuth } from "../../auth/useAuth";
 import { useFontSize } from "../../../providers/themeProviders";
 
@@ -901,9 +902,18 @@ export function useWidgetsState() {
   // Autosave-effekt: lagrer endringer til Firestore med debounce-forsinkelse
   // Dette minimerer antall Firestore-writes under rask oppfølging av endringer (f.eks. drag/resize)
   useEffect(() => {
-    if (!user || isLoading || !hasLoadedRef.current) return;
+    if (
+      !user ||
+      isLoading ||
+      !hasLoadedRef.current ||
+      isUserDataDeletionInProgress(user.uid)
+    ) {
+      return;
+    }
 
     const timeout = setTimeout(async () => {
+      if (isUserDataDeletionInProgress(user.uid)) return;
+
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
         const reconciledState = reconcileCustomButtonState({
@@ -994,7 +1004,14 @@ export function useWidgetsState() {
 
   const persistPresetsImmediately = useCallback(
     async (nextPresets: DashboardPreset[]) => {
-      if (!user || isLoading || !hasLoadedRef.current) return;
+      if (
+        !user ||
+        isLoading ||
+        !hasLoadedRef.current ||
+        isUserDataDeletionInProgress(user.uid)
+      ) {
+        return;
+      }
 
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
