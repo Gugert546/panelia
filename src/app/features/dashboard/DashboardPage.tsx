@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
-import EditPanel from "../../components/editPanel";
+import EditPanel, { type EditPanelHandle } from "../../components/editPanel";
 import AiChatPanel from "../../components/AiChatPanel";
 import { AiChatProvider } from "../../components/aiChatContext";
 
@@ -82,6 +82,7 @@ function getImageBackgroundSource(
 
 function DashboardPageContent() {
   const SIDEBAR_WIDTH = 86;
+  const editPanelRef = useRef<EditPanelHandle | null>(null);
 
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
@@ -170,6 +171,15 @@ function DashboardPageContent() {
 
     setActivePanel(null);
   }, [isAuthenticated, loading]);
+
+  useEffect(() => {
+    if (!activePanel) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActivePanel(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [activePanel]);
 
   useEffect(() => {
     if (!shouldManageCalendarConnection) return;
@@ -388,6 +398,23 @@ function DashboardPageContent() {
     }
   };
 
+  const focusSidebarEditButton = () => {
+    const editButton = document.querySelector('button[aria-label="Rediger"]') as HTMLButtonElement | null;
+    editButton?.focus();
+  };
+
+  const focusEditPanelWidgetList = () => {
+    if (!isAuthenticated) return;
+
+    if (activePanel !== "edit") {
+      setActivePanel("edit");
+    }
+
+    requestAnimationFrame(() => {
+      editPanelRef.current?.focusFirstWidget();
+    });
+  };
+
   return (
     <div
       style={{
@@ -423,6 +450,7 @@ function DashboardPageContent() {
 
       <Sidebar
         disabled={!isAuthenticated}
+        onEditArrowRight={focusEditPanelWidgetList}
         onSidebarNav={handleSidebarNavigation}
         onEditClick={() => {
           if (!isAuthenticated) return;
@@ -442,8 +470,10 @@ function DashboardPageContent() {
       </div>
 
       <EditPanel
+        ref={editPanelRef}
         open={activePanel === "edit"}
         onClose={() => setActivePanel(null)}
+        onFocusSidebar={focusSidebarEditButton}
         availableWidgets={translatedAvailableWidgets}
         activeWidgets={activeWidgets}
         toggleWidget={toggleWidget}
