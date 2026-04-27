@@ -9,6 +9,8 @@ import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 type NewsArticle = {
   title: string;
   url: string;
+  image?: string;
+  publishedAt?: string;
 };
 
 type NewsResponse = {
@@ -17,7 +19,7 @@ type NewsResponse = {
   articles: NewsArticle[];
 };
 
-const NEWS_CACHE_KEY_PREFIX = "panelia:news:v1:";
+const NEWS_CACHE_KEY_PREFIX = "panelia:news:v2:";
 const NEWS_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 
 function readCachedNews(country: string) {
@@ -54,6 +56,20 @@ function writeCachedNews(country: string, articles: NewsArticle[]) {
   }
 }
 
+function formatArticleTimestamp(value?: string) {
+  if (!value) return "";
+
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function NewsArticleIcon({ url, title }: NewsArticle) {
   const candidates = useMemo(() => getFaviconCandidates(url), [url]);
   const [index, setIndex] = useState(0);
@@ -85,6 +101,46 @@ function NewsArticleIcon({ url, title }: NewsArticle) {
       }}
     >
       {title.slice(0, 1).toUpperCase()}
+    </span>
+  );
+}
+
+function NewsArticleImage({ article }: { article: NewsArticle }) {
+  const [failed, setFailed] = useState(false);
+
+  if (article.image && !failed) {
+    return (
+      <img
+        src={article.image}
+        alt=""
+        loading="lazy"
+        onError={() => setFailed(true)}
+        style={{
+          width: 72,
+          height: 54,
+          borderRadius: 10,
+          objectFit: "cover",
+          flexShrink: 0,
+          background: "rgba(255,255,255,0.12)",
+        }}
+      />
+    );
+  }
+
+  return (
+    <span
+      style={{
+        width: 72,
+        height: 54,
+        borderRadius: 10,
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+        background: "rgba(255,255,255,0.12)",
+      }}
+    >
+      <NewsArticleIcon url={article.url} title={article.title} />
     </span>
   );
 }
@@ -147,88 +203,109 @@ export default function NewsWidget() {
           }
         `}</style>
         <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-              overflowY: "auto",
-              flex: 1,
-              paddingRight: 4,
-            }}
-          >
-            {loading ? (
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+            overflowY: "auto",
+            flex: 1,
+            paddingRight: 4,
+          }}
+        >
+          {loading ? (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 180,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <div
+                aria-label="Loading news"
                 style={{
-                  flex: 1,
-                  minHeight: 180,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  width: 32,
+                  height: 32,
+                  borderRadius: "50%",
+                  border: "3px solid rgba(255,255,255,0.2)",
+                  borderTopColor: "rgba(255,255,255,0.92)",
+                  animation: "news-widget-spin 0.9s linear infinite",
                 }}
-              >
-                <div
-                  aria-label="Loading news"
+              />
+            </div>
+          ) : null}
+
+          {!loading &&
+            articles.slice(0, 6).map((article, i) => {
+              const timestamp = formatArticleTimestamp(article.publishedAt);
+
+              return (
+                <a
+                  key={`${article.url}-${i}`}
+                  href={article.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  draggable={true}
                   style={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    border: "3px solid rgba(255,255,255,0.2)",
-                    borderTopColor: "rgba(255,255,255,0.92)",
-                    animation: "news-widget-spin 0.9s linear infinite",
-                  }}
-                />
-              </div>
-            ) : null}
-
-            {!loading && articles.slice(0, 6).map((article, i) => (
-              <a
-                key={i}
-                href={article.url}
-                target="_blank"
-                rel="noreferrer"
-                draggable={true}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-
-                  fontSize,
-                  textDecoration: "none",
-                  color: "inherit",
-
-                  padding: "14px 16px",
-                  borderRadius: 14,
-
-                  
-                  background: "rgba(255,255,255,0.12)",
-                  border: "1px solid rgba(255,255,255,0.18)",
-                  backdropFilter: "blur(12px)",
-
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.22)";
-                  e.currentTarget.style.transform = "scale(1.01)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "rgba(255,255,255,0.12)";
-                  e.currentTarget.style.transform = "scale(1)";
-                }}
-              >
-                <NewsArticleIcon key={article.url} url={article.url} title={article.title} />
-
-                <span
-                  style={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 12,
                     fontSize,
-                    lineHeight: 1.3,
-                    fontWeight: 500,
+                    textDecoration: "none",
+                    color: "inherit",
+                    padding: "14px 16px",
+                    borderRadius: 14,
+                    background: "rgba(255,255,255,0.12)",
+                    border: "1px solid rgba(255,255,255,0.18)",
+                    backdropFilter: "blur(12px)",
+                    transition: "all 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.22)";
+                    e.currentTarget.style.transform = "scale(1.01)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = "rgba(255,255,255,0.12)";
+                    e.currentTarget.style.transform = "scale(1)";
                   }}
                 >
-                  {article.title}
-                </span>
-              </a>
-            ))}
-          </div>
+                  <NewsArticleImage article={article} />
+
+                  <span
+                    style={{
+                      minWidth: 0,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize,
+                        lineHeight: 1.3,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {article.title}
+                    </span>
+
+                    {timestamp ? (
+                      <span
+                        style={{
+                          fontSize: Math.max(11, fontSize * 0.78),
+                          lineHeight: 1.1,
+                          color: "rgba(255,255,255,0.72)",
+                        }}
+                      >
+                        {timestamp}
+                      </span>
+                    ) : null}
+                  </span>
+                </a>
+              );
+            })}
+        </div>
       </WidgetPane>
     </WidgetContainer>
   );

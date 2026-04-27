@@ -8,6 +8,8 @@ const newsCache = new Map<string, { timestamp: number; data: any }>();
 type NewsApiArticle = {
   title?: string;
   url?: string;
+  image?: string;
+  publish_date?: string;
 };
 
 type NewsApiPayload = {
@@ -95,6 +97,8 @@ newsRouter.get("/", async (req, res) => {
     const articles = list.map((article) => ({
       title: article.title,
       url: article.url,
+      image: article.image,
+      publishedAt: article.publish_date,
     }));
 
     const result = {
