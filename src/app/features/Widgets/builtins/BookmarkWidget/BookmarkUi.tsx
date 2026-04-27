@@ -11,6 +11,12 @@ import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
 import { useWidgetInstance } from "../../components/WidgetInstanceContext";
 
+type BookmarkIconProps = {
+  url: string;
+  favicon?: string;
+  title: string;
+};
+
 function toRgba(color: string, alpha: number) {
   const trimmed = color.trim();
   const rgbaMatch = trimmed.match(
@@ -36,6 +42,30 @@ function toRgba(color: string, alpha: number) {
   }
 
   return color;
+}
+
+function BookmarkIcon({ url, favicon, title }: BookmarkIconProps) {
+  const candidates = useMemo(() => getFaviconCandidates(url, favicon), [url, favicon]);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [url, favicon, candidates.length]);
+
+  const current = candidates[index] ?? "";
+
+  if (current) {
+    return (
+      <img
+        src={current}
+        alt=""
+        onError={() => setIndex((prev) => Math.min(prev + 1, candidates.length - 1))}
+        style={{ width: 18, height: 18, objectFit: "contain" }}
+      />
+    );
+  }
+
+  return <span>{title.slice(0, 1).toUpperCase()}</span>;
 }
 
 export default function BookmarkUi() {
@@ -90,26 +120,6 @@ export default function BookmarkUi() {
     setSelectedCategoryId(categories[nextIndex].id);
     setSelectedCategoryForBookmark(null);
   };
-
-    function BookmarkIcon({ url, favicon, title }: { url: string; favicon?: string; title: string }) {
-    const candidates = useMemo(() => getFaviconCandidates(url, favicon), [url, favicon]);
-    const [index, setIndex] = useState(0);
-    useEffect(() => setIndex(0), [url, favicon, candidates.length]);
-    const current = candidates[index] ?? "";
-  
-    if (current) {
-      return (
-        <img
-          src={current}
-          alt=""
-          onError={() => setIndex((prev) => Math.min(prev + 1, candidates.length - 1))}
-          style={{ width: 18, height: 18, objectFit: "contain" }}
-        />
-      );
-    }
-  
-    return <span>{title.slice(0, 1).toUpperCase()}</span>;
-  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
