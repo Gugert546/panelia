@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
-import { useWeatherWidget } from "../WeatherWidget/WeatherWidgetLogic";
+import { getCountryCodeFromLocale, useUserLocation } from "../../hooks/userLocation";
 import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 
 type NewsArticle = {
@@ -17,13 +17,46 @@ type NewsResponse = {
   articles: NewsArticle[];
 };
 
+const NEWS_CACHE_KEY_PREFIX = "panelia:news:v1:";
+const NEWS_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+
+function readCachedNews(country: string) {
+  try {
+    const raw = localStorage.getItem(`${NEWS_CACHE_KEY_PREFIX}${country}`);
+    if (!raw) return undefined;
+
+    const value = JSON.parse(raw) as Partial<NewsResponse>;
+    const updatedAt = typeof value.updatedAt === "string" ? value.updatedAt : "";
+    const updatedAtMs = new Date(updatedAt).getTime();
+    if (!Number.isFinite(updatedAtMs) || Date.now() - updatedAtMs > NEWS_CACHE_MAX_AGE_MS) {
+      return undefined;
+    }
+
+    return Array.isArray(value.articles)
+      ? value.articles.filter(
+          (article): article is NewsArticle =>
+            typeof article?.title === "string" && typeof article?.url === "string"
+        )
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeCachedNews(country: string, articles: NewsArticle[]) {
+  try {
+    localStorage.setItem(
+      `${NEWS_CACHE_KEY_PREFIX}${country}`,
+      JSON.stringify({ country, updatedAt: new Date().toISOString(), articles })
+    );
+  } catch {
+    // Storage is best-effort; news remains visible from component state.
+  }
+}
+
 function NewsArticleIcon({ url, title }: NewsArticle) {
   const candidates = useMemo(() => getFaviconCandidates(url), [url]);
   const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIndex(0);
-  }, [url, candidates.length]);
 
   const current = candidates[index] ?? "";
 
@@ -59,20 +92,27 @@ function NewsArticleIcon({ url, title }: NewsArticle) {
 export default function NewsWidget() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
+  const lastFetchedCountryRef = useRef<string | undefined>(undefined);
 
   const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
-  const { state: weatherState } = useWeatherWidget();
+  const { state: locationState } = useUserLocation();
+
+  const country = locationState.status === "success"
+    ? locationState.data.countryCode ?? getCountryCodeFromLocale()
+    : getCountryCodeFromLocale();
 
   useEffect(() => {
-    setLoading(true);
-    if (weatherState.status !== "success") return;
+    if (!country || lastFetchedCountryRef.current === country) return;
+    lastFetchedCountryRef.current = country;
 
-    const country = weatherState.data.countryCode;
-    if (!country) return;
+    const cachedArticles = readCachedNews(country);
+    if (cachedArticles) {
+      setArticles(cachedArticles);
+    }
 
     const fetchNews = async () => {
-      setLoading(true);
+      setLoading(!cachedArticles);
 
       try {
         const res = await fetch(
@@ -84,7 +124,9 @@ export default function NewsWidget() {
         }
 
         const data = (await res.json()) as NewsResponse;
-        setArticles(data.articles ?? []);
+        const nextArticles = data.articles ?? [];
+        setArticles(nextArticles);
+        writeCachedNews(country, nextArticles);
       } catch (err) {
         console.error("News fetch failed:", err);
       }
@@ -93,7 +135,7 @@ export default function NewsWidget() {
     };
 
     fetchNews();
-  }, [weatherState]);
+  }, [country]);
 
   return (
     <WidgetContainer>
@@ -172,7 +214,7 @@ export default function NewsWidget() {
                   e.currentTarget.style.transform = "scale(1)";
                 }}
               >
-                <NewsArticleIcon url={article.url} title={article.title} />
+                <NewsArticleIcon key={article.url} url={article.url} title={article.title} />
 
                 <span
                   style={{
