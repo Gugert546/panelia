@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../../lib/firebase/client";
@@ -49,8 +49,15 @@ export default function AuthMenu() {
   const [open, setOpen] = useState(false);
   const { user } = useAuth();
 
+  useEffect(() => {
+    if (!open || !user) return;
 
- 
+    const closeTimer = window.setTimeout(() => {
+      setOpen(false);
+    }, 2500);
+
+    return () => window.clearTimeout(closeTimer);
+  }, [open, user]);
 
   const handleGoogleLogin = async () => {
     await signInWithPopup(auth, googleProvider);
