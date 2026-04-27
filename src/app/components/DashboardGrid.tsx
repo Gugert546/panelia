@@ -179,7 +179,7 @@ export default function DashboardGrid({
       width={window.innerWidth - sidebarWidth}
       isDraggable={isMovable}
       isResizable={isMovable}
-      draggableCancel="input,button:not(.widget-draggable-button),select,option,textarea,label,[role='button']:not(.widget-draggable-button),[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-clock-background-btn,.widget-style-btn,.widget-style-control"
+      draggableCancel="a,input,button:not(.widget-draggable-button),select,option,textarea,label,[role='button']:not(.widget-draggable-button),[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-clock-background-btn,.widget-style-btn,.widget-style-control"
       compactType={null}
       preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
       margin={[0, 0]}    

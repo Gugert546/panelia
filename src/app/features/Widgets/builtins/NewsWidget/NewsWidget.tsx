@@ -186,6 +186,7 @@ export default function NewsWidget() {
                 href={article.url}
                 target="_blank"
                 rel="noreferrer"
+                draggable={true}
                 style={{
                   display: "flex",
                   alignItems: "center",
