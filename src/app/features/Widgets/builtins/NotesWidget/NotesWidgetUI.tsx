@@ -67,7 +67,8 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
               outline: "none",
               fontSize,
               fontFamily: "inherit",
-              boxSizing: "border-box"
+              boxSizing: "border-box",
+              marginTop:8,
             }}
           />
 
