@@ -25,6 +25,7 @@ type Props = {
   onResetWidgetStyle: (widgetId: string) => void;
   sidebarWidth: number;
   isInteractive?: boolean;
+  isMovable?: boolean;
   calendarWidgetConfig?: Record<string, unknown>;
 };
 
@@ -103,6 +104,7 @@ export default function DashboardGrid({
   onResetWidgetStyle,
   sidebarWidth,
   isInteractive = true,
+  isMovable = isInteractive,
   calendarWidgetConfig
 }: Props) {
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
@@ -169,8 +171,8 @@ export default function DashboardGrid({
       cols={40}          // Mer columns --> Finere horisontal kontroll
       rowHeight={30}    // Mindre rowHeight --> Mer vertikal kontroll og flere rader tilgjengelig
       width={window.innerWidth - sidebarWidth}
-      isDraggable={isInteractive}
-      isResizable={isInteractive}
+      isDraggable={isMovable}
+      isResizable={isMovable}
       draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
       compactType={null}
       preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
