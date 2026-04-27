@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { signInWithPopup, signOut } from "firebase/auth";
 import { auth, googleProvider } from "../../lib/firebase/client";
 import { useAuth } from "../features/auth/useAuth";
@@ -111,11 +112,16 @@ export default function AuthMenu() {
                 onClick={handleGoogleLogin}
                 style={{
                   ...actionButtonStyle,
-                  marginBottom: 0,
                 }}
               >
                 Logg inn med google
               </button>
+              <Link className="auth-menu-privacy-link" to="/privacy">
+                Privacy Policy
+              </Link>
+              <Link className="auth-menu-privacy-link" to="/terms">
+                Terms of Service
+              </Link>
             </>
           ) : (
             <>
@@ -135,6 +141,12 @@ export default function AuthMenu() {
               >
                 Logg ut
               </button>
+              <Link className="auth-menu-privacy-link" to="/privacy">
+                Privacy Policy
+              </Link>
+              <Link className="auth-menu-privacy-link" to="/terms">
+                Terms of Service
+              </Link>
             </>
           )}
         </div>
