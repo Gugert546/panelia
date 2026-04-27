@@ -295,7 +295,8 @@ export default function NewsWidget() {
                         style={{
                           fontSize: Math.max(11, fontSize * 0.78),
                           lineHeight: 1.1,
-                          color: "rgba(255,255,255,0.72)",
+                          color: "inherit",
+                          opacity: 0.72,
                         }}
                       >
                         {timestamp}
