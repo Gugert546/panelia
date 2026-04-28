@@ -30,8 +30,11 @@ type Props = {
 };
 
 const BASE_GRID_COLUMNS = 40;
-const GRID_ROW_HEIGHT = 30;
+const BASE_GRID_ROWS = 40;
+const GRID_MAX_ROW_HEIGHT = 30;
+const GRID_MIN_ROW_HEIGHT = 12;
 const GRID_MIN_WIDTH = 320;
+const GRID_MIN_HEIGHT = 360;
 
 function resolveGridColumns(width: number) {
   if (width >= 1500) return 40;
@@ -39,6 +42,15 @@ function resolveGridColumns(width: number) {
   if (width >= 900) return 24;
   if (width >= 700) return 18;
   return 12;
+}
+
+function resolveGridRowHeight(height: number) {
+  const available = Math.max(GRID_MIN_HEIGHT, height);
+  return clampGridValue(
+    Math.floor(available / BASE_GRID_ROWS),
+    GRID_MIN_ROW_HEIGHT,
+    GRID_MAX_ROW_HEIGHT
+  );
 }
 
 function clampGridValue(value: number, min: number, max: number) {
@@ -154,6 +166,9 @@ export default function DashboardGrid({
       ? containerWidth
       : fallbackWidth;
   const gridWidth = Math.max(GRID_MIN_WIDTH, resolvedContainerWidth);
+  const fallbackHeight = typeof window === "undefined" ? 900 : window.innerHeight;
+  const gridHeight = Math.max(GRID_MIN_HEIGHT, fallbackHeight);
+  const gridRowHeight = resolveGridRowHeight(gridHeight);
 
   const activeGridColumns = resolveGridColumns(gridWidth);
 
@@ -222,7 +237,7 @@ export default function DashboardGrid({
         className="layout"
         layout={computedLayout}
         cols={activeGridColumns}
-        rowHeight={GRID_ROW_HEIGHT}
+        rowHeight={gridRowHeight}
         width={gridWidth}
         isDraggable={isMovable}
         isResizable={isMovable}
@@ -230,7 +245,7 @@ export default function DashboardGrid({
         compactType={null}
         preventCollision={true}
         margin={[0, 0]}
-        maxRows={40}
+        maxRows={BASE_GRID_ROWS}
         containerPadding={[0, 0]}
         autoSize={false}
         style={{ height: "100%" }}
