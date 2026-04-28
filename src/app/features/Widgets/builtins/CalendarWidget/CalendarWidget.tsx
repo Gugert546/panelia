@@ -39,7 +39,7 @@ export type CalendarWidgetProps = {
   variant?: CalendarWidgetVariant;
 };
 
-const CALENDAR_MIN_WIDTH = 600;
+const CALENDAR_MIN_WIDTH = 620;
 const CALENDAR_MIN_HEIGHT_VH = 82;
 const CALENDAR_DAY_COUNT = 7;
 const CALENDAR_CELL_HEIGHT = 34;
