@@ -31,7 +31,6 @@ type Props = {
 
 const GRID_COLUMNS = 40;
 const GRID_ROW_HEIGHT = 30;
-const GRID_MAX_WIDTH = 1440;
 const GRID_MIN_WIDTH = 320;
 
 function toColorInputValue(value: string) {
@@ -169,12 +168,12 @@ export default function DashboardGrid({
     onLayoutChange(newLayouts);
   };
 
-  const fallbackWidth = typeof window === "undefined" ? GRID_MAX_WIDTH : window.innerWidth;
+  const fallbackWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
   const resolvedContainerWidth =
     typeof containerWidth === "number" && Number.isFinite(containerWidth)
       ? containerWidth
       : fallbackWidth;
-  const gridWidth = Math.max(GRID_MIN_WIDTH, Math.min(resolvedContainerWidth, GRID_MAX_WIDTH));
+  const gridWidth = Math.max(GRID_MIN_WIDTH, resolvedContainerWidth);
 
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "flex-start" }}>
