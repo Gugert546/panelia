@@ -79,6 +79,7 @@ export function AiChatProvider({ children }: Props) {
           "addCustomButton",
           "removeCustomButton",
           "addDashboardWidget",
+          "arrangeDashboardWidgets",
           "removeDashboardWidget",
           "setClockMode",
           "toggleClockMode",

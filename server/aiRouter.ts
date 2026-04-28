@@ -138,10 +138,14 @@ Intent-mapping for egendefinerte knapper:
 Intent-mapping for vanlige dashboard-widgets:
 - "legg til/vis/slå på widget" => addDashboardWidget
 - "fjern/skjul/slå av widget" => removeDashboardWidget
+- "flytt widgets", "legg widgets på venstre/høyre side", "samle widgets", "put them close together" => arrangeDashboardWidgets
 - "hvilke widgets har jeg" => listDashboardWidgets
-- Dette gjelder kun vanlige widgets: clock, calendar, google_search, weather, news, spotify, minesweeper, bookmark, info, ai_chat, email.
-- Ikke bruk disse for notes/notater eller custom buttons/egendefinerte knapper.
+- addDashboardWidget/removeDashboardWidget/listDashboardWidgets gjelder kun vanlige widgets: clock, calendar, google_search, weather, news, spotify, minesweeper, bookmark, info, ai_chat, email.
+- Ikke bruk addDashboardWidget/removeDashboardWidget/listDashboardWidgets for notes/notater eller custom buttons/egendefinerte knapper.
 - Å slå vanlige widgets av/på trenger ikke ekstra bekreftelse.
+- arrangeDashboardWidgets leser nåværende widget-størrelser, pakker widgetene som en samlet layout, og flytter gruppen. Den kan flytte alle aktive widgets hvis widgetIds utelates, inkludert notes/notater og custom buttons. Bruk targetArea "left"/"right"/"top"/"bottom"/"center". Ved "close together"/"tett sammen"/"samle" bruk spacing "none".
+- For "venstre side" bruk targetArea "left"; for "høyre side" bruk "right"; for "øverst" bruk "top"; for "nederst" bruk "bottom"; for "midt på" bruk "center".
+- Ikke si at widgets er flyttet uten at arrangeDashboardWidgets returnerer ok:true.
 
 Intent-mapping for klokke:
 - "sett/bytt klokke til analog" => setClockMode med mode "analog"
