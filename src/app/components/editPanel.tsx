@@ -186,7 +186,7 @@ export default function EditPanel({
   const innerShadow = "inset 0 1px 0 rgba(255,255,255,0.42)";
   
   const widgetTextColor = panelTextColor;
-  const fontSize = 14;
+  const fontSize = Math.min(Math.max(widgetFontSize, MIN_FONT_SIZE), MAX_FONT_SIZE);
   const notesWidgetCount = activeWidgets.filter(
     (activeWidgetId) => activeWidgetId === "notes" || activeWidgetId.startsWith("notes:")
   ).length;
@@ -269,6 +269,7 @@ export default function EditPanel({
   const widgetIconSize = Math.max(fontSize + 8, 22);
   const titleTextSize = Math.max(fontSize + 3);
   const bigTitleFontSize = Math.max(fontSize + 9);
+  const dialogTitleFontSize = Math.max(fontSize + 4, 18);
   const buttonBorder = `1px solid ${panelBorderColor}`;
   const buttonBorderHighlight = `1px solid ${activeBorderColor}`;
   const sectionCardStyle = {
@@ -987,6 +988,7 @@ export default function EditPanel({
                     background: softTint,
                     cursor: "pointer",
                     fontWeight: 600,
+                    fontSize,
                     color:widgetTextColor,
                   }}
                 >
@@ -1002,6 +1004,7 @@ export default function EditPanel({
                     background: "#fff1f1",
                     cursor: "pointer",
                     fontWeight: 600,
+                    fontSize,
                     color:widgetTextColor,
                   }}
                 >
@@ -1107,7 +1110,7 @@ export default function EditPanel({
                     </div>
                   )}
 
-                  <span style={{ fontWeight: 500 }}>
+                  <span style={{ fontSize, fontWeight: 500 }}>
                     {t(option.labelKey)}
                   </span>
                 </button>
@@ -1147,10 +1150,10 @@ export default function EditPanel({
             }}
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "#0f172a" }}>
+            <h2 style={{ margin: 0, fontSize: dialogTitleFontSize, fontWeight: 700, color: "#0f172a" }}>
               {t('editPanel.resetWidgetStyle')}
             </h2>
-            <p style={{ margin: 0, fontSize: 14, color: "#475569" }}>
+            <p style={{ margin: 0, fontSize, color: "#475569" }}>
               {t('editPanel.resetConfirmDescription')}
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
@@ -1167,7 +1170,7 @@ export default function EditPanel({
                   background: "#f8fafc",
                   cursor: "pointer",
                   fontWeight: 600,
-                  fontSize: 14,
+                  fontSize,
                   color: "#0f172a",
                   textAlign: "left",
                 }}
@@ -1187,7 +1190,7 @@ export default function EditPanel({
                   background: "#fff1f1",
                   cursor: "pointer",
                   fontWeight: 600,
-                  fontSize: 14,
+                  fontSize,
                   color: "#b91c1c",
                   textAlign: "left",
                 }}
@@ -1202,7 +1205,7 @@ export default function EditPanel({
                   border: "none",
                   background: "transparent",
                   cursor: "pointer",
-                  fontSize: 14,
+                  fontSize,
                   color: "#64748b",
                   textAlign: "center",
                 }}
