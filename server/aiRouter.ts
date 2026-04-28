@@ -143,7 +143,10 @@ Intent-mapping for vanlige dashboard-widgets:
 - addDashboardWidget/removeDashboardWidget/listDashboardWidgets gjelder kun vanlige widgets: clock, calendar, google_search, weather, news, spotify, minesweeper, bookmark, info, ai_chat, email.
 - Ikke bruk addDashboardWidget/removeDashboardWidget/listDashboardWidgets for notes/notater eller custom buttons/egendefinerte knapper.
 - Å slå vanlige widgets av/på trenger ikke ekstra bekreftelse.
-- arrangeDashboardWidgets leser nåværende widget-størrelser, pakker widgetene som en samlet layout, og flytter gruppen. Den kan flytte alle aktive widgets hvis widgetIds utelates, inkludert notes/notater og custom buttons. Bruk targetArea "left"/"right"/"top"/"bottom"/"center". Ved "close together"/"tett sammen"/"samle" bruk spacing "none".
+- arrangeDashboardWidgets leser nåværende widget-størrelser og kan enten pakke en samlet layout, finflytte/nudge widgets, eller plassere en widget relativt til en annen. Den kan flytte alle aktive widgets hvis widgetIds utelates i pack-mode, inkludert notes/notater og custom buttons.
+- Ved "close together"/"tett sammen"/"samle" bruk mode "pack" og spacing "none". Bruk targetArea "left"/"right"/"top"/"bottom"/"center".
+- Ved "litt til høyre/venstre/opp/ned" bruk mode "nudge" med deltaX/deltaY. "litt til høyre" = deltaX 2, "litt til venstre" = deltaX -2, "litt opp" = deltaY -2, "litt ned" = deltaY 2. Ikke spør om hva "litt" betyr.
+- Ved "ved siden av / next to / beside X" bruk mode "place", relativeToWidgetId for X, placement "beside" og widgetIds for widgeten som skal flyttes. Hvis brukeren sier "til høyre for X", bruk placement "right_of"; "til venstre for X" = "left_of"; "over X" = "above"; "under X" = "below".
 - For "venstre side" bruk targetArea "left"; for "høyre side" bruk "right"; for "øverst" bruk "top"; for "nederst" bruk "bottom"; for "midt på" bruk "center".
 - Ikke si at widgets er flyttet uten at arrangeDashboardWidgets returnerer ok:true.
 

@@ -45,9 +45,16 @@ type DashboardWidgetSummary = {
 
 type ArrangeDashboardWidgetsArgs = {
   widgetIds?: string[];
+  mode?: "pack" | "nudge" | "place";
   targetArea?: "left" | "right" | "top" | "bottom" | "center";
   spacing?: "none" | "small" | "normal";
   direction?: "vertical" | "horizontal";
+  deltaX?: number;
+  deltaY?: number;
+  relativeToWidgetId?: string;
+  placement?: "left_of" | "right_of" | "above" | "below" | "beside";
+  align?: "start" | "center" | "end";
+  gap?: number;
   includeLocked?: boolean;
 };
 
@@ -75,12 +82,12 @@ const DASHBOARD_WIDGETS: Record<DashboardWidgetId, { label: string; aliases: str
     aliases: ["google search", "search", "søk", "sok", "google_search"],
   },
   weather: { label: "Weather", aliases: ["weather", "vær", "ver"] },
-  news: { label: "News", aliases: ["news", "nyheter", "verdensnyheter"] },
+  news: { label: "News", aliases: ["news", "nyheter", "nyhetswidget", "nyhets widget", "verdensnyheter"] },
   spotify: { label: "Spotify", aliases: ["spotify"] },
   minesweeper: { label: "Minesweeper", aliases: ["minesweeper"] },
   bookmark: { label: "Bookmarks", aliases: ["bookmark", "bookmarks", "bokmerke", "bokmerker"] },
   info: { label: "Info", aliases: ["info"] },
-  ai_chat: { label: "AI chat", aliases: ["ai chat", "ai-chat", "chat", "ai_chat"] },
+  ai_chat: { label: "AI chat", aliases: ["ai", "ai chat", "ai-chat", "chat", "ai_chat"] },
   email: { label: "Email", aliases: ["email", "e-post", "epost", "mail"] },
 };
 
@@ -226,6 +233,16 @@ function resolveActiveWidgetTargets(requestedWidgetIds: string[], activeWidgets:
   return activeWidgets.filter((widgetId) => resolved.has(widgetId));
 }
 
+function resolveSingleActiveWidgetTarget(widgetId: string, activeWidgets: string[]) {
+  const matches = resolveActiveWidgetTargets([widgetId], activeWidgets);
+
+  if (matches.length !== 1) {
+    throw new Error(`Expected exactly one active widget match for "${widgetId}", found ${matches.length}.`);
+  }
+
+  return matches[0];
+}
+
 function normalizeActiveWidgets(value: unknown, docExists: boolean) {
   if (!Array.isArray(value)) return docExists ? [] : [...PUBLIC_WIDGET_IDS];
   return value.filter((item): item is string => typeof item === "string");
@@ -292,6 +309,23 @@ function clampLayout(layout: LayoutItem) {
     w,
     h,
   };
+}
+
+function overlapsAny(layout: LayoutItem, occupiedLayouts: LayoutItem[]) {
+  return occupiedLayouts.some((occupiedLayout) => rectsOverlap(layout, occupiedLayout));
+}
+
+function getFineSpacing(args: ArrangeDashboardWidgetsArgs) {
+  if (typeof args.gap === "number" && Number.isFinite(args.gap)) {
+    return Math.min(12, Math.max(0, Math.round(args.gap)));
+  }
+
+  return getSpacingValue(args.spacing);
+}
+
+function getNudgeAmount(value: number | undefined) {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.min(GRID_COLUMNS, Math.max(-GRID_COLUMNS, Math.round(value)));
 }
 
 function getDefaultLayoutForWidget(widgetId: string) {
@@ -361,7 +395,7 @@ function buildVerticalPackedLayouts(widgets: PackedWidget[], args: ArrangeDashbo
   const columns: Array<{ widgets: PackedWidget[]; width: number; height: number }> = [];
 
   for (const widget of sortWidgetsByCurrentPosition(widgets)) {
-    const currentColumn = columns.at(-1);
+    const currentColumn = columns.length > 0 ? columns[columns.length - 1] : undefined;
     const nextHeight = currentColumn
       ? currentColumn.height + spacing + widget.layout.h
       : widget.layout.h;
@@ -422,7 +456,7 @@ function buildHorizontalPackedLayouts(widgets: PackedWidget[], args: ArrangeDash
   const rows: Array<{ widgets: PackedWidget[]; width: number; height: number }> = [];
 
   for (const widget of sortWidgetsByCurrentPosition(widgets)) {
-    const currentRow = rows.at(-1);
+    const currentRow = rows.length > 0 ? rows[rows.length - 1] : undefined;
     const nextWidth = currentRow ? currentRow.width + spacing + widget.layout.w : widget.layout.w;
 
     if (currentRow && nextWidth <= GRID_COLUMNS) {
@@ -560,6 +594,212 @@ function placePackedLayouts(
   );
 }
 
+function getLayoutsBounds(layouts: Record<string, LayoutItem>) {
+  const values = Object.values(layouts);
+  const minX = Math.min(...values.map((layout) => layout.x));
+  const minY = Math.min(...values.map((layout) => layout.y));
+  const maxX = Math.max(...values.map((layout) => layout.x + layout.w));
+  const maxY = Math.max(...values.map((layout) => layout.y + layout.h));
+
+  return {
+    minX,
+    minY,
+    width: maxX - minX,
+    height: maxY - minY,
+  };
+}
+
+function createRelativeLayoutsFromCurrent(widgets: PackedWidget[]) {
+  const absoluteLayouts = Object.fromEntries(widgets.map((widget) => [widget.id, widget.layout]));
+  const bounds = getLayoutsBounds(absoluteLayouts);
+
+  return {
+    relativeLayouts: Object.fromEntries(
+      Object.entries(absoluteLayouts).map(([widgetId, layout]) => [
+        widgetId,
+        {
+          ...layout,
+          x: layout.x - bounds.minX,
+          y: layout.y - bounds.minY,
+        },
+      ])
+    ),
+    groupWidth: bounds.width,
+    groupHeight: bounds.height,
+  };
+}
+
+function offsetRelativeLayouts(relativeLayouts: Record<string, LayoutItem>, origin: { x: number; y: number }) {
+  return Object.fromEntries(
+    Object.entries(relativeLayouts).map(([widgetId, layout]) => [
+      widgetId,
+      clampLayout({
+        ...layout,
+        x: layout.x + origin.x,
+        y: layout.y + origin.y,
+      }),
+    ])
+  );
+}
+
+function layoutsCollide(layouts: Record<string, LayoutItem>, occupiedLayouts: LayoutItem[]) {
+  const values = Object.values(layouts);
+  const overlapsOccupied = values.some((layout) => overlapsAny(layout, occupiedLayouts));
+  const overlapsSelf = values.some((layout, index) =>
+    values.slice(index + 1).some((otherLayout) => rectsOverlap(layout, otherLayout))
+  );
+
+  return overlapsOccupied || overlapsSelf;
+}
+
+function clampGroupOrigin(origin: { x: number; y: number }, groupWidth: number, groupHeight: number) {
+  return {
+    x: Math.min(Math.max(0, Math.round(origin.x)), Math.max(0, GRID_COLUMNS - groupWidth)),
+    y: Math.min(Math.max(0, Math.round(origin.y)), Math.max(0, MAX_GRID_ROWS - groupHeight)),
+  };
+}
+
+function getPlacementOrigin(
+  placement: Exclude<ArrangeDashboardWidgetsArgs["placement"], undefined | "beside">,
+  anchorLayout: LayoutItem,
+  groupWidth: number,
+  groupHeight: number,
+  align: ArrangeDashboardWidgetsArgs["align"],
+  gap: number
+) {
+  const crossAxisStart =
+    align === "end"
+      ? anchorLayout.y + anchorLayout.h - groupHeight
+      : align === "center"
+        ? anchorLayout.y + Math.floor((anchorLayout.h - groupHeight) / 2)
+        : anchorLayout.y;
+  const horizontalStart =
+    align === "end"
+      ? anchorLayout.x + anchorLayout.w - groupWidth
+      : align === "center"
+        ? anchorLayout.x + Math.floor((anchorLayout.w - groupWidth) / 2)
+        : anchorLayout.x;
+
+  if (placement === "left_of") {
+    return { x: anchorLayout.x - groupWidth - gap, y: crossAxisStart };
+  }
+
+  if (placement === "right_of") {
+    return { x: anchorLayout.x + anchorLayout.w + gap, y: crossAxisStart };
+  }
+
+  if (placement === "above") {
+    return { x: horizontalStart, y: anchorLayout.y - groupHeight - gap };
+  }
+
+  return { x: horizontalStart, y: anchorLayout.y + anchorLayout.h + gap };
+}
+
+function findNearestSingleLayout(desiredLayout: LayoutItem, occupiedLayouts: LayoutItem[]) {
+  const clampedLayout = clampLayout(desiredLayout);
+  const maxX = GRID_COLUMNS - clampedLayout.w;
+  const maxY = MAX_GRID_ROWS - clampedLayout.h;
+  const positions = [];
+
+  for (let x = 0; x <= maxX; x += 1) {
+    for (let y = 0; y <= maxY; y += 1) {
+      positions.push({ x, y });
+    }
+  }
+
+  positions.sort(
+    (a, b) =>
+      Math.abs(a.x - clampedLayout.x) +
+      Math.abs(a.y - clampedLayout.y) -
+      (Math.abs(b.x - clampedLayout.x) + Math.abs(b.y - clampedLayout.y))
+  );
+
+  for (const position of positions) {
+    const candidate = { ...clampedLayout, x: position.x, y: position.y };
+    if (!overlapsAny(candidate, occupiedLayouts)) return candidate;
+  }
+
+  return clampedLayout;
+}
+
+function nudgeLayouts(
+  widgets: PackedWidget[],
+  occupiedLayouts: LayoutItem[],
+  args: ArrangeDashboardWidgetsArgs
+) {
+  const deltaX = getNudgeAmount(args.deltaX);
+  const deltaY = getNudgeAmount(args.deltaY);
+  const nextLayouts: Record<string, LayoutItem> = {};
+  const movingOccupiedLayouts = [...occupiedLayouts];
+
+  for (const widget of sortWidgetsByCurrentPosition(widgets)) {
+    const desiredLayout = {
+      ...widget.layout,
+      x: widget.layout.x + deltaX,
+      y: widget.layout.y + deltaY,
+    };
+    const nextLayout = findNearestSingleLayout(desiredLayout, movingOccupiedLayouts);
+
+    nextLayouts[widget.id] = nextLayout;
+    movingOccupiedLayouts.push(nextLayout);
+  }
+
+  return nextLayouts;
+}
+
+function placeLayoutsRelativeToWidget(
+  widgets: PackedWidget[],
+  anchorLayout: LayoutItem,
+  occupiedLayouts: LayoutItem[],
+  args: ArrangeDashboardWidgetsArgs
+) {
+  const currentGroup = createRelativeLayoutsFromCurrent(widgets);
+  const gap = getFineSpacing(args);
+  const placement = args.placement ?? "beside";
+  const align = args.align ?? "start";
+  const placementCandidates =
+    placement === "beside"
+      ? (["left_of", "right_of"] as const)
+      : ([placement] as Array<Exclude<ArrangeDashboardWidgetsArgs["placement"], undefined | "beside">>);
+  const origins = placementCandidates.map((candidatePlacement) =>
+    clampGroupOrigin(
+      getPlacementOrigin(
+        candidatePlacement,
+        anchorLayout,
+        currentGroup.groupWidth,
+        currentGroup.groupHeight,
+        align,
+        gap
+      ),
+      currentGroup.groupWidth,
+      currentGroup.groupHeight
+    )
+  );
+  const currentBounds = getLayoutsBounds(Object.fromEntries(widgets.map((widget) => [widget.id, widget.layout])));
+
+  origins.sort(
+    (a, b) =>
+      Math.abs(a.x - currentBounds.minX) +
+      Math.abs(a.y - currentBounds.minY) -
+      (Math.abs(b.x - currentBounds.minX) + Math.abs(b.y - currentBounds.minY))
+  );
+
+  for (const origin of origins) {
+    const candidateLayouts = offsetRelativeLayouts(currentGroup.relativeLayouts, origin);
+    if (!layoutsCollide(candidateLayouts, occupiedLayouts)) return candidateLayouts;
+  }
+
+  for (const origin of getGroupOrigins(currentGroup.groupWidth, currentGroup.groupHeight, {
+    ...args,
+    targetArea: args.placement === "right_of" ? "right" : args.placement === "below" ? "bottom" : args.targetArea,
+  })) {
+    const candidateLayouts = offsetRelativeLayouts(currentGroup.relativeLayouts, origin);
+    if (!layoutsCollide(candidateLayouts, occupiedLayouts)) return candidateLayouts;
+  }
+
+  return offsetRelativeLayouts(currentGroup.relativeLayouts, origins[0] ?? { x: currentBounds.minX, y: currentBounds.minY });
+}
+
 function summarizeWidgets(activeWidgets: string[], includeInactive = true): DashboardWidgetSummary[] {
   return WIDGET_IDS.map((id) => ({
     id,
@@ -651,7 +891,7 @@ export const arrangeDashboardWidgetsTool: ToolDef<
 > = {
   name: "arrangeDashboardWidgets",
   description:
-    "Move and compact active dashboard widgets on the grid. Reads current widget sizes, packs the requested widgets as a coherent group, then anchors that group to the left/right/top/bottom/center. Use this when the user asks to move widgets, group widgets together, or put widgets close together. If widgetIds is omitted, all active widgets are arranged. Supports active built-in widgets, notes, and custom button widget IDs.",
+    "Move dashboard widgets on the grid. Supports three modes: pack active widgets as a coherent group, nudge selected widgets by grid cells, or place selected widgets beside/above/below another widget. Use this when the user asks to move widgets, group widgets together, put widgets close together, move a widget a little, or place one widget next to another. If widgetIds is omitted in pack mode, all active widgets are arranged. Supports active built-in widgets, notes, and custom button widget IDs.",
   parameters: {
     type: "object",
     properties: {
@@ -661,21 +901,58 @@ export const arrangeDashboardWidgetsTool: ToolDef<
         description:
           "Optional active widget IDs or unambiguous widget names to move. Omit to arrange all active widgets.",
       },
+      mode: {
+        type: "string",
+        enum: ["pack", "nudge", "place"],
+        description:
+          "Use pack for grouping/anchoring many widgets, nudge for small moves by grid cells, and place for positioning relative to another widget.",
+      },
       targetArea: {
         type: "string",
         enum: ["left", "right", "top", "bottom", "center"],
-        description: "Where to move the widgets. Defaults to left.",
+        description: "Where to move a packed group. Defaults to left in pack mode.",
       },
       spacing: {
         type: "string",
         enum: ["none", "small", "normal"],
-        description: "How tightly widgets should be packed. Use none for requests like close together.",
+        description: "How tightly widgets should be packed or placed. Use none for requests like close together.",
       },
       direction: {
         type: "string",
         enum: ["vertical", "horizontal"],
         description:
           "Primary packing direction. Defaults to vertical for left/right/center and horizontal for top/bottom.",
+      },
+      deltaX: {
+        type: "number",
+        description:
+          "Grid columns to nudge selected widgets. Positive moves right, negative moves left. For 'a little right', use 2.",
+      },
+      deltaY: {
+        type: "number",
+        description:
+          "Grid rows to nudge selected widgets. Positive moves down, negative moves up. For 'a little down', use 2.",
+      },
+      relativeToWidgetId: {
+        type: "string",
+        description:
+          "Active widget ID or unambiguous widget name used as the anchor for place mode, such as ai_chat or AI chat.",
+      },
+      placement: {
+        type: "string",
+        enum: ["left_of", "right_of", "above", "below", "beside"],
+        description:
+          "Where to place selected widgets relative to relativeToWidgetId. Use beside when the user says next to/ved siden av without a precise side.",
+      },
+      align: {
+        type: "string",
+        enum: ["start", "center", "end"],
+        description:
+          "Alignment against the anchor widget in place mode. start aligns top/left edges, center centers, end aligns bottom/right edges.",
+      },
+      gap: {
+        type: "number",
+        description: "Exact grid-cell gap for place mode. Defaults to spacing.",
       },
       includeLocked: {
         type: "boolean",
@@ -697,27 +974,53 @@ export const arrangeDashboardWidgetsTool: ToolDef<
       const requestedTargets = Array.isArray(args.widgetIds) && args.widgetIds.length
         ? resolveActiveWidgetTargets(args.widgetIds, activeWidgets)
         : activeWidgets;
+      const mode =
+        args.mode ??
+        (args.relativeToWidgetId
+          ? "place"
+          : typeof args.deltaX === "number" || typeof args.deltaY === "number"
+            ? "nudge"
+            : "pack");
+      const anchorWidgetId = args.relativeToWidgetId
+        ? resolveSingleActiveWidgetTarget(args.relativeToWidgetId, activeWidgets)
+        : null;
       const skippedLockedWidgets: string[] = [];
       const targetWidgets = requestedTargets.filter((widgetId) => {
+        if (widgetId === anchorWidgetId) return false;
         if (args.includeLocked || !widgetLocks[widgetId]) return true;
         skippedLockedWidgets.push(widgetId);
         return false;
       });
+      const moved: ArrangedWidgetSummary[] = [];
+
+      if (targetWidgets.length === 0) {
+        return { moved, skippedLockedWidgets };
+      }
+
       const occupiedLayouts = Object.entries(layouts)
         .filter(([widgetId]) => !targetWidgets.includes(widgetId))
         .map(([, layout]) => clampLayout(layout));
       const nextLayouts = { ...layouts };
-      const moved: ArrangedWidgetSummary[] = [];
       const packedWidgets = targetWidgets.map((widgetId) => ({
         id: widgetId,
         layout: clampLayout(layouts[widgetId] ?? getDefaultLayoutForWidget(widgetId)),
         originalIndex: activeWidgets.indexOf(widgetId),
       }));
-      const packedLayouts = placePackedLayouts(
-        packedWidgets,
-        occupiedLayouts,
-        { ...args, targetArea, spacing }
-      );
+      const packedLayouts =
+        mode === "nudge"
+          ? nudgeLayouts(packedWidgets, occupiedLayouts, args)
+          : mode === "place" && anchorWidgetId
+            ? placeLayoutsRelativeToWidget(
+                packedWidgets,
+                clampLayout(layouts[anchorWidgetId] ?? getDefaultLayoutForWidget(anchorWidgetId)),
+                occupiedLayouts,
+                { ...args, spacing }
+              )
+            : placePackedLayouts(
+                packedWidgets,
+                occupiedLayouts,
+                { ...args, targetArea, spacing }
+              );
 
       for (const widgetId of targetWidgets) {
         const nextLayout =
