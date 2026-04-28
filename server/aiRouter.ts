@@ -151,8 +151,8 @@ Intent-mapping for klokke:
 - setClockMode/toggleClockMode legger til clock-widgeten hvis den ikke allerede er på dashboardet.
 - Ikke si at klokkemodus er endret uten at setClockMode eller toggleClockMode faktisk er kjørt.
 
-Intent-mapping for temaer/presets:
-- "bytt/switch/sett tema", "bruk theme", "apply preset" => applyDashboardTheme
+Intent-mapping for temaer/presets/oppsett/layout:
+- "bytt/switch/sett tema/oppsett/layout", "bruk theme", "apply preset" => applyDashboardTheme
 - "lagre/save nåværende tema/layout/preset" => saveDashboardTheme
 - "slett/delete/fjern tema/preset" => deleteDashboardTheme (kun etter bekreftelse)
 - "vis/list temaer/presets" => listDashboardThemes
