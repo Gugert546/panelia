@@ -29,9 +29,41 @@ type Props = {
   calendarWidgetConfig?: Record<string, unknown>;
 };
 
-const GRID_COLUMNS = 40;
+const BASE_GRID_COLUMNS = 40;
 const GRID_ROW_HEIGHT = 30;
 const GRID_MIN_WIDTH = 320;
+
+function resolveGridColumns(width: number) {
+  if (width >= 1500) return 40;
+  if (width >= 1200) return 32;
+  if (width >= 900) return 24;
+  if (width >= 700) return 18;
+  return 12;
+}
+
+function clampGridValue(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function scaleSpanToCurrent(span: number, currentCols: number) {
+  return clampGridValue(Math.round((span / BASE_GRID_COLUMNS) * currentCols), 1, currentCols);
+}
+
+function scaleXToCurrent(x: number, w: number, currentCols: number) {
+  const scaledW = scaleSpanToCurrent(w, currentCols);
+  const scaledX = Math.round((x / BASE_GRID_COLUMNS) * currentCols);
+  return clampGridValue(scaledX, 0, Math.max(0, currentCols - scaledW));
+}
+
+function scaleSpanToBase(span: number, currentCols: number) {
+  return clampGridValue(Math.round((span / currentCols) * BASE_GRID_COLUMNS), 1, BASE_GRID_COLUMNS);
+}
+
+function scaleXToBase(x: number, w: number, currentCols: number) {
+  const scaledW = scaleSpanToBase(w, currentCols);
+  const scaledX = Math.round((x / currentCols) * BASE_GRID_COLUMNS);
+  return clampGridValue(scaledX, 0, Math.max(0, BASE_GRID_COLUMNS - scaledW));
+}
 
 function toColorInputValue(value: string) {
   const trimmed = value.trim();
@@ -116,6 +148,15 @@ export default function DashboardGrid({
   const { t } = useLanguage();
   const { fontSize: globalFontSize } = useFontSize();
 
+  const fallbackWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
+  const resolvedContainerWidth =
+    typeof containerWidth === "number" && Number.isFinite(containerWidth)
+      ? containerWidth
+      : fallbackWidth;
+  const gridWidth = Math.max(GRID_MIN_WIDTH, resolvedContainerWidth);
+
+  const activeGridColumns = resolveGridColumns(gridWidth);
+
   const computedLayout = activeWidgets
     .map((widgetId, index) => {
       const widgetType = getWidgetType(widgetId);
@@ -134,13 +175,18 @@ export default function DashboardGrid({
           }
         : baseGrid;
 
+      const scaledW = scaleSpanToCurrent(currentLayout.w, activeGridColumns);
+      const scaledH = currentLayout.h;
+      const scaledX = scaleXToCurrent(currentLayout.x ?? (index * 4) % 20, currentLayout.w, activeGridColumns);
+      const scaledMinW = scaleSpanToCurrent(baseGrid.w, activeGridColumns);
+
       return {
         i: widgetId,
-        x: currentLayout.x ?? (index * 4) % 20,
+        x: scaledX,
         y: currentLayout.y ?? Math.floor(index / 5) * widget.defaultGrid.h,
-        w: currentLayout.w,
-        h: currentLayout.h,
-        minW: baseGrid.w,
+        w: scaledW,
+        h: scaledH,
+        minW: scaledMinW,
         minH: baseGrid.h,
         static: Boolean(widgetLocks[widgetId]),
       };
@@ -155,12 +201,14 @@ export default function DashboardGrid({
       const widget = WIDGETS[widgetType as keyof typeof WIDGETS];
       const baseGrid = widget?.defaultGrid;
 
+      const baseW = scaleSpanToBase(item.w, activeGridColumns);
+
       newLayouts[item.i] = {
-        x: item.x,
+        x: scaleXToBase(item.x, item.w, activeGridColumns),
         y: item.y,
         
         // Clamp to widget minimums so users can’t resize smaller than starting size
-        w: baseGrid ? Math.max(item.w, baseGrid.w) : item.w,
+        w: baseGrid ? Math.max(baseW, baseGrid.w) : baseW,
         h: baseGrid ? Math.max(item.h, baseGrid.h) : item.h,
       };
     });
@@ -168,19 +216,12 @@ export default function DashboardGrid({
     onLayoutChange(newLayouts);
   };
 
-  const fallbackWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
-  const resolvedContainerWidth =
-    typeof containerWidth === "number" && Number.isFinite(containerWidth)
-      ? containerWidth
-      : fallbackWidth;
-  const gridWidth = Math.max(GRID_MIN_WIDTH, resolvedContainerWidth);
-
   return (
     <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "flex-start" }}>
       <GridLayout
         className="layout"
         layout={computedLayout}
-        cols={GRID_COLUMNS}
+        cols={activeGridColumns}
         rowHeight={GRID_ROW_HEIGHT}
         width={gridWidth}
         isDraggable={isMovable}
@@ -233,9 +274,13 @@ export default function DashboardGrid({
             key={widgetId}
             data-grid={{
               ...currentLayout,
-              x: currentLayout.x !== undefined ? currentLayout.x : (index * 4) % 20,
+              x:
+                currentLayout.x !== undefined
+                  ? scaleXToCurrent(currentLayout.x, currentLayout.w, activeGridColumns)
+                  : scaleXToCurrent((index * 4) % 20, currentLayout.w, activeGridColumns),
               y: currentLayout.y !== undefined ? currentLayout.y : Math.floor(index / 5) * widget.defaultGrid.h,
-              minW: baseGrid.w,
+              w: scaleSpanToCurrent(currentLayout.w, activeGridColumns),
+              minW: scaleSpanToCurrent(baseGrid.w, activeGridColumns),
               minH: baseGrid.h,
               static: isLocked,
             }}
