@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import type { CalendarEvent } from "../../../../../types/firestore";
+import type { CalendarProvider } from "../../../../../types/firestore";
 import { useCalendarEvents } from "./useCalendarEvents";
 
 type EventFormState = {
@@ -124,9 +125,12 @@ function assignLanes(events: CalendarEvent[]) {
   return laneByEventId;
 }
 
-export function useCalendarLogic(selectedCalendarIds: string[] = ["primary"]) {
+export function useCalendarLogic(
+  selectedCalendarIds: string[] = ["primary"],
+  calendarProvider: CalendarProvider = "google"
+) {
   const { events, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } =
-    useCalendarEvents(selectedCalendarIds);
+    useCalendarEvents(selectedCalendarIds, calendarProvider);
   const [creatingKey, setCreatingKey] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [editingEvent, setEditingEvent] = useState<EventFormState | null>(null);

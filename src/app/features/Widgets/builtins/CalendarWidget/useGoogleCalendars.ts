@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { auth } from "../../../../../lib/firebase/client";
-import type { GoogleCalendarMeta } from "../../../../../types/firestore";
+import type { CalendarMeta, CalendarProvider } from "../../../../../types/firestore";
 
 const CALENDAR_SELECTION_EVENT = "panelia:calendar-selection-updated";
 
 type CalendarsResponse = {
   ok?: boolean;
-  calendars?: GoogleCalendarMeta[];
+  calendars?: CalendarMeta[];
   selectedCalendarIds?: string[];
 };
 
@@ -28,9 +28,17 @@ async function authedFetch(path: string, init?: RequestInit) {
   return res.json();
 }
 
-export function useGoogleCalendars(enabled: boolean) {
-  const [calendars, setCalendars] = useState<GoogleCalendarMeta[]>([]);
-  const [selectedCalendarIds, setSelectedCalendarIds] = useState<string[]>(["primary"]);
+function defaultCalendarIds(provider: CalendarProvider) {
+  return provider === "outlook" ? ["outlook:primary"] : ["primary"];
+}
+
+function calendarEndpoint(provider: CalendarProvider, path: string) {
+  return `/api/${provider === "outlook" ? "outlook-calendar" : "google-calendar"}${path}`;
+}
+
+export function useGoogleCalendars(enabled: boolean, provider: CalendarProvider = "google") {
+  const [calendars, setCalendars] = useState<CalendarMeta[]>([]);
+  const [selectedCalendarIds, setSelectedCalendarIds] = useState<string[]>(defaultCalendarIds(provider));
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,11 +47,11 @@ export function useGoogleCalendars(enabled: boolean) {
     if (!enabled) return;
     setLoading(true);
     try {
-      const payload = (await authedFetch("/api/google-calendar/calendars")) as CalendarsResponse;
+      const payload = (await authedFetch(calendarEndpoint(provider, "/calendars"))) as CalendarsResponse;
       setCalendars(Array.isArray(payload.calendars) ? payload.calendars : []);
       const selected = Array.isArray(payload.selectedCalendarIds) && payload.selectedCalendarIds.length
         ? payload.selectedCalendarIds
-        : ["primary"];
+        : defaultCalendarIds(provider);
       setSelectedCalendarIds(selected);
       if (typeof window !== "undefined") {
         window.dispatchEvent(
@@ -58,33 +66,39 @@ export function useGoogleCalendars(enabled: boolean) {
     } finally {
       setLoading(false);
     }
-  }, [enabled]);
+  }, [enabled, provider]);
 
   useEffect(() => { void refresh(); }, [refresh]);
+
+  useEffect(() => {
+    if (enabled) return;
+    setCalendars([]);
+    setSelectedCalendarIds(defaultCalendarIds(provider));
+  }, [enabled, provider]);
 
   const toggleCalendar = useCallback((calendarId: string) => {
     setSelectedCalendarIds((prev) => {
       const has = prev.includes(calendarId);
       if (has) {
         const next = prev.filter((id) => id !== calendarId);
-        return next.length ? next : ["primary"];
+        return next.length ? next : defaultCalendarIds(provider);
       }
       return [...prev, calendarId];
     });
-  }, []);
+  }, [provider]);
 
   const saveSelection = useCallback(async () => {
     setSaving(true);
     try {
-      const selected = selectedCalendarIds.length ? selectedCalendarIds : ["primary"];
-      const payload = (await authedFetch("/api/google-calendar/calendars/selected", {
+      const selected = selectedCalendarIds.length ? selectedCalendarIds : defaultCalendarIds(provider);
+      const payload = (await authedFetch(calendarEndpoint(provider, "/calendars/selected"), {
         method: "POST",
         body: JSON.stringify({ calendarIds: selected }),
       })) as { selectedCalendarIds?: string[] };
 
       const persisted = Array.isArray(payload.selectedCalendarIds) && payload.selectedCalendarIds.length
         ? payload.selectedCalendarIds
-        : ["primary"];
+        : defaultCalendarIds(provider);
 
       setSelectedCalendarIds(persisted);
       if (typeof window !== "undefined") {
@@ -95,7 +109,7 @@ export function useGoogleCalendars(enabled: boolean) {
         );
       }
 
-      await authedFetch("/api/google-calendar/sync/pull", {
+      await authedFetch(calendarEndpoint(provider, "/sync/pull"), {
         method: "POST",
         body: JSON.stringify({
           maxResults: 250,
@@ -112,7 +126,7 @@ export function useGoogleCalendars(enabled: boolean) {
     } finally {
       setSaving(false);
     }
-  }, [selectedCalendarIds]);
+  }, [provider, selectedCalendarIds]);
 
   // Debug state updates
   useEffect(() => {
