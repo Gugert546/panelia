@@ -83,6 +83,11 @@ function getImageBackgroundSource(
 function DashboardPageContent() {
   const SIDEBAR_WIDTH = 86;
   const GUEST_INFO_LAYOUT = { x: 1, y: 2, w: 12, h: 12 };
+  const [gridContainerWidth, setGridContainerWidth] = useState(() =>
+    typeof window === "undefined"
+      ? 1200
+      : Math.max(320, window.innerWidth - SIDEBAR_WIDTH)
+  );
 
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
@@ -169,6 +174,19 @@ function DashboardPageContent() {
     }, 900000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const updateGridWidth = () => {
+      setGridContainerWidth(Math.max(320, window.innerWidth - SIDEBAR_WIDTH));
+    };
+
+    updateGridWidth();
+    window.addEventListener("resize", updateGridWidth);
+
+    return () => {
+      window.removeEventListener("resize", updateGridWidth);
+    };
   }, []);
 
   useEffect(() => {
@@ -483,7 +501,7 @@ function DashboardPageContent() {
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
-          width: window.innerWidth - SIDEBAR_WIDTH,
+          width: `calc(100vw - ${SIDEBAR_WIDTH}px)`,
           height: "100vh",
           position: "relative",
         }}
@@ -504,7 +522,7 @@ function DashboardPageContent() {
           onToggleClockMode={toggleClockMode}
           onSetWidgetStyle={setWidgetStyle}
           onResetWidgetStyle={resetWidgetStyle}
-          sidebarWidth={SIDEBAR_WIDTH}
+          containerWidth={gridContainerWidth}
           isInteractive={isAuthenticated}
           isMovable={true}
           calendarWidgetConfig={{

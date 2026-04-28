@@ -23,11 +23,16 @@ type Props = {
   onToggleClockMode: (widgetId: string) => void;
   onSetWidgetStyle: (widgetId: string, patch: WidgetStyleOverrides) => void;
   onResetWidgetStyle: (widgetId: string) => void;
-  sidebarWidth: number;
+  containerWidth?: number;
   isInteractive?: boolean;
   isMovable?: boolean;
   calendarWidgetConfig?: Record<string, unknown>;
 };
+
+const GRID_COLUMNS = 40;
+const GRID_ROW_HEIGHT = 30;
+const GRID_MAX_WIDTH = 1440;
+const GRID_MIN_WIDTH = 320;
 
 function toColorInputValue(value: string) {
   const trimmed = value.trim();
@@ -102,7 +107,7 @@ export default function DashboardGrid({
   onToggleClockMode,
   onSetWidgetStyle,
   onResetWidgetStyle,
-  sidebarWidth,
+  containerWidth,
   isInteractive = true,
   isMovable = isInteractive,
   calendarWidgetConfig
@@ -164,26 +169,34 @@ export default function DashboardGrid({
     onLayoutChange(newLayouts);
   };
 
+  const fallbackWidth = typeof window === "undefined" ? GRID_MAX_WIDTH : window.innerWidth;
+  const resolvedContainerWidth =
+    typeof containerWidth === "number" && Number.isFinite(containerWidth)
+      ? containerWidth
+      : fallbackWidth;
+  const gridWidth = Math.max(GRID_MIN_WIDTH, Math.min(resolvedContainerWidth, GRID_MAX_WIDTH));
+
   return (
-    <GridLayout
-      className="layout"
-      layout={computedLayout}
-      cols={40}          // Mer columns --> Finere horisontal kontroll
-      rowHeight={30}    // Mindre rowHeight --> Mer vertikal kontroll og flere rader tilgjengelig
-      width={window.innerWidth - sidebarWidth}
-      isDraggable={isMovable}
-      isResizable={isMovable}
-      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
-      compactType={null}
-      preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
-      margin={[0, 0]}    
-      maxRows={40}      // tillatter flere rader for å unngå at widgets blir presset sammen vertikalt
-      containerPadding={[0, 0]}
-      autoSize={false}
-      style={{ height: "100%" }}
-      onLayoutChange={handleLayoutChange}
-    >
-      {activeWidgets.map((widgetId, index) => {
+    <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "flex-start" }}>
+      <GridLayout
+        className="layout"
+        layout={computedLayout}
+        cols={GRID_COLUMNS}
+        rowHeight={GRID_ROW_HEIGHT}
+        width={gridWidth}
+        isDraggable={isMovable}
+        isResizable={isMovable}
+        draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
+        compactType={null}
+        preventCollision={true}
+        margin={[0, 0]}
+        maxRows={40}
+        containerPadding={[0, 0]}
+        autoSize={false}
+        style={{ height: "100%" }}
+        onLayoutChange={handleLayoutChange}
+      >
+        {activeWidgets.map((widgetId, index) => {
 
         const widgetType = getWidgetType(widgetId);
         const widget = WIDGETS[widgetType as keyof typeof WIDGETS];
@@ -511,7 +524,8 @@ export default function DashboardGrid({
             </WidgetInstanceProvider>
           </div>
         );
-      })}
-    </GridLayout>
+        })}
+      </GridLayout>
+    </div>
   );
 }
