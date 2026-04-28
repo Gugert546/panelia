@@ -28,6 +28,7 @@
     "widgetColorHelp": "Bruk hex (f.eks. #cde8ff) eller rgba (f.eks. rgba(255,255,255,0.15)).",
     "widgetBorderColor": "Velg farge",
     "widgetTextColor": "Tekstfarge",
+    "widgetBlur": "blur",
     "widgetOpacity": "opasitet",
     "widgetBorderColorTitle": "Border",
     "widgetBorderWidth": "Tykkelse",

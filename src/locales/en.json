@@ -28,6 +28,7 @@
     "widgetColorHelp": "Use hex (for example #cde8ff) or rgba (for example rgba(255,255,255,0.15)).",
     "widgetBorderColor": "Choose color",
     "widgetTextColor": "Text color",
+    "widgetBlur": "blur",
     "widgetOpacity": "opacity",
     "widgetBorderColorTitle": "Border",
     "widgetBorderWidth": "Thickness",

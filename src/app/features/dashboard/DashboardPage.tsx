@@ -102,11 +102,13 @@ function DashboardPageContent() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -118,12 +120,14 @@ function DashboardPageContent() {
     removeCustomButton,
     toggleWidgetLock,
     toggleClockMode,
+    toggleClockBackground,
     setWidgetStyle,
     resetWidgetStyle,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
     setWidgetTextColor,
     setWidgetOpacity,
+    setWidgetBlur,
     setWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,
@@ -464,6 +468,8 @@ function DashboardPageContent() {
         setWidgetTextColor={setWidgetTextColor}
         widgetOpacity={widgetOpacity}
         setWidgetOpacity={setWidgetOpacity}
+        widgetBlur={widgetBlur}
+        setWidgetBlur={setWidgetBlur}
         widgetBorderWidth={widgetBorderWidth}
         setWidgetBorderWidth={setWidgetBorderWidth}
         widgetSizeMode={widgetSizeMode}
@@ -493,15 +499,18 @@ function DashboardPageContent() {
           layouts={visibleLayouts}
           widgetLocks={widgetLocks}
           clockModes={clockModes}
+          clockBackgrounds={clockBackgrounds}
           widgetStyles={widgetStyles}
           widgetSurfaceColor={widgetSurfaceColor}
           widgetBorderColor={widgetBorderColor}
           widgetTextColor={widgetTextColor}
+          widgetBlur={widgetBlur}
           widgetBorderWidth={widgetBorderWidth}
           onLayoutChange={updateLayout}
           onCloseWidget={removeCustomButton}
           onToggleWidgetLock={toggleWidgetLock}
           onToggleClockMode={toggleClockMode}
+          onToggleClockBackground={toggleClockBackground}
           onSetWidgetStyle={setWidgetStyle}
           onResetWidgetStyle={resetWidgetStyle}
           sidebarWidth={SIDEBAR_WIDTH}

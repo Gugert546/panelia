@@ -3,13 +3,16 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
+  writeBatch,
 } from "firebase/firestore";
 import { db } from "./client";
+import { isUserDataDeletionInProgress } from "./userDataDeletion";
 import type { CalendarEvent } from "../../types/firestore";
 import type { Bookmark, BookmarkCategory } from "../../types/firestore";
 import type { StickyNote } from "../../types/firestore";
@@ -72,6 +75,8 @@ export function subscribeToEvents(uid: string, onData: (events: CalendarEvent[])
 }
 
 export async function createEvent(uid: string, event: CalendarEvent) {
+  if (isUserDataDeletionInProgress(uid)) return;
+
   await setDoc(doc(eventsRef(uid), event.id), {
     ...event,
     createdAt: serverTimestamp(),
@@ -85,6 +90,8 @@ export async function updateEvent(
   patch: Partial<CalendarEvent>,
   options: UpdateEventOptions = {}
 ) {
+  if (isUserDataDeletionInProgress(uid)) return;
+
   const { expectedUpdatedAt, markPending = true } = options;
   const ref = doc(eventsRef(uid), eventId);
   const payload = makeUpdatePayload(patch, markPending);
@@ -172,6 +179,8 @@ export function subscribeToBookmarks(
 
 
 export async function createCategory(uid: string, category: BookmarkCategory) {
+  if (isUserDataDeletionInProgress(uid)) return;
+
   await setDoc(doc(categoriesRef(uid), category.id), {
     ...category,
     createdAt: serverTimestamp(),
@@ -181,6 +190,8 @@ export async function createCategory(uid: string, category: BookmarkCategory) {
 
 
 export async function createBookmark(uid: string, bookmark: Bookmark) {
+  if (isUserDataDeletionInProgress(uid)) return;
+
   await setDoc(doc(bookmarksRef(uid), bookmark.id), {
     ...bookmark,
     createdAt: serverTimestamp(),
@@ -194,6 +205,8 @@ export async function updateBookmark(
   bookmarkId: string,
   patch: Partial<Bookmark>
 ) {
+  if (isUserDataDeletionInProgress(uid)) return;
+
   const ref = doc(bookmarksRef(uid), bookmarkId);
   await updateDoc(ref, {
     ...patch,
@@ -217,6 +230,8 @@ const notesRef = (uid: string) =>
 
 
 export async function createStickyNote(uid: string, noteId: string) {
+  if (isUserDataDeletionInProgress(uid)) return;
+
   await setDoc(doc(notesRef(uid), noteId), {
     id: noteId,
     userId: uid,
@@ -228,6 +243,8 @@ export async function createStickyNote(uid: string, noteId: string) {
 
 
 export async function updateStickyNote(uid: string, noteId: string, text: string) {
+  if (isUserDataDeletionInProgress(uid)) return;
+
   await setDoc(
     doc(notesRef(uid), noteId),
     {
@@ -259,4 +276,52 @@ export function subscribeToStickyNote(
 
     onData(snap.data() as StickyNote);
   });
+}
+
+const USER_DATA_COLLECTIONS = [
+  "calendarEvents",
+  "bookmarkCategories",
+  "bookmarks",
+  "widgetLayout",
+  "stickyNotes",
+  "preferences",
+] as const;
+
+const FIRESTORE_BATCH_LIMIT = 450;
+
+export async function deleteUserData(uid: string) {
+  let batch = writeBatch(db);
+  let operationCount = 0;
+  let deletedCount = 0;
+
+  const commitBatch = async () => {
+    if (operationCount === 0) return;
+
+    await batch.commit();
+    batch = writeBatch(db);
+    operationCount = 0;
+  };
+
+  const queueDelete = async (ref: ReturnType<typeof doc>) => {
+    batch.delete(ref);
+    operationCount += 1;
+    deletedCount += 1;
+
+    if (operationCount >= FIRESTORE_BATCH_LIMIT) {
+      await commitBatch();
+    }
+  };
+
+  for (const collectionName of USER_DATA_COLLECTIONS) {
+    const snapshot = await getDocs(collection(db, "users", uid, collectionName));
+
+    for (const documentSnapshot of snapshot.docs) {
+      await queueDelete(documentSnapshot.ref);
+    }
+  }
+
+  await queueDelete(doc(db, "users", uid));
+  await commitBatch();
+
+  return deletedCount;
 }

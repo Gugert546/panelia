@@ -12,15 +12,18 @@ type Props = {
   layouts: Record<string, { x: number; y: number; w: number; h: number }>;
   widgetLocks: Record<string, boolean>;
   clockModes: Record<string, "digital" | "analog">;
+  clockBackgrounds: Record<string, boolean>;
   widgetStyles: Record<string, WidgetStyleOverrides>;
   widgetSurfaceColor: string;
   widgetBorderColor: string;
   widgetTextColor: string;
+  widgetBlur: number;
   widgetBorderWidth: number;
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
   onCloseWidget: (widgetId: string) => void;
   onToggleWidgetLock: (widgetId: string) => void;
   onToggleClockMode: (widgetId: string) => void;
+  onToggleClockBackground: (widgetId: string) => void;
   onSetWidgetStyle: (widgetId: string, patch: WidgetStyleOverrides) => void;
   onResetWidgetStyle: (widgetId: string) => void;
   sidebarWidth: number;
@@ -91,15 +94,18 @@ export default function DashboardGrid({
   layouts,
   widgetLocks,
   clockModes,
+  clockBackgrounds,
   widgetStyles,
   widgetSurfaceColor,
   widgetBorderColor,
   widgetTextColor,
+  widgetBlur,
   widgetBorderWidth,
   onLayoutChange,
   onCloseWidget,
   onToggleWidgetLock,
   onToggleClockMode,
+  onToggleClockBackground,
   onSetWidgetStyle,
   onResetWidgetStyle,
   sidebarWidth,
@@ -173,7 +179,7 @@ export default function DashboardGrid({
       width={window.innerWidth - sidebarWidth}
       isDraggable={isMovable}
       isResizable={isMovable}
-      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
+      draggableCancel="a,input,button:not(.widget-draggable-button),select,option,textarea,label,[role='button']:not(.widget-draggable-button),[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-clock-background-btn,.widget-style-btn,.widget-style-control"
       compactType={null}
       preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
       margin={[0, 0]}    
@@ -198,6 +204,7 @@ export default function DashboardGrid({
         const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
         const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
         const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
+        const resolvedBlur = widgetStyle?.widgetBlur ?? widgetBlur;
         const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
         const resolvedFontSize = widgetStyle?.widgetFontSize ?? globalFontSize;
         const surfaceAlpha = getColorAlpha(resolvedSurfaceColor);
@@ -215,6 +222,7 @@ export default function DashboardGrid({
           : baseGrid;
         const isClockWidget = widgetType === "clock";
         const clockMode = clockModes[widgetId] ?? "digital";
+        const showClockBackground = clockBackgrounds[widgetId] ?? (clockMode === "analog");
         const isStyleEditorOpen = styleEditorWidgetId === widgetId;
         return (
           <div
@@ -247,6 +255,69 @@ export default function DashboardGrid({
                   zIndex: 2,
                 }}
               >
+                {isClockWidget && (
+                  <button
+                    type="button"
+                    className="widget-clock-mode-btn"
+                    aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    onClick={() => onToggleClockMode(widgetId)}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background:
+                        clockMode === "analog"
+                          ? widgetControlActiveBackground
+                          : widgetControlBackground,
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      {clockMode === "analog" ? "schedule" : "av_timer"}
+                    </span>
+                  </button>
+                )}
+                {isClockWidget && (
+                  <button
+                    type="button"
+                    className="widget-clock-background-btn"
+                    aria-label={showClockBackground ? "Hide clock background" : "Show clock background"}
+                    title={showClockBackground ? "Hide clock background" : "Show clock background"}
+                    onClick={() => onToggleClockBackground(widgetId)}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: showClockBackground
+                        ? widgetControlActiveBackground
+                        : widgetControlBackground,
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      {showClockBackground ? "crop_square" : "check_box_outline_blank"}
+                    </span>
+                  </button>
+                )}
                 {!isLocked && (
                   <button
                     type="button"
@@ -278,38 +349,6 @@ export default function DashboardGrid({
                       style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
                     >
                       palette
-                    </span>
-                  </button>
-                )}
-                {isClockWidget && (
-                  <button
-                    type="button"
-                    className="widget-clock-mode-btn"
-                    aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
-                    title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
-                    onClick={() => onToggleClockMode(widgetId)}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 999,
-                      border: "1px solid rgba(255,255,255,0.35)",
-                      background:
-                        clockMode === "analog"
-                          ? widgetControlActiveBackground
-                          : widgetControlBackground,
-                      backdropFilter: "blur(6px)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <span
-                      className="material-symbols-rounded"
-                      aria-hidden="true"
-                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
-                    >
-                      {clockMode === "analog" ? "schedule" : "av_timer"}
                     </span>
                   </button>
                 )}
@@ -384,6 +423,22 @@ export default function DashboardGrid({
                     onChange={(event) =>
                       onSetWidgetStyle(widgetId, {
                         widgetSurfaceColor: withAlpha(event.target.value, surfaceAlpha),
+                      })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetBlur")}: {resolvedBlur}px
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={1}
+                    value={resolvedBlur}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, {
+                        widgetBlur: Number(event.target.value),
                       })
                     }
                   />
@@ -496,12 +551,12 @@ export default function DashboardGrid({
             )}
 
             <WidgetInstanceProvider widgetId={widgetId}>
-              <Component
+                <Component
                 config={
                   widgetType === "calendar"
                     ? (calendarWidgetConfig ?? {})
                     : widgetType === "clock"
-                      ? { mode: clockMode }
+                      ? { mode: clockMode, showBackground: showClockBackground }
                       : {}
                 }
                 onConfigChange={() => {}}
