@@ -11,11 +11,24 @@ import type {
 import { useFontSize } from '../providers/themeProviders';
 import { useLanguage } from '../providers/languageProvider';
 import {
+  DEFAULT_WIDGET_SURFACE_COLOR,
+  DEFAULT_WIDGET_BORDER_COLOR,
+  DEFAULT_WIDGET_TEXT_COLOR,
+  DEFAULT_WIDGET_OPACITY,
+  DEFAULT_WIDGET_BLUR,
+  DEFAULT_WIDGET_BORDER_WIDTH,
+  DEFAULT_WIDGET_FONT_SIZE,
+  MIN_WIDGET_FONT_SIZE,
+  MAX_WIDGET_FONT_SIZE,
+  DEFAULT_WIDGET_SIZE_MODE,
+} from '../../lib/config/widgetDefaults';
+import {
   detectBackgroundMediaType,
   uploadBackgroundMedia,
   validateFileSize,
 } from "../../lib/firebase/storage";
 import { useAuth } from "../features/auth/useAuth";
+import { toColorInputValue, getColorAlpha, withAlpha } from "../../lib/utils/colorUtils";
 import paneliabgmashup from "../../assets/panelia-bg/paneliabgmashup.png";
 
 
@@ -71,68 +84,6 @@ const BACKGROUND_OPTIONS: Array<{
 }> = [
   { id: "defaultbg", labelKey: "editPanel.paneliabgmashup", preview: paneliabgmashup },
 ];
-
-const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
-const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
-const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
-const DEFAULT_WIDGET_OPACITY = 1;
-const DEFAULT_WIDGET_BLUR = 10;
-const DEFAULT_WIDGET_BORDER_WIDTH = 1;
-const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
-const DEFAULT_FONT_SIZE = 14;
-const MIN_FONT_SIZE = 10;
-const MAX_FONT_SIZE = 22;
-
-function toColorInputValue(value: string) {
-  const trimmed = value.trim();
-
-  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
-    if (trimmed.length === 4) {
-      const r = trimmed[1];
-      const g = trimmed[2];
-      const b = trimmed[3];
-      return `#${r}${r}${g}${g}${b}${b}`;
-    }
-
-    return trimmed;
-  }
-
-  const rgbaMatch = trimmed.match(
-    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
-  );
-
-  if (rgbaMatch) {
-    const [, red, green, blue] = rgbaMatch;
-    return `#${[red, green, blue]
-      .map((channel) => Number(channel).toString(16).padStart(2, "0"))
-      .join("")}`;
-  }
-
-  return "#ffffff";
-}
-
-function getColorAlpha(value: string) {
-  const trimmed = value.trim();
-  const rgbaMatch = trimmed.match(
-    /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i
-  );
-
-  if (rgbaMatch) {
-    return Number(rgbaMatch[1]);
-  }
-
-  return 1;
-}
-
-function withAlpha(color: string, alpha: number) {
-  const normalizedColor = toColorInputValue(color);
-  const hex = normalizedColor.slice(1);
-  const red = Number.parseInt(hex.slice(0, 2), 16);
-  const green = Number.parseInt(hex.slice(2, 4), 16);
-  const blue = Number.parseInt(hex.slice(4, 6), 16);
-
-  return `rgba(${red},${green},${blue},${alpha})`;
-}
 
 export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   open,
@@ -223,7 +174,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const innerShadow = "inset 0 1px 0 rgba(255,255,255,0.42)";
   
   const widgetTextColor = panelTextColor;
-  const fontSize = Math.min(Math.max(widgetFontSize, MIN_FONT_SIZE), MAX_FONT_SIZE);
+  const fontSize = Math.min(Math.max(widgetFontSize, MIN_WIDGET_FONT_SIZE), MAX_WIDGET_FONT_SIZE);
   const notesWidgetCount = activeWidgets.filter(
     (activeWidgetId) => activeWidgetId === "notes" || activeWidgetId.startsWith("notes:")
   ).length;
@@ -830,7 +781,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     setWidgetBlur(DEFAULT_WIDGET_BLUR);
     setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
     setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
-    setFontSize(DEFAULT_FONT_SIZE);
+    setFontSize(DEFAULT_WIDGET_FONT_SIZE);
   };
 
   const handleSavePreset = () => {
@@ -1124,8 +1075,8 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
               <input
                 ref={fontSizeSliderRef}
                 type="range"
-                min={MIN_FONT_SIZE}
-                max={MAX_FONT_SIZE}
+                min={MIN_WIDGET_FONT_SIZE}
+                max={MAX_WIDGET_FONT_SIZE}
                 step={1}
                 value={widgetFontSize}
                 onChange={(event) => setFontSize(Number(event.target.value))}

@@ -4,6 +4,24 @@ import { db } from "../../../../lib/firebase/client";
 import { isUserDataDeletionInProgress } from "../../../../lib/firebase/userDataDeletion";
 import { useAuth } from "../../auth/useAuth";
 import { useFontSize } from "../../../providers/themeProviders";
+import { normalizeBackgroundOpacity } from "../../../../lib/utils/colorUtils";
+import {
+  DEFAULT_WIDGET_SURFACE_COLOR,
+  DEFAULT_WIDGET_BORDER_COLOR,
+  DEFAULT_WIDGET_TEXT_COLOR,
+  DEFAULT_WIDGET_OPACITY,
+  DEFAULT_WIDGET_BLUR,
+  DEFAULT_WIDGET_BORDER_WIDTH,
+  DEFAULT_WIDGET_FONT_SIZE,
+  MIN_WIDGET_FONT_SIZE,
+  MAX_WIDGET_FONT_SIZE,
+  DEFAULT_WIDGET_SIZE_MODE,
+  DEFAULT_DASHBOARD_BACKGROUND_ID,
+  SAVE_DEBOUNCE_MS,
+} from "../../../../lib/config/widgetDefaults";
+
+// Identifier for custom button widgets
+const CUSTOM_BUTTON_PREFIX = "customButton:";
 
 // Representer posisjonen og størrelsen på en widget i rutenett
 type LayoutItem = {
@@ -13,9 +31,7 @@ type LayoutItem = {
   h: number;
 };
 
-// Rutenett-dimensjoner for dashboard-layoutet
-const GRID_COLUMNS = 40; // Horisontale spalter for widget-plassering
-const GRID_ROWS = 20; // Vertikale rader tilgjengelige i dashboard
+import { GRID_COLUMNS, MAX_WIDGET_PLACEMENT_ROWS } from "../../../../lib/config/gridConfig";
 
 // Konfigurasjonsalternativer for egendefinert knapp-widget
 export type CustomButtonConfig = {
@@ -138,20 +154,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "minesweeper", label: "Minesweeper", icon: "bomb" },
 ] as const;
 
-// Debounce delay for saving to Firestore (5 seconds)
-const SAVE_DEBOUNCE_MS = 5000;
-const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
-const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
-const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
-const DEFAULT_WIDGET_OPACITY = 1;
-const DEFAULT_WIDGET_BLUR = 10;
-const DEFAULT_WIDGET_BORDER_WIDTH = 1;
-const DEFAULT_WIDGET_FONT_SIZE = 14;
-const MIN_WIDGET_FONT_SIZE = 10;
-const MAX_WIDGET_FONT_SIZE = 22;
-const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
-const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "defaultbg";
-const CUSTOM_BUTTON_PREFIX = "customButton:";
+
 
 // Validerer at en verdi er en gyldig bakgrunns-ID
 function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId {
@@ -279,51 +282,7 @@ function normalizeClockModes(value: unknown): Record<string, ClockMode> {
   return next;
 }
 
-function withAlpha(color: string, alpha: number) {
-  const trimmed = color.trim();
-  const rgbaMatch = trimmed.match(
-    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
-  );
 
-  if (rgbaMatch) {
-    const [, red, green, blue] = rgbaMatch;
-    return `rgba(${red},${green},${blue},${alpha})`;
-  }
-
-  const hexMatch = trimmed.match(/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/);
-  if (hexMatch) {
-    const hex = hexMatch[1].length === 3
-      ? hexMatch[1].split("").map((char) => char + char).join("")
-      : hexMatch[1];
-
-    const red = Number.parseInt(hex.slice(0, 2), 16);
-    const green = Number.parseInt(hex.slice(2, 4), 16);
-    const blue = Number.parseInt(hex.slice(4, 6), 16);
-
-    return `rgba(${red},${green},${blue},${alpha})`;
-  }
-
-  return color;
-}
-
-function colorHasExplicitAlpha(color: string) {
-  return /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i.test(
-    color.trim()
-  );
-}
-
-function normalizeBackgroundOpacity(color: string, opacity: unknown) {
-  if (typeof opacity !== "number" || !Number.isFinite(opacity)) {
-    return color;
-  }
-
-  if (colorHasExplicitAlpha(color)) {
-    return color;
-  }
-
-  const normalizedOpacity = Math.min(1, Math.max(0.2, Number(opacity.toFixed(2))));
-  return withAlpha(color, normalizedOpacity);
-}
 
 function normalizeWidgetBlur(value: unknown) {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -637,7 +596,7 @@ function createCenteredLayout(
 ): LayoutItem {
   const baseLayout = DEFAULT_LAYOUTS[widgetType] ?? DEFAULT_LAYOUTS.notes;
   const centeredX = Math.max(0, Math.floor((GRID_COLUMNS - baseLayout.w) / 2));
-  const centeredY = Math.max(0, Math.floor((GRID_ROWS - baseLayout.h) / 2));
+  const centeredY = Math.max(0, Math.floor((MAX_WIDGET_PLACEMENT_ROWS - baseLayout.h) / 2));
 
   const candidate: LayoutItem = {
     x: centeredX,
@@ -652,10 +611,10 @@ function createCenteredLayout(
     return candidate;
   }
 
-  for (let offset = 1; offset < GRID_ROWS; offset += 1) {
+  for (let offset = 1; offset < MAX_WIDGET_PLACEMENT_ROWS; offset += 1) {
     const staggeredCandidate: LayoutItem = {
       ...candidate,
-      y: Math.min(GRID_ROWS - baseLayout.h, centeredY + offset),
+      y: Math.min(MAX_WIDGET_PLACEMENT_ROWS - baseLayout.h, centeredY + offset),
     };
 
     if (!occupiedLayouts.some((layout) => rectsOverlap(staggeredCandidate, layout))) {

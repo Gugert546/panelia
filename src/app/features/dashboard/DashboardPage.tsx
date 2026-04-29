@@ -27,10 +27,7 @@ import natt1 from "../../../assets/panelia-bg/Natt 1.png";
 import natt2 from "../../../assets/panelia-bg/Natt 2.png";
 import natt3 from "../../../assets/panelia-bg/Natt 3.png";
 
-import {
-  AVAILABLE_WIDGETS,
-} from "./hooks/useWidgets";
-
+import { AVAILABLE_WIDGETS } from "./hooks/useWidgetsState";
 import { WidgetsProvider, useWidgets } from "./hooks/WidgetsContext";
 import { useLanguage } from "../../providers/languageProvider";
 import { useAuth } from "../auth/useAuth";

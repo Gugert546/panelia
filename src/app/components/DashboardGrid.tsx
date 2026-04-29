@@ -2,6 +2,18 @@ import { useState } from "react";
 import GridLayout from "react-grid-layout/legacy";
 import type { Layout } from "react-grid-layout";
 import { WIDGETS } from "../features/Widgets/registry/WidgetRegistry";
+import { toColorInputValue, getColorAlpha, withAlpha } from "../../lib/utils/colorUtils";
+import {
+  GRID_BASE_ROWS,
+  GRID_MIN_WIDTH,
+  GRID_MIN_HEIGHT,
+  resolveGridColumns,
+  resolveGridRowHeight,
+  scaleSpanToCurrent,
+  scaleXToCurrent,
+  scaleSpanToBase,
+  scaleXToBase,
+} from "../../lib/config/gridConfig";
 import { WidgetInstanceProvider } from "../features/Widgets/components/WidgetInstanceContext";
 import type { WidgetStyleOverrides } from "../features/dashboard/hooks/useWidgetsState";
 import { useLanguage } from "../providers/languageProvider";
@@ -32,104 +44,9 @@ type Props = {
   calendarWidgetConfig?: Record<string, unknown>;
 };
 
-const BASE_GRID_COLUMNS = 40;
-const BASE_GRID_ROWS = 40;
-const GRID_MAX_ROW_HEIGHT = 30;
-const GRID_MIN_ROW_HEIGHT = 12;
-const GRID_MIN_WIDTH = 320;
-const GRID_MIN_HEIGHT = 360;
 
-function resolveGridColumns(width: number) {
-  if (width >= 1500) return 40;
-  if (width >= 1200) return 32;
-  if (width >= 900) return 24;
-  if (width >= 700) return 18;
-  return 12;
-}
 
-function resolveGridRowHeight(height: number) {
-  const available = Math.max(GRID_MIN_HEIGHT, height);
-  return clampGridValue(
-    Math.floor(available / BASE_GRID_ROWS),
-    GRID_MIN_ROW_HEIGHT,
-    GRID_MAX_ROW_HEIGHT
-  );
-}
 
-function clampGridValue(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value));
-}
-
-function scaleSpanToCurrent(span: number, currentCols: number) {
-  return clampGridValue(Math.round((span / BASE_GRID_COLUMNS) * currentCols), 1, currentCols);
-}
-
-function scaleXToCurrent(x: number, w: number, currentCols: number) {
-  const scaledW = scaleSpanToCurrent(w, currentCols);
-  const scaledX = Math.round((x / BASE_GRID_COLUMNS) * currentCols);
-  return clampGridValue(scaledX, 0, Math.max(0, currentCols - scaledW));
-}
-
-function scaleSpanToBase(span: number, currentCols: number) {
-  return clampGridValue(Math.round((span / currentCols) * BASE_GRID_COLUMNS), 1, BASE_GRID_COLUMNS);
-}
-
-function scaleXToBase(x: number, w: number, currentCols: number) {
-  const scaledW = scaleSpanToBase(w, currentCols);
-  const scaledX = Math.round((x / currentCols) * BASE_GRID_COLUMNS);
-  return clampGridValue(scaledX, 0, Math.max(0, BASE_GRID_COLUMNS - scaledW));
-}
-
-function toColorInputValue(value: string) {
-  const trimmed = value.trim();
-
-  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
-    if (trimmed.length === 4) {
-      const r = trimmed[1];
-      const g = trimmed[2];
-      const b = trimmed[3];
-      return `#${r}${r}${g}${g}${b}${b}`;
-    }
-
-    return trimmed;
-  }
-
-  const rgbaMatch = trimmed.match(
-    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
-  );
-
-  if (rgbaMatch) {
-    const [, red, green, blue] = rgbaMatch;
-    return `#${[red, green, blue]
-      .map((channel) => Number(channel).toString(16).padStart(2, "0"))
-      .join("")}`;
-  }
-
-  return "#ffffff";
-}
-
-function getColorAlpha(value: string) {
-  const trimmed = value.trim();
-  const rgbaMatch = trimmed.match(
-    /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i
-  );
-
-  if (rgbaMatch) {
-    return Number(rgbaMatch[1]);
-  }
-
-  return 1;
-}
-
-function withAlpha(color: string, alpha: number) {
-  const normalizedColor = toColorInputValue(color);
-  const hex = normalizedColor.slice(1);
-  const red = Number.parseInt(hex.slice(0, 2), 16);
-  const green = Number.parseInt(hex.slice(2, 4), 16);
-  const blue = Number.parseInt(hex.slice(4, 6), 16);
-
-  return `rgba(${red},${green},${blue},${alpha})`;
-}
 
 function getWidgetType(widgetId: string) {
   const separatorIndex = widgetId.indexOf(":");
@@ -253,7 +170,7 @@ export default function DashboardGrid({
         preventCollision={true}
         allowOverlap={false}
         margin={[0, 0]}
-        maxRows={BASE_GRID_ROWS}
+        maxRows={GRID_BASE_ROWS}
         containerPadding={[0, 0]}
         autoSize={false}
         style={{ height: "100%" }}

@@ -12,7 +12,6 @@ import InfoWidget from "../builtins/InfoWidget/InfoWidget";
 import EmailWidget from "../builtins/EmailWidget/EmailWidget";
 import MinesweeperWidgetUI from "../builtins/MinesweeperWidget/minesweeperUi";
 import CustomButtonItemWidget from "../builtins/CustomButtonsWidget/CustomButtonItemWidget";
-import type { CustomButtonConfig } from "../../dashboard/hooks/useWidgetsState";
 import { useWidgets } from "../../dashboard/hooks/WidgetsContext";
 import Chat from "../../../components/chatUI";
 
@@ -162,32 +161,6 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
     defaultGrid: { w: 2, h: 2 },
   },
 };
-
-export function buildWidgets(
-  customButtonConfigs: Record<string, CustomButtonConfig>
-): Record<string, WidgetDefinition> {
-  const dynamicButtons = Object.fromEntries(
-    Object.entries(customButtonConfigs).map(([id, config]) => [
-      id,
-      {
-        title: config.label,
-        Component: () => (
-          <CustomButtonItemWidget
-            label={config.label}
-            url={config.url}
-            favicon={config.favicon}
-          />
-        ),
-        defaultGrid: { w: 2, h: 2 },
-      } satisfies WidgetDefinition,
-    ])
-  );
-
-  return {
-    ...STATIC_WIDGETS,
-    ...dynamicButtons,
-  };
-}
 
 export const WIDGETS: Record<string, WidgetDefinition> = {
   ...STATIC_WIDGETS,
