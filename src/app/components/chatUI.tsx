@@ -1,4 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from "react";
+import WidgetContainer from "../features/Widgets/components/WidgetContainer";
 import WidgetPane from "../features/Widgets/components/WidgetPane";
 import { useLanguage } from "../providers/languageProvider";
 import { useAiChat } from "./useAiChat";
@@ -207,10 +208,12 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat({ variant = "widget
     return chatContent;
   }
 
-  return <WidgetPane title={t("chat.title")}>{chatContent}</WidgetPane>;
-});
-
-export default Chat;
+  return (
+    <WidgetContainer>
+      <WidgetPane title={t("chat.title")}>{chatContent}</WidgetPane>
+    </WidgetContainer>
+  );
+}
 
 const styles: Record<string, CSSProperties> = {
   root: {

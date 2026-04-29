@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
 import EditPanel, { type EditPanelHandle } from "../../components/editPanel";
@@ -14,6 +14,7 @@ import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
 
 import { auth } from "../../../lib/firebase/client";
+import type { CalendarProvider } from "../../../types/firestore";
 import type {
   CustomBackgroundMediaType,
   DashboardBackgroundId,
@@ -36,6 +37,11 @@ import { useAuth } from "../auth/useAuth";
 
 type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 type ActivePanel = "edit" | "calendar" | "chat" | null;
+
+const DEFAULT_CALENDAR_CONNECTIONS: Record<CalendarProvider, CalendarConnectionStatus> = {
+  google: "loading",
+  outlook: "loading",
+};
 
 function resolveDashboardBackground(
   backgroundId: DashboardBackgroundId
@@ -86,14 +92,22 @@ function DashboardPageContent() {
   const editPanelRef = useRef<EditPanelHandle | null>(null);
   const calendarPanelRef = useRef<CalendarWidgetHandle | null>(null);
   const chatPanelRef = useRef<AiChatPanelHandle | null>(null);
+  const GUEST_INFO_LAYOUT = { x: 1, y: 2, w: 12, h: 12 };
+  const [gridContainerWidth, setGridContainerWidth] = useState(() =>
+    typeof window === "undefined"
+      ? 1200
+      : Math.max(320, window.innerWidth - SIDEBAR_WIDTH)
+  );
 
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
-  const [calendarConnectionStatus, setCalendarConnectionStatus] =
-    useState<CalendarConnectionStatus>("loading");
+  const [calendarProvider, setCalendarProvider] = useState<CalendarProvider>("google");
+  const [calendarConnections, setCalendarConnections] =
+    useState<Record<CalendarProvider, CalendarConnectionStatus>>(DEFAULT_CALENDAR_CONNECTIONS);
 
   const [calendarConnectionBusy, setCalendarConnectionBusy] = useState(false);
   const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
+  const calendarRefreshBusyRef = useRef(false);
 
   const { t } = useLanguage();
   const { user, loading } = useAuth();
@@ -105,11 +119,13 @@ function DashboardPageContent() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -121,12 +137,14 @@ function DashboardPageContent() {
     removeCustomButton,
     toggleWidgetLock,
     toggleClockMode,
+    toggleClockBackground,
     setWidgetStyle,
     resetWidgetStyle,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
     setWidgetTextColor,
     setWidgetOpacity,
+    setWidgetBlur,
     setWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,
@@ -159,6 +177,13 @@ function DashboardPageContent() {
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
     isAuthenticated && (activePanel === "calendar" || isCalendarWidgetActive);
+  const calendarConnectionStatus = calendarConnections[calendarProvider];
+  const visibleWidgets = isAuthenticated ? activeWidgets : ["info"];
+  const visibleLayouts = isAuthenticated
+    ? layouts
+    : {
+      info: layouts.info ?? GUEST_INFO_LAYOUT,
+    };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -166,6 +191,19 @@ function DashboardPageContent() {
     }, 900000);
 
     return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const updateGridWidth = () => {
+      setGridContainerWidth(Math.max(320, window.innerWidth - SIDEBAR_WIDTH));
+    };
+
+    updateGridWidth();
+    window.addEventListener("resize", updateGridWidth);
+
+    return () => {
+      window.removeEventListener("resize", updateGridWidth);
+    };
   }, []);
 
   useEffect(() => {
@@ -193,35 +231,49 @@ function DashboardPageContent() {
       const user = auth.currentUser;
 
       if (!user) {
-        if (!cancelled) setCalendarConnectionStatus("disconnected");
+        if (!cancelled) {
+          setCalendarConnections({ google: "disconnected", outlook: "disconnected" });
+        }
         return;
       }
 
-      if (!cancelled) setCalendarConnectionStatus("loading");
+      if (!cancelled) {
+        setCalendarConnections({ google: "loading", outlook: "loading" });
+      }
 
       try {
         const idToken = await user.getIdToken();
 
-        const response = await fetch("/api/google-calendar/status", {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
+        const headers = {
+          Authorization: `Bearer ${idToken}`,
+        };
+        const [googleResponse, outlookResponse] = await Promise.all([
+          fetch("/api/google-calendar/status", { headers }),
+          fetch("/api/outlook-calendar/status", { headers }),
+        ]);
 
-        if (!response.ok) {
-          if (!cancelled) setCalendarConnectionStatus("disconnected");
-          return;
-        }
-
-        const payload = await response.json();
+        const googlePayload = googleResponse.ok ? await googleResponse.json() : {};
+        const outlookPayload = outlookResponse.ok ? await outlookResponse.json() : {};
 
         if (!cancelled) {
-          setCalendarConnectionStatus(
-            payload.connected ? "connected" : "disconnected"
-          );
+          const nextConnections: Record<CalendarProvider, CalendarConnectionStatus> = {
+            google: googlePayload.connected ? "connected" : "disconnected",
+            outlook: outlookPayload.connected ? "connected" : "disconnected",
+          };
+
+          setCalendarConnections(nextConnections);
+
+          setCalendarProvider((currentProvider) => {
+            if (nextConnections[currentProvider] === "connected") return currentProvider;
+            if (nextConnections.google === "connected") return "google";
+            if (nextConnections.outlook === "connected") return "outlook";
+            return currentProvider;
+          });
         }
       } catch {
-        if (!cancelled) setCalendarConnectionStatus("disconnected");
+        if (!cancelled) {
+          setCalendarConnections({ google: "disconnected", outlook: "disconnected" });
+        }
       }
     };
 
@@ -235,10 +287,18 @@ function DashboardPageContent() {
   useEffect(() => {
     const url = new URL(window.location.href);
     const oauthResult = url.searchParams.get("calendar_oauth");
+    const emailOauthResult = url.searchParams.get("email_oauth");
+    const emailProvider = url.searchParams.get("email_provider");
 
-    if (!oauthResult) return;
+    if (!oauthResult && !emailOauthResult) return;
 
     url.searchParams.delete("calendar_oauth");
+    url.searchParams.delete("email_oauth");
+    url.searchParams.delete("email_provider");
+
+    if (emailOauthResult && emailProvider === "outlook") {
+      setCalendarProvider("outlook");
+    }
 
     window.history.replaceState(
       {},
@@ -247,18 +307,27 @@ function DashboardPageContent() {
     );
   }, []);
 
-  const pullFromGoogleCalendar = async (showAlert = false) => {
+  const calendarApiBase = calendarProvider === "outlook" ? "/api/outlook-calendar" : "/api/google-calendar";
+  const calendarProviderLabel = calendarProvider === "outlook" ? "Outlook" : "Google Calendar";
+
+  const handleCalendarProviderChange = useCallback((provider: CalendarProvider) => {
+    setCalendarProvider(provider);
+  }, []);
+
+  const pullFromConnectedCalendar = useCallback(async (showAlert = false) => {
     if (calendarConnectionStatus !== "connected") return;
+    if (calendarRefreshBusyRef.current) return;
 
     const user = auth.currentUser;
     if (!user) return;
 
+    calendarRefreshBusyRef.current = true;
     setCalendarRefreshBusy(true);
 
     try {
       const idToken = await user.getIdToken();
 
-      const response = await fetch("/api/google-calendar/sync/pull", {
+      const response = await fetch(`${calendarApiBase}/sync/pull`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -268,38 +337,39 @@ function DashboardPageContent() {
       });
 
       if (!response.ok && showAlert) {
-        window.alert("Failed to refresh events from Google Calendar.");
+        window.alert(`Failed to refresh events from ${calendarProviderLabel}.`);
       }
     } catch {
       if (showAlert) {
-        window.alert("Failed to refresh events from Google Calendar.");
+        window.alert(`Failed to refresh events from ${calendarProviderLabel}.`);
       }
     } finally {
+      calendarRefreshBusyRef.current = false;
       setCalendarRefreshBusy(false);
     }
-  };
+  }, [calendarApiBase, calendarConnectionStatus, calendarProviderLabel]);
 
   useEffect(() => {
     if (!shouldManageCalendarConnection) return;
     if (calendarConnectionStatus !== "connected") return;
-    if (calendarRefreshBusy) return;
 
-    void pullFromGoogleCalendar(false);
+    void pullFromConnectedCalendar(false);
 
     const interval = setInterval(() => {
-      void pullFromGoogleCalendar(false);
+      void pullFromConnectedCalendar(false);
     }, 30000);
 
     return () => clearInterval(interval);
   }, [
     shouldManageCalendarConnection,
     calendarConnectionStatus,
+    pullFromConnectedCalendar,
   ]);
 
   const handleConnectCalendar = async () => {
     const user = auth.currentUser;
     if (!user) {
-      window.alert("Please sign in before connecting Google Calendar.");
+      window.alert(`Please sign in before connecting ${calendarProviderLabel}.`);
       return;
     }
 
@@ -309,17 +379,25 @@ function DashboardPageContent() {
       const idToken = await user.getIdToken();
       const returnTo = window.location.href;
 
-      const response = await fetch("/api/google-calendar/connect-url", {
+      const response = await fetch(
+        calendarProvider === "outlook"
+          ? "/api/email/connect-url"
+          : "/api/google-calendar/connect-url",
+        {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ returnTo }),
+        body: JSON.stringify(
+          calendarProvider === "outlook"
+            ? { provider: "outlook", scope: "calendar", returnTo }
+            : { returnTo }
+        ),
       });
 
       if (!response.ok) {
-        window.alert("Failed to start Google Calendar OAuth.");
+        window.alert(`Failed to start ${calendarProviderLabel} OAuth.`);
         setCalendarConnectionBusy(false);
         return;
       }
@@ -334,7 +412,7 @@ function DashboardPageContent() {
 
       window.location.href = payload.url;
     } catch {
-      window.alert("Failed to start Google Calendar OAuth.");
+      window.alert(`Failed to start ${calendarProviderLabel} OAuth.`);
       setCalendarConnectionBusy(false);
     }
   };
@@ -343,7 +421,10 @@ function DashboardPageContent() {
     const user = auth.currentUser;
 
     if (!user) {
-      setCalendarConnectionStatus("disconnected");
+      setCalendarConnections((current) => ({
+        ...current,
+        [calendarProvider]: "disconnected",
+      }));
       return;
     }
 
@@ -352,7 +433,7 @@ function DashboardPageContent() {
     try {
       const idToken = await user.getIdToken();
 
-      const response = await fetch("/api/google-calendar/disconnect", {
+      const response = await fetch(`${calendarApiBase}/disconnect`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${idToken}`,
@@ -360,13 +441,16 @@ function DashboardPageContent() {
       });
 
       if (!response.ok) {
-        window.alert("Failed to disconnect Google Calendar.");
+        window.alert(`Failed to disconnect ${calendarProviderLabel}.`);
         return;
       }
 
-      setCalendarConnectionStatus("disconnected");
+      setCalendarConnections((current) => ({
+        ...current,
+        [calendarProvider]: "disconnected",
+      }));
     } catch {
-      window.alert("Failed to disconnect Google Calendar.");
+      window.alert(`Failed to disconnect ${calendarProviderLabel}.`);
     } finally {
       setCalendarConnectionBusy(false);
     }
@@ -374,18 +458,18 @@ function DashboardPageContent() {
 
   const handleRefreshCalendar = async () => {
     if (calendarConnectionStatus !== "connected") {
-      window.alert("Connect Google Calendar before refreshing.");
+      window.alert("Connect a calendar before refreshing.");
       return;
     }
 
     const user = auth.currentUser;
 
     if (!user) {
-      window.alert("Please sign in before refreshing Google Calendar.");
+      window.alert(`Please sign in before refreshing ${calendarProviderLabel}.`);
       return;
     }
 
-    await pullFromGoogleCalendar(true);
+    await pullFromConnectedCalendar(true);
   };
 
 
@@ -529,6 +613,8 @@ function DashboardPageContent() {
         setWidgetTextColor={setWidgetTextColor}
         widgetOpacity={widgetOpacity}
         setWidgetOpacity={setWidgetOpacity}
+        widgetBlur={widgetBlur}
+        setWidgetBlur={setWidgetBlur}
         widgetBorderWidth={widgetBorderWidth}
         setWidgetBorderWidth={setWidgetBorderWidth}
         widgetSizeMode={widgetSizeMode}
@@ -548,36 +634,42 @@ function DashboardPageContent() {
       <main
         style={{
           marginLeft: SIDEBAR_WIDTH,
-          width: window.innerWidth - SIDEBAR_WIDTH,
+          width: `calc(100vw - ${SIDEBAR_WIDTH}px)`,
           height: "100vh",
           position: "relative",
         }}
       >
         <DashboardGrid
-          activeWidgets={activeWidgets}
-          layouts={layouts}
+          activeWidgets={visibleWidgets}
+          layouts={visibleLayouts}
           widgetLocks={widgetLocks}
           clockModes={clockModes}
+          clockBackgrounds={clockBackgrounds}
           widgetStyles={widgetStyles}
           widgetSurfaceColor={widgetSurfaceColor}
           widgetBorderColor={widgetBorderColor}
           widgetTextColor={widgetTextColor}
+          widgetBlur={widgetBlur}
           widgetBorderWidth={widgetBorderWidth}
           onLayoutChange={updateLayout}
           onCloseWidget={removeCustomButton}
           onToggleWidgetLock={toggleWidgetLock}
           onToggleClockMode={toggleClockMode}
+          onToggleClockBackground={toggleClockBackground}
           onSetWidgetStyle={setWidgetStyle}
           onResetWidgetStyle={resetWidgetStyle}
-          sidebarWidth={SIDEBAR_WIDTH}
+          containerWidth={gridContainerWidth}
           isInteractive={isAuthenticated}
+          isMovable={true}
           calendarWidgetConfig={{
             calendarConnectionStatus,
+            calendarProvider,
             calendarConnectionBusy,
             calendarRefreshBusy,
             onConnectCalendar: handleConnectCalendar,
             onDisconnectCalendar: handleDisconnectCalendar,
             onRefreshCalendar: handleRefreshCalendar,
+            onCalendarProviderChange: handleCalendarProviderChange,
           }}
         />
       </main>
@@ -596,11 +688,13 @@ function DashboardPageContent() {
           onFocusSidebarCalendarButton={focusSidebarCalendarButton}
           leftOffset={SIDEBAR_WIDTH + 20}
           calendarConnectionStatus={calendarConnectionStatus}
+          calendarProvider={calendarProvider}
           calendarConnectionBusy={calendarConnectionBusy}
           calendarRefreshBusy={calendarRefreshBusy}
           onConnectCalendar={handleConnectCalendar}
           onDisconnectCalendar={handleDisconnectCalendar}
           onRefreshCalendar={handleRefreshCalendar}
+          onCalendarProviderChange={handleCalendarProviderChange}
         />
       )}
     </div>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import type { ReactNode } from 'react';
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase/client";
+import { isUserDataDeletionInProgress } from "../../lib/firebase/userDataDeletion";
 import { useAuth } from "../features/auth/useAuth";
 import nbTranslations from '../../locales/no.json';
 import enTranslations from '../../locales/en.json';
@@ -79,7 +80,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   }, [user]);
 
   const saveLanguage = useCallback(async (newLanguage: Language) => {
-    if (!user) return;
+    if (!user || isUserDataDeletionInProgress(user.uid)) return;
 
     try {
       const docRef = doc(db, "users", user.uid, "preferences", "language");

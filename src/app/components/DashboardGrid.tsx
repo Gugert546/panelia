@@ -12,21 +12,73 @@ type Props = {
   layouts: Record<string, { x: number; y: number; w: number; h: number }>;
   widgetLocks: Record<string, boolean>;
   clockModes: Record<string, "digital" | "analog">;
+  clockBackgrounds: Record<string, boolean>;
   widgetStyles: Record<string, WidgetStyleOverrides>;
   widgetSurfaceColor: string;
   widgetBorderColor: string;
   widgetTextColor: string;
+  widgetBlur: number;
   widgetBorderWidth: number;
   onLayoutChange: (layouts: Record<string, { x: number; y: number; w: number; h: number }>) => void;
   onCloseWidget: (widgetId: string) => void;
   onToggleWidgetLock: (widgetId: string) => void;
   onToggleClockMode: (widgetId: string) => void;
+  onToggleClockBackground: (widgetId: string) => void;
   onSetWidgetStyle: (widgetId: string, patch: WidgetStyleOverrides) => void;
   onResetWidgetStyle: (widgetId: string) => void;
-  sidebarWidth: number;
+  containerWidth?: number;
   isInteractive?: boolean;
+  isMovable?: boolean;
   calendarWidgetConfig?: Record<string, unknown>;
 };
+
+const BASE_GRID_COLUMNS = 40;
+const BASE_GRID_ROWS = 40;
+const GRID_MAX_ROW_HEIGHT = 30;
+const GRID_MIN_ROW_HEIGHT = 12;
+const GRID_MIN_WIDTH = 320;
+const GRID_MIN_HEIGHT = 360;
+
+function resolveGridColumns(width: number) {
+  if (width >= 1500) return 40;
+  if (width >= 1200) return 32;
+  if (width >= 900) return 24;
+  if (width >= 700) return 18;
+  return 12;
+}
+
+function resolveGridRowHeight(height: number) {
+  const available = Math.max(GRID_MIN_HEIGHT, height);
+  return clampGridValue(
+    Math.floor(available / BASE_GRID_ROWS),
+    GRID_MIN_ROW_HEIGHT,
+    GRID_MAX_ROW_HEIGHT
+  );
+}
+
+function clampGridValue(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function scaleSpanToCurrent(span: number, currentCols: number) {
+  return clampGridValue(Math.round((span / BASE_GRID_COLUMNS) * currentCols), 1, currentCols);
+}
+
+function scaleXToCurrent(x: number, w: number, currentCols: number) {
+  const scaledW = scaleSpanToCurrent(w, currentCols);
+  const scaledX = Math.round((x / BASE_GRID_COLUMNS) * currentCols);
+  return clampGridValue(scaledX, 0, Math.max(0, currentCols - scaledW));
+}
+
+function scaleSpanToBase(span: number, currentCols: number) {
+  return clampGridValue(Math.round((span / currentCols) * BASE_GRID_COLUMNS), 1, BASE_GRID_COLUMNS);
+}
+
+function scaleXToBase(x: number, w: number, currentCols: number) {
+  const scaledW = scaleSpanToBase(w, currentCols);
+  const scaledX = Math.round((x / currentCols) * BASE_GRID_COLUMNS);
+  return clampGridValue(scaledX, 0, Math.max(0, BASE_GRID_COLUMNS - scaledW));
+}
 
 function toColorInputValue(value: string) {
   const trimmed = value.trim();
@@ -90,25 +142,41 @@ export default function DashboardGrid({
   layouts,
   widgetLocks,
   clockModes,
+  clockBackgrounds,
   widgetStyles,
   widgetSurfaceColor,
   widgetBorderColor,
   widgetTextColor,
+  widgetBlur,
   widgetBorderWidth,
   onLayoutChange,
   onCloseWidget,
   onToggleWidgetLock,
   onToggleClockMode,
+  onToggleClockBackground,
   onSetWidgetStyle,
   onResetWidgetStyle,
-  sidebarWidth,
+  containerWidth,
   isInteractive = true,
+  isMovable = isInteractive,
   calendarWidgetConfig
 }: Props) {
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
   const [styleEditorWidgetId, setStyleEditorWidgetId] = useState<string | null>(null);
   const { t } = useLanguage();
   const { fontSize: globalFontSize } = useFontSize();
+
+  const fallbackWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
+  const resolvedContainerWidth =
+    typeof containerWidth === "number" && Number.isFinite(containerWidth)
+      ? containerWidth
+      : fallbackWidth;
+  const gridWidth = Math.max(GRID_MIN_WIDTH, resolvedContainerWidth);
+  const fallbackHeight = typeof window === "undefined" ? 900 : window.innerHeight;
+  const gridHeight = Math.max(GRID_MIN_HEIGHT, fallbackHeight);
+  const gridRowHeight = resolveGridRowHeight(gridHeight);
+
+  const activeGridColumns = resolveGridColumns(gridWidth);
 
   const computedLayout = activeWidgets
     .map((widgetId, index) => {
@@ -128,20 +196,25 @@ export default function DashboardGrid({
           }
         : baseGrid;
 
+      const scaledW = scaleSpanToCurrent(currentLayout.w, activeGridColumns);
+      const scaledH = currentLayout.h;
+      const scaledX = scaleXToCurrent(currentLayout.x ?? (index * 4) % 20, currentLayout.w, activeGridColumns);
+      const scaledMinW = scaleSpanToCurrent(baseGrid.w, activeGridColumns);
+
       return {
         i: widgetId,
-        x: currentLayout.x ?? (index * 4) % 20,
+        x: scaledX,
         y: currentLayout.y ?? Math.floor(index / 5) * widget.defaultGrid.h,
-        w: currentLayout.w,
-        h: currentLayout.h,
-        minW: baseGrid.w,
+        w: scaledW,
+        h: scaledH,
+        minW: scaledMinW,
         minH: baseGrid.h,
         static: Boolean(widgetLocks[widgetId]),
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const handleLayoutChange = (newLayout: Layout) => {
+  const persistLayout = (newLayout: Layout) => {
     const newLayouts: Record<string, { x: number; y: number; w: number; h: number }> = {};
 
     newLayout.forEach(item => {
@@ -149,12 +222,14 @@ export default function DashboardGrid({
       const widget = WIDGETS[widgetType as keyof typeof WIDGETS];
       const baseGrid = widget?.defaultGrid;
 
+      const baseW = scaleSpanToBase(item.w, activeGridColumns);
+
       newLayouts[item.i] = {
-        x: item.x,
+        x: scaleXToBase(item.x, item.w, activeGridColumns),
         y: item.y,
         
         // Clamp to widget minimums so users can’t resize smaller than starting size
-        w: baseGrid ? Math.max(item.w, baseGrid.w) : item.w,
+        w: baseGrid ? Math.max(baseW, baseGrid.w) : baseW,
         h: baseGrid ? Math.max(item.h, baseGrid.h) : item.h,
       };
     });
@@ -163,25 +238,29 @@ export default function DashboardGrid({
   };
 
   return (
-    <GridLayout
-      className="layout"
-      layout={computedLayout}
-      cols={40}          // Mer columns --> Finere horisontal kontroll
-      rowHeight={30}    // Mindre rowHeight --> Mer vertikal kontroll og flere rader tilgjengelig
-      width={window.innerWidth - sidebarWidth}
-      isDraggable={isInteractive}
-      isResizable={isInteractive}
-      draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
-      compactType={null}
-      preventCollision={true}  // blokkerer auto-flytting av andre widgets ved hover / drag
-      margin={[0, 0]}    
-      maxRows={40}      // tillatter flere rader for å unngå at widgets blir presset sammen vertikalt
-      containerPadding={[0, 0]}
-      autoSize={false}
-      style={{ height: "100%" }}
-      onLayoutChange={handleLayoutChange}
-    >
-      {activeWidgets.map((widgetId, index) => {
+    <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "flex-start" }}>
+      <GridLayout
+        className="layout"
+        layout={computedLayout}
+        cols={activeGridColumns}
+        rowHeight={gridRowHeight}
+        width={gridWidth}
+        isDraggable={isMovable}
+        isResizable={isMovable}
+        isBounded={true}
+        draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
+        compactType={null}
+        preventCollision={true}
+        allowOverlap={false}
+        margin={[0, 0]}
+        maxRows={BASE_GRID_ROWS}
+        containerPadding={[0, 0]}
+        autoSize={false}
+        style={{ height: "100%" }}
+        onDragStop={(layout) => persistLayout(layout)}
+        onResizeStop={(layout) => persistLayout(layout)}
+      >
+        {activeWidgets.map((widgetId, index) => {
 
         const widgetType = getWidgetType(widgetId);
         const widget = WIDGETS[widgetType as keyof typeof WIDGETS];
@@ -196,6 +275,7 @@ export default function DashboardGrid({
         const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
         const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
         const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
+        const resolvedBlur = widgetStyle?.widgetBlur ?? widgetBlur;
         const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
         const resolvedFontSize = widgetStyle?.widgetFontSize ?? globalFontSize;
         const surfaceAlpha = getColorAlpha(resolvedSurfaceColor);
@@ -213,15 +293,20 @@ export default function DashboardGrid({
           : baseGrid;
         const isClockWidget = widgetType === "clock";
         const clockMode = clockModes[widgetId] ?? "digital";
+        const showClockBackground = clockBackgrounds[widgetId] ?? (clockMode === "analog");
         const isStyleEditorOpen = styleEditorWidgetId === widgetId;
         return (
           <div
             key={widgetId}
             data-grid={{
               ...currentLayout,
-              x: currentLayout.x !== undefined ? currentLayout.x : (index * 4) % 20,
+              x:
+                currentLayout.x !== undefined
+                  ? scaleXToCurrent(currentLayout.x, currentLayout.w, activeGridColumns)
+                  : scaleXToCurrent((index * 4) % 20, currentLayout.w, activeGridColumns),
               y: currentLayout.y !== undefined ? currentLayout.y : Math.floor(index / 5) * widget.defaultGrid.h,
-              minW: baseGrid.w,
+              w: scaleSpanToCurrent(currentLayout.w, activeGridColumns),
+              minW: scaleSpanToCurrent(baseGrid.w, activeGridColumns),
               minH: baseGrid.h,
               static: isLocked,
             }}
@@ -245,6 +330,69 @@ export default function DashboardGrid({
                   zIndex: 2,
                 }}
               >
+                {isClockWidget && (
+                  <button
+                    type="button"
+                    className="widget-clock-mode-btn"
+                    aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
+                    onClick={() => onToggleClockMode(widgetId)}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background:
+                        clockMode === "analog"
+                          ? widgetControlActiveBackground
+                          : widgetControlBackground,
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      {clockMode === "analog" ? "schedule" : "av_timer"}
+                    </span>
+                  </button>
+                )}
+                {isClockWidget && (
+                  <button
+                    type="button"
+                    className="widget-clock-background-btn"
+                    aria-label={showClockBackground ? "Hide clock background" : "Show clock background"}
+                    title={showClockBackground ? "Hide clock background" : "Show clock background"}
+                    onClick={() => onToggleClockBackground(widgetId)}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: showClockBackground
+                        ? widgetControlActiveBackground
+                        : widgetControlBackground,
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      {showClockBackground ? "crop_square" : "check_box_outline_blank"}
+                    </span>
+                  </button>
+                )}
                 {!isLocked && (
                   <button
                     type="button"
@@ -276,38 +424,6 @@ export default function DashboardGrid({
                       style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
                     >
                       palette
-                    </span>
-                  </button>
-                )}
-                {isClockWidget && (
-                  <button
-                    type="button"
-                    className="widget-clock-mode-btn"
-                    aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
-                    title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
-                    onClick={() => onToggleClockMode(widgetId)}
-                    style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: 999,
-                      border: "1px solid rgba(255,255,255,0.35)",
-                      background:
-                        clockMode === "analog"
-                          ? widgetControlActiveBackground
-                          : widgetControlBackground,
-                      backdropFilter: "blur(6px)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <span
-                      className="material-symbols-rounded"
-                      aria-hidden="true"
-                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
-                    >
-                      {clockMode === "analog" ? "schedule" : "av_timer"}
                     </span>
                   </button>
                 )}
@@ -382,6 +498,22 @@ export default function DashboardGrid({
                     onChange={(event) =>
                       onSetWidgetStyle(widgetId, {
                         widgetSurfaceColor: withAlpha(event.target.value, surfaceAlpha),
+                      })
+                    }
+                  />
+                </label>
+
+                <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
+                  {t("editPanel.widgetBlur")}: {resolvedBlur}px
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={1}
+                    value={resolvedBlur}
+                    onChange={(event) =>
+                      onSetWidgetStyle(widgetId, {
+                        widgetBlur: Number(event.target.value),
                       })
                     }
                   />
@@ -494,12 +626,12 @@ export default function DashboardGrid({
             )}
 
             <WidgetInstanceProvider widgetId={widgetId}>
-              <Component
+                <Component
                 config={
                   widgetType === "calendar"
                     ? (calendarWidgetConfig ?? {})
                     : widgetType === "clock"
-                      ? { mode: clockMode }
+                      ? { mode: clockMode, showBackground: showClockBackground }
                       : {}
                 }
                 onConfigChange={() => {}}
@@ -509,7 +641,8 @@ export default function DashboardGrid({
             </WidgetInstanceProvider>
           </div>
         );
-      })}
-    </GridLayout>
+        })}
+      </GridLayout>
+    </div>
   );
 }

@@ -4,8 +4,9 @@ import WidgetPane from "../../components/WidgetPane";
 import { useCalendarLogic } from "./calendarLogic";
 import EventEditModal from "./EventEditModal";
 import CalendarSelector from "./CalendarSelector";
-import { useGoogleCalendars } from "./useGoogleCalendars"; // or ./useGoogleCalendars if you renamed
+import { useGoogleCalendars } from "./useGoogleCalendars";
 import type { CalendarEvent } from "../../../../../types/firestore";
+import type { CalendarProvider } from "../../../../../types/firestore";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
@@ -19,6 +20,11 @@ type StickyDayLabel = {
   event: CalendarEvent | null;
 };
 
+const CALENDAR_PROVIDERS: Array<{ id: CalendarProvider; label: string }> = [
+  { id: "google", label: "Google" },
+  { id: "outlook", label: "Outlook" },
+];
+
 export type CalendarWidgetProps = {
   onClose?: () => void;
   onFocusSidebarCalendarButton?: () => void;
@@ -26,7 +32,9 @@ export type CalendarWidgetProps = {
   onConnectCalendar?: () => void;
   onDisconnectCalendar?: () => void;
   onRefreshCalendar?: () => void;
+  onCalendarProviderChange?: (provider: CalendarProvider) => void;
   calendarConnectionStatus?: "loading" | "connected" | "disconnected";
+  calendarProvider?: CalendarProvider;
   calendarConnectionBusy?: boolean;
   calendarRefreshBusy?: boolean;
   variant?: CalendarWidgetVariant;
@@ -36,7 +44,7 @@ export type CalendarWidgetHandle = {
   focusTopLeftArrowButton: () => void;
 };
 
-const CALENDAR_MIN_WIDTH = 560;
+const CALENDAR_MIN_WIDTH = 620;
 const CALENDAR_MIN_HEIGHT_VH = 82;
 const CALENDAR_DAY_COUNT = 7;
 const CALENDAR_CELL_HEIGHT = 34;
@@ -142,7 +150,9 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
   onConnectCalendar,
   onDisconnectCalendar,
   onRefreshCalendar,
+  onCalendarProviderChange,
   calendarConnectionStatus = "disconnected",
+  calendarProvider = "google",
   calendarConnectionBusy = false,
   calendarRefreshBusy = false,
   variant = "popup",
@@ -193,7 +203,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
     saving: calendarsSaving,
     toggleCalendar,
     saveSelection,
-  } = useGoogleCalendars(calendarConnectionStatus === "connected");
+  } = useGoogleCalendars(calendarConnectionStatus === "connected", calendarProvider);
 
   const handleRefreshCalendar = () => {
     if (
@@ -206,6 +216,11 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
 
     onRefreshCalendar?.();
   };
+
+  const handleProviderChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    onCalendarProviderChange?.(event.target.value as CalendarProvider);
+  };
+
   const checking = t("widgets.calendarWidget.checking")
   const connected = t("widgets.calendarWidget.connected")
   const connectCalendar = t("widgets.calendarWidget.connectCalendar")
@@ -219,7 +234,9 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
         : connectCalendar;
 
   const refreshing = t("widgets.calendarWidget.refreshing")
-  const refreshFromGoogle = t("widgets.calendarWidget.refreshFromGoogle")
+  const refreshFromGoogle = calendarProvider === "outlook"
+    ? t("widgets.calendarWidget.refreshFromOutlook")
+    : t("widgets.calendarWidget.refreshFromGoogle")
 
   const refreshButtonLabel = calendarRefreshBusy
     ? refreshing
@@ -340,7 +357,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
     saveEditModal,
     deleteEditModal,
     getCellRenderState,
-  } = useCalendarLogic(selectedCalendarIds);
+  } = useCalendarLogic(selectedCalendarIds, calendarProvider);
 
   const displayWeekDays = useMemo(
     () => weekDays.slice(0, CALENDAR_DAY_COUNT),
@@ -948,6 +965,35 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
           
           {/* sub-kalender velger*/}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <select
+              value={calendarProvider}
+              onChange={handleProviderChange}
+              disabled={calendarConnectionBusy}
+              style={{
+                border: "1px solid rgba(255,255,255,0.32)",
+                borderRadius: "9999px",
+                background: "rgba(255,255,255,0.45)",
+                color: "rgba(15,23,42,0.95)",
+                padding: "8px 10px",
+                fontSize: actionButtonFontSize,
+                fontWeight: 700,
+                outline: "none",
+                cursor:
+                  calendarConnectionBusy
+                    ? "not-allowed"
+                    : "pointer",
+                opacity: calendarConnectionBusy ? 0.7 : 1,
+              }}
+              aria-label="Calendar provider"
+              title="Calendar provider"
+            >
+              {CALENDAR_PROVIDERS.map((provider) => (
+                <option key={provider.id} value={provider.id}>
+                  {provider.label}
+                </option>
+              ))}
+            </select>
+
             {calendarConnectionStatus === "connected" && (
               <CalendarSelector
                 calendars={calendars}

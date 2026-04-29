@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
@@ -21,13 +21,13 @@ export default function CustomButtonItemWidget({
   const iconLetterFontSize = Math.max(fontSize - 1, 13);
   const iconLetterMaxFontSize = Math.max(fontSize + 8, 22);
   const labelMaxFontSize = Math.max(fontSize + 12, 26);
-  const [isDragging, setIsDragging] = useState(false);
-  const [startPos, setStartPos] = useState({ x: 0, y: 0 });
   const faviconCandidates = useMemo(
     () => getFaviconCandidates(url, favicon),
     [url, favicon]
   );
   const [faviconIndex, setFaviconIndex] = useState(0);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const didDragRef = useRef(false);
 
   useEffect(() => {
     setFaviconIndex(0);
@@ -36,20 +36,37 @@ export default function CustomButtonItemWidget({
   const currentFavicon = faviconCandidates[faviconIndex] ?? "";
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    setIsDragging(false);
-    setStartPos({ x: e.clientX, y: e.clientY });
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+    didDragRef.current = false;
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (Math.abs(e.clientX - startPos.x) > 5 || Math.abs(e.clientY - startPos.y) > 5) {
-      setIsDragging(true);
+    const dragStart = dragStartRef.current;
+    if (!dragStart) {
+      return;
+    }
+
+    if (
+      Math.abs(e.clientX - dragStart.x) > 5 ||
+      Math.abs(e.clientY - dragStart.y) > 5
+    ) {
+      didDragRef.current = true;
     }
   };
 
   const handleMouseUp = () => {
-    if (!isDragging) {
-      window.open(url, '_blank', 'noopener,noreferrer');
+    dragStartRef.current = null;
+  };
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (didDragRef.current) {
+      e.preventDefault();
+      e.stopPropagation();
+      didDragRef.current = false;
+      return;
     }
+
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -63,9 +80,12 @@ export default function CustomButtonItemWidget({
           }}
         >
           <button
+            type="button"
+            className="widget-draggable-button"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onClick={handleClick}
             style={{
               display: "flex",
               alignItems: "center",
@@ -106,6 +126,7 @@ export default function CustomButtonItemWidget({
                   objectFit: "contain",
                   flexShrink: 0,
                 }}
+                draggable={false}
               />
             ) : (
               <span

@@ -1,4 +1,5 @@
 export type CalendarSyncStatus = "synced" | "pending" | "failed";
+export type CalendarProvider = "google" | "outlook";
 
 export type CalendarEvent = {
   id: string;
@@ -9,8 +10,9 @@ export type CalendarEvent = {
   endAt: string;   // ISO
   allDay: boolean;
   timezone: string;
-  source: "local" | "google";
+  source: "local" | CalendarProvider;
   googleEventId?: string;
+  outlookEventId?: string;
   calendarId?: string; 
   updatedAt: number;      // server epoch ms
   createdAt: number;      // server epoch ms
@@ -18,7 +20,7 @@ export type CalendarEvent = {
   syncStatus: CalendarSyncStatus;
 };
 
-export type GoogleCalendarMeta = {
+export type CalendarMeta = {
   id: string;
   summary: string;
   backgroundColor: string;
@@ -26,6 +28,8 @@ export type GoogleCalendarMeta = {
   selected?: boolean;
   primary?: boolean;
 };
+
+export type GoogleCalendarMeta = CalendarMeta;
 
 export type Bookmark = {
   id: string;

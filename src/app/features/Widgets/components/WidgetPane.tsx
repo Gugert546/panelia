@@ -14,6 +14,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
+    widgetBlur,
     widgetBorderWidth,
     widgetStyles,
   } = useWidgets();
@@ -24,6 +25,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
   const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
   const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
   const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
+  const resolvedBlur = widgetStyle?.widgetBlur ?? widgetBlur;
   const resolvedBorderWidth = widgetStyle?.widgetBorderWidth ?? widgetBorderWidth;
 
   return (
@@ -39,7 +41,8 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
         border: `${resolvedBorderWidth}px solid ${resolvedBorderColor}`,
         color: resolvedTextColor,
         fontSize: resolvedFontSize,
-        backdropFilter: "blur(10px)",
+        backdropFilter: `blur(${resolvedBlur}px)`,
+        WebkitBackdropFilter: `blur(${resolvedBlur}px)`,
 
         display: "flex",
         flexDirection: "column",

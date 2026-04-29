@@ -9,6 +9,7 @@ import {
   updateEvent,
 } from "../../../../../lib/firebase/firestore";
 import type { CalendarEvent } from "../../../../../types/firestore";
+import type { CalendarProvider } from "../../../../../types/firestore";
 
 type CreateEventInput = {
   title?: string;
@@ -23,6 +24,7 @@ type CreateEventInput = {
 type SyncResponse = {
   ok?: boolean;
   googleEventId?: string | null;
+  outlookEventId?: string | null;
 };
 
 class SyncRequestError extends Error {
@@ -93,33 +95,69 @@ async function callCalendarSyncWithRetry(path: string, body: Record<string, unkn
   return withRetry(() => callCalendarSync(path, body));
 }
 
-export function useCalendarEvents(selectedCalendarIds: string[] = ["primary"]) {
+function calendarEndpoint(provider: CalendarProvider, path: string) {
+  return `/api/${provider === "outlook" ? "outlook-calendar" : "google-calendar"}${path}`;
+}
+
+function getEventProvider(event: CalendarEvent, fallbackProvider: CalendarProvider): CalendarProvider {
+  if (event.outlookEventId) return "outlook";
+  if (event.googleEventId) return "google";
+  if (event.source === "outlook" || event.source === "google") return event.source;
+  return fallbackProvider;
+}
+
+function getProviderEventId(event: CalendarEvent, provider: CalendarProvider) {
+  return provider === "outlook" ? event.outlookEventId : event.googleEventId;
+}
+
+function getProviderEventIdKey(provider: CalendarProvider) {
+  return provider === "outlook" ? "outlookEventId" : "googleEventId";
+}
+
+export function useCalendarEvents(
+  selectedCalendarIds: string[] = ["primary"],
+  calendarProvider: CalendarProvider = "google"
+) {
   const { user } = useAuth();
+  const uid = user?.uid;
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user?.uid) {
-      setEvents([]);
-      setLoading(false);
-      return;
+    let cancelled = false;
+
+    if (!uid) {
+      queueMicrotask(() => {
+        if (cancelled) return;
+        setEvents([]);
+        setLoading(false);
+      });
+      return () => {
+        cancelled = true;
+      };
     }
 
-    setLoading(true);
-    const unsubscribe = subscribeToEvents(user.uid, (nextEvents) => {
+    queueMicrotask(() => {
+      if (!cancelled) setLoading(true);
+    });
+    const unsubscribe = subscribeToEvents(uid, (nextEvents) => {
+      if (cancelled) return;
       setEvents(nextEvents);
       setLoading(false);
       setError(null);
     });
 
-    return () => unsubscribe();
-  }, [user?.uid]);
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [uid]);
   
 
   const createCalendarEvent = useCallback(
     async (input: CreateEventInput) => {
-      if (!user?.uid) throw new Error("Not authenticated");
+      if (!uid) throw new Error("Not authenticated");
 
       const targetCalendarId =
         input.calendarId?.trim() ||
@@ -133,7 +171,7 @@ export function useCalendarEvents(selectedCalendarIds: string[] = ["primary"]) {
 
       const event: CalendarEvent = {
         id,
-        userId: user.uid,
+        userId: uid,
         title: input.title?.trim() || "New event",
         description: input.description?.trim() || "",
         startAt: input.startAt,
@@ -147,33 +185,35 @@ export function useCalendarEvents(selectedCalendarIds: string[] = ["primary"]) {
         calendarId: targetCalendarId,
       };
 
-      await createEvent(user.uid, event);
-      
+      await createEvent(uid, event);
 
       try {
-        
-        const sync = await callCalendarSyncWithRetry("/api/google-calendar/sync/create", { event, calendarId: targetCalendarId });
+        const sync = await callCalendarSyncWithRetry(calendarEndpoint(calendarProvider, "/sync/create"), {
+          event,
+          calendarId: targetCalendarId,
+        });
         await updateEvent(
-          user.uid,
+          uid,
           id,
           {
             googleEventId: sync.googleEventId ?? undefined,
+            outlookEventId: sync.outlookEventId ?? undefined,
             syncStatus: "synced",
           },
           { markPending: false }
         );
       } catch {
-        await updateEvent(user.uid, id, { syncStatus: "failed" }, { markPending: false });
+        await updateEvent(uid, id, { syncStatus: "failed" }, { markPending: false });
       }
 
       return event.id;
     },
-    [selectedCalendarIds,user?.uid]
+    [calendarProvider, selectedCalendarIds, uid]
   );
 
   const updateCalendarEvent = useCallback(
     async (eventId: string, patch: Partial<CalendarEvent>) => {
-      if (!user?.uid) throw new Error("Not authenticated");
+      if (!uid) throw new Error("Not authenticated");
       
       const existingEvent = events.find((event) => event.id === eventId);
       if (!existingEvent) {
@@ -181,7 +221,7 @@ export function useCalendarEvents(selectedCalendarIds: string[] = ["primary"]) {
       }
 
       try {
-        await updateEvent(user.uid, eventId, patch, {
+        await updateEvent(uid, eventId, patch, {
           expectedUpdatedAt: existingEvent.updatedAt,
           markPending: true,
         });
@@ -197,62 +237,70 @@ export function useCalendarEvents(selectedCalendarIds: string[] = ["primary"]) {
         ...existingEvent,
         ...patch,
       };
-            const targetCalendarId =
+      const syncProvider = getEventProvider(existingEvent, calendarProvider);
+      const targetCalendarId =
         (typeof patch.calendarId === "string" && patch.calendarId.trim()) ||
         existingEvent.calendarId ||
         selectedCalendarIds[0] ||
         "primary";
       try {
-        if (existingEvent.googleEventId) {
-          await callCalendarSyncWithRetry("/api/google-calendar/sync/update", {
-            googleEventId: existingEvent.googleEventId,
+        const providerEventId = getProviderEventId(existingEvent, syncProvider);
+        if (providerEventId) {
+          await callCalendarSyncWithRetry(calendarEndpoint(syncProvider, "/sync/update"), {
+            [getProviderEventIdKey(syncProvider)]: providerEventId,
             event: mergedEvent,
-            calendarId:targetCalendarId
+            calendarId: targetCalendarId,
           });
 
-          await updateEvent(user.uid, eventId, { syncStatus: "synced" }, { markPending: false });
+          await updateEvent(uid, eventId, { syncStatus: "synced" }, { markPending: false });
           return;
         }
 
-        const sync = await callCalendarSyncWithRetry("/api/google-calendar/sync/create", { event: mergedEvent,calendarId: targetCalendarId, });
+        const sync = await callCalendarSyncWithRetry(calendarEndpoint(calendarProvider, "/sync/create"), {
+          event: mergedEvent,
+          calendarId: targetCalendarId,
+        });
         await updateEvent(
-          user.uid,
+          uid,
           eventId,
           {
             googleEventId: sync.googleEventId ?? undefined,
+            outlookEventId: sync.outlookEventId ?? undefined,
             syncStatus: "synced",
           },
           { markPending: false }
         );
       } catch {
-        await updateEvent(user.uid, eventId, { syncStatus: "failed" }, { markPending: false });
+        await updateEvent(uid, eventId, { syncStatus: "failed" }, { markPending: false });
       }
     },
-    [events,selectedCalendarIds, user?.uid]
+    [calendarProvider, events, selectedCalendarIds, uid]
   );
 
   const deleteCalendarEvent = useCallback(
     async (eventId: string) => {
-      if (!user?.uid) throw new Error("Not authenticated");
+      if (!uid) throw new Error("Not authenticated");
 
       const existingEvent = events.find((event) => event.id === eventId);
-        const targetCalendarId =
+      const syncProvider = existingEvent ? getEventProvider(existingEvent, calendarProvider) : calendarProvider;
+      const targetCalendarId =
         existingEvent?.calendarId ||
         selectedCalendarIds[0] ||
         "primary";
-      if (existingEvent?.googleEventId) {
+      const providerEventId = existingEvent ? getProviderEventId(existingEvent, syncProvider) : undefined;
+      if (providerEventId) {
         try {
-          await callCalendarSyncWithRetry("/api/google-calendar/sync/delete", {
-            googleEventId: existingEvent.googleEventId,
+          await callCalendarSyncWithRetry(calendarEndpoint(syncProvider, "/sync/delete"), {
+            [getProviderEventIdKey(syncProvider)]: providerEventId,
             calendarId: targetCalendarId,
           });
         } catch {
-          await updateEvent(user.uid, eventId, { syncStatus: "failed" }, { markPending: false });
+          await updateEvent(uid, eventId, { syncStatus: "failed" }, { markPending: false });
         }
       }
 
       try {
-        await deleteEvent(user.uid, eventId, {
+        await deleteEvent(uid, eventId, {
           expectedUpdatedAt: existingEvent?.updatedAt,
         });
       } catch (err) {
@@ -263,7 +311,7 @@ export function useCalendarEvents(selectedCalendarIds: string[] = ["primary"]) {
         throw err;
       }
     },
-    [events,selectedCalendarIds ,user?.uid]
+    [calendarProvider, events, selectedCalendarIds, uid]
   );
 
   return {

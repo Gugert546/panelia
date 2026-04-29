@@ -4,7 +4,7 @@ import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
-import paneliaLogo from "../../../../../assets/logo.png";
+const paneliaLogo = "/vite.svg";
 
 type InfoSlide = {
   titleKey?: string;
@@ -91,7 +91,7 @@ export default function InfoWidget() {
 
   return (
     <WidgetContainer>
-      <WidgetPane title={t("widgets.info")}>
+      <WidgetPane>
         <div
           style={{
             width: "100%",
