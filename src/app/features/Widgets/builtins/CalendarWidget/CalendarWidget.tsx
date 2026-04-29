@@ -1,4 +1,4 @@
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useCalendarLogic } from "./calendarLogic";
@@ -21,6 +21,7 @@ type StickyDayLabel = {
 
 export type CalendarWidgetProps = {
   onClose?: () => void;
+  onFocusSidebarCalendarButton?: () => void;
   leftOffset?: number;
   onConnectCalendar?: () => void;
   onDisconnectCalendar?: () => void;
@@ -29,6 +30,10 @@ export type CalendarWidgetProps = {
   calendarConnectionBusy?: boolean;
   calendarRefreshBusy?: boolean;
   variant?: CalendarWidgetVariant;
+};
+
+export type CalendarWidgetHandle = {
+  focusTopLeftArrowButton: () => void;
 };
 
 const CALENDAR_MIN_WIDTH = 560;
@@ -130,8 +135,9 @@ function hexToRgba(color: string, alpha: number) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
-export default function CalendarWidget({
+const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(function CalendarWidget({
   onClose,
+  onFocusSidebarCalendarButton,
   leftOffset = 80,
   onConnectCalendar,
   onDisconnectCalendar,
@@ -140,7 +146,7 @@ export default function CalendarWidget({
   calendarConnectionBusy = false,
   calendarRefreshBusy = false,
   variant = "popup",
-}: CalendarWidgetProps) {
+}: CalendarWidgetProps, ref) {
   const isPopup = variant === "popup";
   const fontSize = useResolvedWidgetFontSize();
   const headerFontSize = Math.max(fontSize - 2, 11);
@@ -151,9 +157,16 @@ export default function CalendarWidget({
   const rangeLabelFontSize = Math.max(fontSize + 8, 22);
   const actionButtonFontSize = Math.max(fontSize - 1, 12);
   const closeButtonFontSize = Math.max(fontSize + 6, 20);
+  const previousWeekButtonRef = useRef<HTMLButtonElement | null>(null);
+  const nextWeekButtonRef = useRef<HTMLButtonElement | null>(null);
+  const connectButtonRef = useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const gridCellRefs = useRef<(HTMLDivElement | null)[][]>([]);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerWheelDeltaRef = useRef(0);
   const [topVisibleTime, setTopVisibleTime] = useState<string | null>(null);
+  const [focusedGridCell, setFocusedGridCell] = useState({ row: 0, col: 0 });
+  const [pendingWeekFocus, setPendingWeekFocus] = useState<{ row: number; col: number } | null>(null);
   const popupHeaderRef = useRef<HTMLDivElement | null>(null);
   const [popupHeaderHeight, setPopupHeaderHeight] = useState(0);
 
@@ -212,6 +225,102 @@ export default function CalendarWidget({
     ? refreshing
     : refreshFromGoogle;
 
+  const focusTopCalendarRow = () => {
+    focusGridCell(0, focusedGridCell.col);
+  };
+
+  const handlePreviousWeekButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      onFocusSidebarCalendarButton?.();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusGridCell(0, 0);
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      nextWeekButtonRef.current?.focus();
+    }
+  };
+
+  const handleNextWeekButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      previousWeekButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusTopCalendarRow();
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      connectButtonRef.current?.focus();
+    }
+  };
+
+  const handleConnectButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      nextWeekButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusTopCalendarRow();
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      if (isPopup) {
+        closeButtonRef.current?.focus();
+      }
+    }
+  };
+
+  const handleCloseButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      connectButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      focusTopCalendarRow();
+    }
+  };
+
+  const handleRefreshButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key !== "ArrowDown") return;
+    event.preventDefault();
+    focusTopCalendarRow();
+  };
+
+  const handleTodayButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key !== "ArrowDown") return;
+    event.preventDefault();
+    focusTopCalendarRow();
+  };
+
+  useImperativeHandle(ref, () => ({
+    focusTopLeftArrowButton: () => {
+      requestAnimationFrame(() => {
+        previousWeekButtonRef.current?.focus();
+      });
+    },
+  }), []);
+
   const {
     weekDays,
     timeSlots,
@@ -239,6 +348,37 @@ export default function CalendarWidget({
   );
 
   const displayTimeSlots = useMemo(() => timeSlots, [timeSlots]);
+
+  const focusGridCell = useCallback((row: number, col: number) => {
+    const maxRow = Math.max(0, displayTimeSlots.length - 1);
+    const maxCol = Math.max(0, displayWeekDays.length - 1);
+    const nextRow = Math.min(Math.max(row, 0), maxRow);
+    const nextCol = Math.min(Math.max(col, 0), maxCol);
+
+    setFocusedGridCell({ row: nextRow, col: nextCol });
+
+    requestAnimationFrame(() => {
+      gridCellRefs.current[nextRow]?.[nextCol]?.focus();
+    });
+  }, [displayTimeSlots.length, displayWeekDays.length]);
+
+  useLayoutEffect(() => {
+    if (displayTimeSlots.length === 0 || displayWeekDays.length === 0) {
+      return;
+    }
+
+    setFocusedGridCell((prev) => ({
+      row: Math.min(prev.row, displayTimeSlots.length - 1),
+      col: Math.min(prev.col, displayWeekDays.length - 1),
+    }));
+  }, [displayTimeSlots.length, displayWeekDays.length]);
+
+  useLayoutEffect(() => {
+    if (!pendingWeekFocus) return;
+
+    focusGridCell(pendingWeekFocus.row, pendingWeekFocus.col);
+    setPendingWeekFocus(null);
+  }, [pendingWeekFocus, focusGridCell]);
 
   const rangeLabel = useMemo(
     () => formatRangeLabel(displayWeekDays),
@@ -535,10 +675,74 @@ export default function CalendarWidget({
             maxVisibleEventsPerCell
           );
           const hasEvents = items.length > 0;
+          const isFocusedCell = focusedGridCell.row === timeIdx && focusedGridCell.col === dayIdx;
+          const cellDate = displayWeekDays[dayIdx];
+
+          const handleGridCellKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              if (timeIdx === 0) {
+                previousWeekButtonRef.current?.focus();
+                return;
+              }
+
+              focusGridCell(timeIdx - 1, dayIdx);
+              return;
+            }
+
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              focusGridCell(timeIdx + 1, dayIdx);
+              return;
+            }
+
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              if (dayIdx === 0) {
+                setPendingWeekFocus({
+                  row: timeIdx,
+                  col: Math.max(0, displayWeekDays.length - 1),
+                });
+                goToPreviousWeek();
+                return;
+              }
+              focusGridCell(timeIdx, dayIdx - 1);
+              return;
+            }
+
+            if (event.key === "ArrowRight") {
+              event.preventDefault();
+              if (dayIdx === displayWeekDays.length - 1) {
+                setPendingWeekFocus({ row: timeIdx, col: 0 });
+                goToNextWeek();
+                return;
+              }
+              focusGridCell(timeIdx, dayIdx + 1);
+              return;
+            }
+
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              void handleCellClick(dayIdx, time);
+            }
+          };
 
           return (
             <div
               key={`${timeIdx}-${dayIdx}`}
+              ref={(element) => {
+                if (!gridCellRefs.current[timeIdx]) {
+                  gridCellRefs.current[timeIdx] = [];
+                }
+
+                gridCellRefs.current[timeIdx][dayIdx] = element;
+              }}
+              tabIndex={isFocusedCell ? 0 : -1}
+              onFocus={() => {
+                setFocusedGridCell({ row: timeIdx, col: dayIdx });
+              }}
+              onKeyDown={handleGridCellKeyDown}
+              aria-label={`${cellDate.toLocaleDateString("nb-NO", { weekday: "long", day: "numeric", month: "long" })} klokken ${time}`}
               style={{
                 backgroundColor: hasEvents
                   ? hexToRgba(
@@ -678,6 +882,8 @@ export default function CalendarWidget({
         >
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
+              ref={previousWeekButtonRef}
+              onKeyDown={handlePreviousWeekButtonKeyDown}
               onClick={goToPreviousWeek}
               style={{
                 background: "rgba(255,255,255,0.45)",
@@ -700,6 +906,8 @@ export default function CalendarWidget({
             </h2>
 
             <button
+              ref={nextWeekButtonRef}
+              onKeyDown={handleNextWeekButtonKeyDown}
               onClick={goToNextWeek}
               style={{
                 background: "rgba(255,255,255,0.45)",
@@ -719,6 +927,7 @@ export default function CalendarWidget({
 
             {!isViewingCurrentWeek && (
               <button
+                onKeyDown={handleTodayButtonKeyDown}
                 onClick={goToCurrentWeek}
                 style={{
                   background: "rgba(15,23,42,0.12)",
@@ -752,6 +961,7 @@ export default function CalendarWidget({
             )}
             
             <button
+              onKeyDown={handleRefreshButtonKeyDown}
               onClick={handleRefreshCalendar}
               style={{
                 background: "rgba(59,130,246,0.14)",
@@ -784,6 +994,8 @@ export default function CalendarWidget({
             </button>
             
             <button
+              ref={connectButtonRef}
+              onKeyDown={handleConnectButtonKeyDown}
               onClick={handleConnectCalendar}
               style={{
                 background:
@@ -814,6 +1026,8 @@ export default function CalendarWidget({
 
             {isPopup && (
               <button
+                ref={closeButtonRef}
+                onKeyDown={handleCloseButtonKeyDown}
                 onClick={onClose}
                 style={{
                   background: "rgba(255,255,255,0.25)",
@@ -834,6 +1048,7 @@ export default function CalendarWidget({
 
         {isPopup ? (
           <div
+            data-arrow-scope="calendar-panel"
             ref={scrollContainerRef}
             onScroll={updateTopVisibleTime}
             style={{
@@ -966,6 +1181,7 @@ export default function CalendarWidget({
     <>
       {isPopup ? (
         <div
+          data-arrow-scope="calendar-panel"
           style={{
             position: "fixed",
             top: 20,
@@ -1001,4 +1217,6 @@ export default function CalendarWidget({
       />
     </>
   );
-}
+});
+
+export default CalendarWidget;

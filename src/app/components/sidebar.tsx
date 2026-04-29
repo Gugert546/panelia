@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from "react";
 type SidebarProps = {
   onEditClick?: () => void;
   onSidebarNav?: (itemKey: string) => void;
+  onSidebarArrowRight?: (itemKey: string) => void;
+  onSidebarArrowLeft?: (itemKey: string) => void;
   onEditArrowRight?: () => void;
   disabled?: boolean;
 };
@@ -25,6 +27,8 @@ const items: NavItem[] = [
 export default function Sidebar({
   onEditClick,
   onSidebarNav,
+  onSidebarArrowRight,
+  onSidebarArrowLeft,
   onEditArrowRight,
   disabled = false,
 }: SidebarProps) {
@@ -33,10 +37,15 @@ export default function Sidebar({
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "ArrowRight") return;
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
 
       const activeElement = document.activeElement as HTMLElement | null;
-      if (activeElement?.closest('[data-arrow-scope="edit-panel"]')) return;
+      if (
+        activeElement?.closest('[data-arrow-scope="edit-panel"]') ||
+        activeElement?.closest('[data-arrow-scope="calendar-panel"]')
+      ) {
+        return;
+      }
 
       const focused = document.activeElement;
       const focusedIndex = buttonRefs.current.findIndex((b) => b === focused);
@@ -52,7 +61,27 @@ export default function Sidebar({
 
       if (e.key === "ArrowRight") {
         e.preventDefault();
-        onEditArrowRight?.();
+        const focusedItem = items[focusedIndex];
+        if (!focusedItem) return;
+
+        if (focusedItem.key === "edit") {
+          onEditArrowRight?.();
+          return;
+        }
+
+        setActive(focusedItem.key);
+        onSidebarArrowRight?.(focusedItem.key);
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        const focusedItem = items[focusedIndex];
+        if (!focusedItem) return;
+
+        if (focusedItem.key === "edit" || focusedItem.key === "calendar") {
+          e.preventDefault();
+          onSidebarArrowLeft?.(focusedItem.key);
+        }
         return;
       }
 
@@ -66,7 +95,7 @@ export default function Sidebar({
 
     window.addEventListener("keydown", handleGlobalKeyDown);
     return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, [onEditArrowRight]);
+  }, [onEditArrowRight, onSidebarArrowRight, onSidebarArrowLeft]);
 
   return (
     <aside
