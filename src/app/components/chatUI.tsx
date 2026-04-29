@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState, type CSSProperties } from "react";
 import WidgetContainer from "../features/Widgets/components/WidgetContainer";
 import WidgetPane from "../features/Widgets/components/WidgetPane";
 import { useLanguage } from "../providers/languageProvider";
@@ -9,6 +9,10 @@ type ChatVariant = "panel" | "widget";
 type ChatProps = {
   variant?: ChatVariant;
   autoFocus?: boolean;
+};
+
+export type ChatHandle = {
+  focusInput: () => void;
 };
 
 const MAX_INPUT_CHARS = 3000;
@@ -27,7 +31,7 @@ function isConfirmationPrompt(text: string) {
   );
 }
 
-export default function Chat({ variant = "widget", autoFocus = false }: ChatProps) {
+const Chat = forwardRef<ChatHandle, ChatProps>(function Chat({ variant = "widget", autoFocus = false }: ChatProps, ref) {
   const { messages, isSending, sendMessage } = useAiChat();
   const { t } = useLanguage();
   const [input, setInput] = useState("");
@@ -54,6 +58,14 @@ export default function Chat({ variant = "widget", autoFocus = false }: ChatProp
       inputRef.current?.focus({ preventScroll: true });
     });
   }, [autoFocus]);
+
+  useImperativeHandle(ref, () => ({
+    focusInput: () => {
+      requestAnimationFrame(() => {
+        inputRef.current?.focus({ preventScroll: true });
+      });
+    },
+  }), []);
 
   const handleSend = async () => {
     const messageText = input.trim();

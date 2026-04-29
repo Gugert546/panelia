@@ -1,11 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
-import EditPanel from "../../components/editPanel";
-import AiChatPanel from "../../components/AiChatPanel";
+import EditPanel, { type EditPanelHandle } from "../../components/editPanel";
+import AiChatPanel, { type AiChatPanelHandle } from "../../components/AiChatPanel";
 import { AiChatProvider } from "../../components/aiChatContext";
 
 import CalendarWidget from "../Widgets/builtins/CalendarWidget/CalendarWidget";
+import type { CalendarWidgetHandle } from "../Widgets/builtins/CalendarWidget/CalendarWidget";
 
 import DashboardGrid from "../../components/DashboardGrid";
 
@@ -88,6 +89,9 @@ function getImageBackgroundSource(
 
 function DashboardPageContent() {
   const SIDEBAR_WIDTH = 86;
+  const editPanelRef = useRef<EditPanelHandle | null>(null);
+  const calendarPanelRef = useRef<CalendarWidgetHandle | null>(null);
+  const chatPanelRef = useRef<AiChatPanelHandle | null>(null);
   const GUEST_INFO_LAYOUT = { x: 1, y: 2, w: 12, h: 12 };
   const [gridContainerWidth, setGridContainerWidth] = useState(() =>
     typeof window === "undefined"
@@ -208,6 +212,15 @@ function DashboardPageContent() {
 
     setActivePanel(null);
   }, [isAuthenticated, loading]);
+
+  useEffect(() => {
+    if (!activePanel) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setActivePanel(null);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [activePanel]);
 
   useEffect(() => {
     if (!shouldManageCalendarConnection) return;
@@ -472,6 +485,60 @@ function DashboardPageContent() {
     }
   };
 
+  const handleSidebarArrowRight = (itemKey: string) => {
+    if (!isAuthenticated) return;
+
+    if (itemKey === "calendar") {
+      setActivePanel("calendar");
+      requestAnimationFrame(() => {
+        calendarPanelRef.current?.focusTopLeftArrowButton();
+      });
+      return;
+    }
+
+    if (itemKey === "chat") {
+      setActivePanel("chat");
+      requestAnimationFrame(() => {
+        chatPanelRef.current?.focusMessageInput();
+      });
+    }
+  };
+
+  const handleSidebarArrowLeft = (itemKey: string) => {
+    if (!isAuthenticated) return;
+    if (itemKey !== "edit" && itemKey !== "calendar") return;
+
+    setActivePanel((prev) => {
+      if (prev === "edit" || prev === "calendar") {
+        return null;
+      }
+      return prev;
+    });
+  };
+
+  const focusSidebarEditButton = () => {
+    setActivePanel((prev) => (prev === "edit" ? null : prev));
+    const editButton = document.querySelector('button[aria-label="Rediger"]') as HTMLButtonElement | null;
+    editButton?.focus();
+  };
+
+  const focusSidebarCalendarButton = () => {
+    const calendarButton = document.querySelector('button[aria-label="Calendar"]') as HTMLButtonElement | null;
+    calendarButton?.focus();
+  };
+
+  const focusEditPanelWidgetList = () => {
+    if (!isAuthenticated) return;
+
+    if (activePanel !== "edit") {
+      setActivePanel("edit");
+    }
+
+    requestAnimationFrame(() => {
+      editPanelRef.current?.focusFirstWidget();
+    });
+  };
+
   return (
     <div
       style={{
@@ -507,7 +574,10 @@ function DashboardPageContent() {
 
       <Sidebar
         disabled={!isAuthenticated}
+        onEditArrowRight={focusEditPanelWidgetList}
         onSidebarNav={handleSidebarNavigation}
+        onSidebarArrowRight={handleSidebarArrowRight}
+        onSidebarArrowLeft={handleSidebarArrowLeft}
         onEditClick={() => {
           if (!isAuthenticated) return;
           setActivePanel((prev) => (prev === "edit" ? null : "edit"));
@@ -526,8 +596,10 @@ function DashboardPageContent() {
       </div>
 
       <EditPanel
+        ref={editPanelRef}
         open={activePanel === "edit"}
         onClose={() => setActivePanel(null)}
+        onFocusSidebar={focusSidebarEditButton}
         availableWidgets={translatedAvailableWidgets}
         activeWidgets={activeWidgets}
         toggleWidget={toggleWidget}
@@ -603,6 +675,7 @@ function DashboardPageContent() {
       </main>
 
       <AiChatPanel
+        ref={chatPanelRef}
         open={activePanel === "chat"}
         onClose={() => setActivePanel(null)}
         sidebarWidth={SIDEBAR_WIDTH}
@@ -610,7 +683,9 @@ function DashboardPageContent() {
 
       {activePanel === "calendar" && (
         <CalendarWidget
+          ref={calendarPanelRef}
           onClose={() => setActivePanel(null)}
+          onFocusSidebarCalendarButton={focusSidebarCalendarButton}
           leftOffset={SIDEBAR_WIDTH + 20}
           calendarConnectionStatus={calendarConnectionStatus}
           calendarProvider={calendarProvider}

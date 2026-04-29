@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 type SidebarProps = {
   onEditClick?: () => void;
   onSidebarNav?: (itemKey: string) => void;
+  onSidebarArrowRight?: (itemKey: string) => void;
+  onSidebarArrowLeft?: (itemKey: string) => void;
+  onEditArrowRight?: () => void;
   disabled?: boolean;
 };
 
@@ -24,11 +27,77 @@ const items: NavItem[] = [
 export default function Sidebar({
   onEditClick,
   onSidebarNav,
+  onSidebarArrowRight,
+  onSidebarArrowLeft,
+  onEditArrowRight,
   disabled = false,
 }: SidebarProps) {
   const [active, setActive] = useState("calendar");
+  const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
-    return (
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      if (
+        activeElement?.closest('[data-arrow-scope="edit-panel"]') ||
+        activeElement?.closest('[data-arrow-scope="calendar-panel"]')
+      ) {
+        return;
+      }
+
+      const focused = document.activeElement;
+      const focusedIndex = buttonRefs.current.findIndex((b) => b === focused);
+
+      if (focusedIndex === -1) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          // Ingenting i sidebar er fokusert – send fokus til første knapp
+          e.preventDefault();
+          buttonRefs.current[0]?.focus();
+        }
+        return;
+      }
+
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        const focusedItem = items[focusedIndex];
+        if (!focusedItem) return;
+
+        if (focusedItem.key === "edit") {
+          onEditArrowRight?.();
+          return;
+        }
+
+        setActive(focusedItem.key);
+        onSidebarArrowRight?.(focusedItem.key);
+        return;
+      }
+
+      if (e.key === "ArrowLeft") {
+        const focusedItem = items[focusedIndex];
+        if (!focusedItem) return;
+
+        if (focusedItem.key === "edit" || focusedItem.key === "calendar") {
+          e.preventDefault();
+          onSidebarArrowLeft?.(focusedItem.key);
+        }
+        return;
+      }
+
+      e.preventDefault();
+      if (e.key === "ArrowDown") {
+        buttonRefs.current[(focusedIndex + 1) % items.length]?.focus();
+      } else {
+        buttonRefs.current[(focusedIndex - 1 + items.length) % items.length]?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, [onEditArrowRight, onSidebarArrowRight, onSidebarArrowLeft]);
+
+  return (
     <aside
       style={{
         position: "fixed",
@@ -45,9 +114,10 @@ export default function Sidebar({
         zIndex: 1000,
       }}
     >
-      {items.map((item) => (
+      {items.map((item, index) => (
         <button
           key={item.key}
+          ref={(el) => { buttonRefs.current[index] = el; }}
           aria-label={item.label}
           disabled={disabled}
           title={disabled ? "Sign in to use the side panel" : item.label}

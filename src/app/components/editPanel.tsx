@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import AddCustomButtonModal from "./AddCustomButtonModal";
+import { ColorPicker } from "./ColorPicker";
 import type {
   CustomBackgroundMediaType,
   CustomButtonConfig,
@@ -27,6 +28,7 @@ type Widget = {
 type EditPanelProps = {
   open: boolean;
   onClose: () => void;
+  onFocusSidebar?: () => void;
   availableWidgets: readonly Widget[];
   activeWidgets: string[];
   toggleWidget: (id: string) => void;
@@ -58,13 +60,16 @@ type EditPanelProps = {
   clearAllWidgetStyles: () => void;
 };
 
+export type EditPanelHandle = {
+  focusFirstWidget: () => void;
+};
+
 const BACKGROUND_OPTIONS: Array<{
   id: DashboardBackgroundId;
   labelKey: string;
   preview?: string;
 }> = [
   { id: "defaultbg", labelKey: "editPanel.paneliabgmashup", preview: paneliabgmashup },
-  
 ];
 
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
@@ -129,9 +134,10 @@ function withAlpha(color: string, alpha: number) {
   return `rgba(${red},${green},${blue},${alpha})`;
 }
 
-export default function EditPanel({
+export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   open,
   onClose,
+  onFocusSidebar,
   availableWidgets,
   activeWidgets,
   toggleWidget,
@@ -160,14 +166,45 @@ export default function EditPanel({
   deleteDashboardPreset,
   clearUnlockedWidgetStyles,
   clearAllWidgetStyles,
-}: EditPanelProps) {
+}: EditPanelProps, ref) {
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"widgets" | "background">("widgets");
   const [presetName, setPresetName] = useState("");
+  const [focusedColorButton, setFocusedColorButton] = useState<"widget" | "border" | "text" | null>(null);
+  const [activeColorPicker, setActiveColorPicker] = useState<"widget" | "border" | "text" | null>(null);
+  const [activeSlider, setActiveSlider] = useState<"fontSize" | "opacity" | "borderWidth" | null>(null);
+  const widgetItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const norwegianButtonRef = useRef<HTMLButtonElement | null>(null);
+  const englishButtonRef = useRef<HTMLButtonElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const widgetsTabButtonRef = useRef<HTMLButtonElement | null>(null);
+  const backgroundTabButtonRef = useRef<HTMLButtonElement | null>(null);
   const customBackgroundInputRef = useRef<HTMLInputElement | null>(null);
+  const fontSizeSliderRef = useRef<HTMLInputElement | null>(null);
+  const widgetColorResetRef = useRef<HTMLButtonElement | null>(null);
+  const widgetColorButtonRef = useRef<HTMLButtonElement | null>(null);
+  const widgetOpacitySliderRef = useRef<HTMLInputElement | null>(null);
+  const borderColorResetRef = useRef<HTMLButtonElement | null>(null);
+  const borderColorButtonRef = useRef<HTMLButtonElement | null>(null);
+  const borderWidthSliderRef = useRef<HTMLInputElement | null>(null);
+  const textColorResetRef = useRef<HTMLButtonElement | null>(null);
+  const textColorButtonRef = useRef<HTMLButtonElement | null>(null);
+  const resetAllButtonRef = useRef<HTMLButtonElement | null>(null);
+  const uploadBgButtonRef = useRef<HTMLButtonElement | null>(null);
+  const presetNameInputRef = useRef<HTMLInputElement | null>(null);
+  const savePresetButtonRef = useRef<HTMLButtonElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
+  const backgroundOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const presetApplyButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const presetDeleteButtonRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const resetConfirmUnlockedRef = useRef<HTMLButtonElement | null>(null);
+  const resetConfirmAllRef = useRef<HTMLButtonElement | null>(null);
+  const resetConfirmCancelRef = useRef<HTMLButtonElement | null>(null);
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [uploadBackgroundError, setUploadBackgroundError] = useState("");
+  const [pendingPresetFocusId, setPendingPresetFocusId] = useState<string | null>(null);
   const { fontSize: widgetFontSize, setFontSize } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
@@ -195,6 +232,549 @@ export default function EditPanel({
     setModalOpen(false);
     setViewMode("widgets");
   }, [open]);
+
+  useEffect(() => {
+    if (open) return;
+
+    const activeElement = document.activeElement as HTMLElement | null;
+    if (!activeElement || !panelRef.current?.contains(activeElement)) return;
+
+    requestAnimationFrame(() => {
+      onFocusSidebar?.();
+    });
+  }, [open, onFocusSidebar]);
+
+  useEffect(() => {
+    if (!pendingPresetFocusId) return;
+
+    const presetIndex = dashboardPresets.findIndex((preset) => preset.id === pendingPresetFocusId);
+    if (presetIndex === -1) return;
+
+    requestAnimationFrame(() => {
+      presetApplyButtonRefs.current[presetIndex]?.focus();
+      setPendingPresetFocusId(null);
+    });
+  }, [dashboardPresets, pendingPresetFocusId]);
+
+  useImperativeHandle(ref, () => ({
+    focusFirstWidget: () => {
+      setViewMode("widgets");
+      requestAnimationFrame(() => {
+        widgetsTabButtonRef.current?.focus();
+      });
+    },
+  }), []);
+
+  useEffect(() => {
+    if (!open || viewMode !== "widgets") return;
+
+    const handleWidgetListArrows = (e: KeyboardEvent) => {
+      const activeElement = document.activeElement as HTMLElement | null;
+      const inEditPanel = activeElement?.closest('[data-arrow-scope="edit-panel"]');
+      if (!inEditPanel) return;
+
+      const refs = widgetItemRefs.current.filter(
+        (item): item is HTMLButtonElement => Boolean(item)
+      );
+      if (refs.length === 0) return;
+
+      const focusedIndex = refs.findIndex((item) => item === document.activeElement);
+      if (focusedIndex === -1) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        refs[(focusedIndex + 1) % refs.length]?.focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (focusedIndex === 0) {
+          widgetsTabButtonRef.current?.focus();
+        } else {
+          refs[(focusedIndex - 1 + refs.length) % refs.length]?.focus();
+        }
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        onFocusSidebar?.();
+      }
+    };
+
+    window.addEventListener("keydown", handleWidgetListArrows);
+    return () => window.removeEventListener("keydown", handleWidgetListArrows);
+  }, [open, viewMode, onFocusSidebar]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const focusTarget = (target: "norsk" | "english" | "close" | "widgets" | "background") => {
+      if (target === "norsk") {
+        norwegianButtonRef.current?.focus();
+        return;
+      }
+      if (target === "english") {
+        englishButtonRef.current?.focus();
+        return;
+      }
+      if (target === "close") {
+        closeButtonRef.current?.focus();
+        return;
+      }
+      if (target === "widgets") {
+        setViewMode("widgets");
+        requestAnimationFrame(() => widgetsTabButtonRef.current?.focus());
+        return;
+      }
+
+      setViewMode("background");
+      requestAnimationFrame(() => backgroundTabButtonRef.current?.focus());
+    };
+
+    const handleTopButtonArrows = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+
+      const activeElement = document.activeElement as HTMLElement | null;
+      const inEditPanel = activeElement?.closest('[data-arrow-scope="edit-panel"]');
+      if (!inEditPanel) return;
+
+      const currentKey =
+        activeElement === norwegianButtonRef.current
+          ? "norsk"
+          : activeElement === englishButtonRef.current
+            ? "english"
+            : activeElement === closeButtonRef.current
+              ? "close"
+            : activeElement === widgetsTabButtonRef.current
+              ? "widgets"
+              : activeElement === backgroundTabButtonRef.current
+                ? "background"
+                : null;
+
+      if (!currentKey) return;
+
+      if (currentKey === "background" && e.key === "ArrowDown" && viewMode === "background") {
+        e.preventDefault();
+        fontSizeSliderRef.current?.focus();
+        return;
+      }
+
+      if (currentKey === "widgets" && e.key === "ArrowDown") {
+        const clockIndex = availableWidgets.findIndex((widget) => widget.id === "clock");
+        const clockButton = clockIndex >= 0 ? widgetItemRefs.current[clockIndex] : null;
+        if (clockButton) {
+          e.preventDefault();
+          clockButton.focus();
+          return;
+        }
+
+        const refs = widgetItemRefs.current.filter(
+          (item): item is HTMLButtonElement => Boolean(item)
+        );
+        if (refs.length > 0) {
+          e.preventDefault();
+          refs[0].focus();
+          return;
+        }
+      }
+
+      if ((currentKey === "widgets" || currentKey === "norsk") && e.key === "ArrowLeft") {
+        e.preventDefault();
+        onFocusSidebar?.();
+        return;
+      }
+
+      const nextMap: Record<"norsk" | "english" | "close" | "widgets" | "background", {
+        ArrowUp: "norsk" | "english" | "close" | "widgets" | "background";
+        ArrowDown: "norsk" | "english" | "close" | "widgets" | "background";
+        ArrowLeft: "norsk" | "english" | "close" | "widgets" | "background";
+        ArrowRight: "norsk" | "english" | "close" | "widgets" | "background";
+      }> = {
+        norsk: {
+          ArrowUp: "widgets",
+          ArrowDown: "widgets",
+          ArrowLeft: "english",
+          ArrowRight: "english",
+        },
+        english: {
+          ArrowUp: "background",
+          ArrowDown: "background",
+          ArrowLeft: "norsk",
+          ArrowRight: "close",
+        },
+        close: {
+          ArrowUp: "background",
+          ArrowDown: "background",
+          ArrowLeft: "english",
+          ArrowRight: "norsk",
+        },
+        widgets: {
+          ArrowUp: "norsk",
+          ArrowDown: "norsk",
+          ArrowLeft: "background",
+          ArrowRight: "background",
+        },
+        background: {
+          ArrowUp: "english",
+          ArrowDown: "english",
+          ArrowLeft: "widgets",
+          ArrowRight: "close",
+        },
+      };
+
+      if (!["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.key)) {
+        return;
+      }
+
+      e.preventDefault();
+      const next = nextMap[currentKey][e.key as "ArrowUp" | "ArrowDown" | "ArrowLeft" | "ArrowRight"];
+      focusTarget(next);
+    };
+
+    window.addEventListener("keydown", handleTopButtonArrows);
+    return () => window.removeEventListener("keydown", handleTopButtonArrows);
+  }, [open, availableWidgets, viewMode, onFocusSidebar]);
+
+  useEffect(() => {
+    if (!open || viewMode !== "background") return;
+
+    const bgSettingRefs = [
+      fontSizeSliderRef,
+      widgetColorResetRef,
+      widgetColorButtonRef,
+      widgetOpacitySliderRef,
+      borderColorResetRef,
+      borderColorButtonRef,
+      borderWidthSliderRef,
+      textColorResetRef,
+      textColorButtonRef,
+      resetAllButtonRef,
+      uploadBgButtonRef,
+      presetNameInputRef,
+    ];
+    const primaryVerticalRefs = [
+      fontSizeSliderRef,
+      widgetColorResetRef,
+      widgetOpacitySliderRef,
+      borderColorResetRef,
+      borderWidthSliderRef,
+      textColorResetRef,
+      resetAllButtonRef,
+      uploadBgButtonRef,
+    ];
+
+    const sliderRefList = [fontSizeSliderRef, widgetOpacitySliderRef, borderWidthSliderRef] as const;
+    const sliderKeyList = ["fontSize", "opacity", "borderWidth"] as const;
+
+    const handleBgSettingsArrows = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      const activeElement = document.activeElement as HTMLElement | null;
+      const inEditPanel = activeElement?.closest('[data-arrow-scope="edit-panel"]');
+      if (!inEditPanel) return;
+
+      // Slider activation logic
+      const focusedSliderIdx = sliderRefList.findIndex((r) => r.current === activeElement);
+      if (focusedSliderIdx !== -1) {
+        const sliderKey = sliderKeyList[focusedSliderIdx];
+
+        if (activeSlider === sliderKey) {
+          // Activated: ArrowUp/Down blocked
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            return;
+          }
+          // Activated: Enter or Esc deactivates; ArrowLeft/Right adjusts (passed through)
+          if (e.key === "Enter" || e.key === "Escape") {
+            e.preventDefault();
+            setActiveSlider(null);
+            if (e.key === "Escape") {
+              // Navigate away: move to previous element or background tab
+              const elements = bgSettingRefs
+                .map((r) => r.current as HTMLElement | null)
+                .filter((el): el is HTMLElement => Boolean(el));
+              const idx = elements.findIndex((el) => el === activeElement);
+              if (idx <= 0) {
+                backgroundTabButtonRef.current?.focus();
+              } else {
+                elements[idx - 1]?.focus();
+              }
+            }
+          }
+          return;
+        }
+
+        // Not activated: Enter activates; ArrowLeft/Right blocked; Esc navigates away
+        if (e.key === "Enter") {
+          e.preventDefault();
+          setActiveSlider(sliderKey);
+          return;
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          const elements = bgSettingRefs
+            .map((r) => r.current as HTMLElement | null)
+            .filter((el): el is HTMLElement => Boolean(el));
+          const idx = elements.findIndex((el) => el === activeElement);
+          if (idx <= 0) {
+            backgroundTabButtonRef.current?.focus();
+          } else {
+            elements[idx - 1]?.focus();
+          }
+          return;
+        }
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          return;
+        }
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          return;
+        }
+        // ArrowUp/Down fall through to navigation below
+      }
+
+
+      const primaryVerticalElements = primaryVerticalRefs
+        .map((r) => r.current as HTMLElement | null)
+        .filter((el): el is HTMLElement => Boolean(el));
+      const primaryVerticalIndex = primaryVerticalElements.findIndex((el) => el === document.activeElement);
+
+      if (primaryVerticalIndex !== -1) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const nextPrimary = primaryVerticalElements[primaryVerticalIndex + 1];
+          if (nextPrimary) {
+            nextPrimary.focus();
+          } else {
+            presetNameInputRef.current?.focus();
+          }
+          return;
+        }
+
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (primaryVerticalIndex === 0) {
+            backgroundTabButtonRef.current?.focus();
+          } else {
+            primaryVerticalElements[primaryVerticalIndex - 1]?.focus();
+          }
+          return;
+        }
+      }
+
+      const elements = bgSettingRefs
+        .map((r) => r.current as HTMLElement | null)
+        .filter((el): el is HTMLElement => Boolean(el));
+      const focusedIndex = elements.findIndex((el) => el === document.activeElement);
+
+      // ArrowRight: reset → color button. ArrowLeft: color button → reset.
+      // Must be checked before focusedIndex guard since color buttons are not in bgSettingRefs.
+      if (e.key === "ArrowRight") {
+        if (document.activeElement === widgetColorResetRef.current) {
+          e.preventDefault();
+          widgetColorButtonRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === borderColorResetRef.current) {
+          e.preventDefault();
+          borderColorButtonRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === textColorResetRef.current) {
+          e.preventDefault();
+          textColorButtonRef.current?.focus();
+          return;
+        }
+        if (
+          document.activeElement === widgetColorButtonRef.current ||
+          document.activeElement === borderColorButtonRef.current ||
+          document.activeElement === textColorButtonRef.current ||
+          document.activeElement === resetAllButtonRef.current ||
+          document.activeElement === uploadBgButtonRef.current
+        ) {
+          e.preventDefault();
+          return;
+        }
+        if (document.activeElement === presetNameInputRef.current) {
+          e.preventDefault();
+          savePresetButtonRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === savePresetButtonRef.current) {
+          e.preventDefault();
+          return;
+        }
+      } else if (e.key === "ArrowLeft") {
+        if (document.activeElement === savePresetButtonRef.current) {
+          e.preventDefault();
+          presetNameInputRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === widgetColorButtonRef.current) {
+          e.preventDefault();
+          widgetColorResetRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === borderColorButtonRef.current) {
+          e.preventDefault();
+          borderColorResetRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === textColorButtonRef.current) {
+          e.preventDefault();
+          textColorResetRef.current?.focus();
+          return;
+        }
+      }
+
+      // ArrowUp from savePresetButtonRef: go to uploadBgButtonRef (item above in the list)
+      if (e.key === "ArrowUp" && document.activeElement === savePresetButtonRef.current) {
+        e.preventDefault();
+        uploadBgButtonRef.current?.focus();
+        return;
+      }
+
+      // ArrowUp from color buttons: skip reset button, go to element above the row
+      if (e.key === "ArrowUp") {
+        if (document.activeElement === widgetColorButtonRef.current) {
+          e.preventDefault();
+          fontSizeSliderRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === borderColorButtonRef.current) {
+          e.preventDefault();
+          widgetOpacitySliderRef.current?.focus();
+          return;
+        }
+        if (document.activeElement === textColorButtonRef.current) {
+          e.preventDefault();
+          borderWidthSliderRef.current?.focus();
+          return;
+        }
+      }
+
+      // Background option button navigation
+      const bgOptionIdx = backgroundOptionRefs.current.findIndex((r) => r === document.activeElement);
+      if (bgOptionIdx !== -1) {
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = backgroundOptionRefs.current[bgOptionIdx + 1];
+          if (next) next.focus();
+          return;
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (bgOptionIdx > 0) {
+            backgroundOptionRefs.current[bgOptionIdx - 1]?.focus();
+          } else if (dashboardPresets.length > 0) {
+            presetApplyButtonRefs.current[dashboardPresets.length - 1]?.focus();
+          } else {
+            presetNameInputRef.current?.focus();
+          }
+          return;
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          presetNameInputRef.current?.focus();
+          return;
+        }
+        if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+          e.preventDefault();
+          return;
+        }
+      }
+
+      const presetApplyIndex = presetApplyButtonRefs.current.findIndex((r) => r === document.activeElement);
+      if (presetApplyIndex !== -1) {
+        if (e.key === "ArrowRight") {
+          e.preventDefault();
+          presetDeleteButtonRefs.current[presetApplyIndex]?.focus();
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (presetApplyIndex < dashboardPresets.length - 1) {
+            presetApplyButtonRefs.current[presetApplyIndex + 1]?.focus();
+          } else {
+            backgroundOptionRefs.current[0]?.focus();
+          }
+          return;
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (presetApplyIndex > 0) {
+            presetApplyButtonRefs.current[presetApplyIndex - 1]?.focus();
+          } else {
+            savePresetButtonRef.current?.focus();
+          }
+          return;
+        }
+      }
+
+      const presetDeleteIndex = presetDeleteButtonRefs.current.findIndex((r) => r === document.activeElement);
+      if (presetDeleteIndex !== -1) {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          presetApplyButtonRefs.current[presetDeleteIndex]?.focus();
+          return;
+        }
+        if (e.key === "ArrowDown") {
+          e.preventDefault();
+          if (presetDeleteIndex < dashboardPresets.length - 1) {
+            presetDeleteButtonRefs.current[presetDeleteIndex + 1]?.focus();
+          } else {
+            backgroundOptionRefs.current[0]?.focus();
+          }
+          return;
+        }
+        if (e.key === "ArrowUp") {
+          e.preventDefault();
+          if (presetDeleteIndex > 0) {
+            presetDeleteButtonRefs.current[presetDeleteIndex - 1]?.focus();
+          } else {
+            savePresetButtonRef.current?.focus();
+          }
+          return;
+        }
+      }
+
+      if (focusedIndex === -1) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (focusedIndex < elements.length - 1) {
+          elements[focusedIndex + 1]?.focus();
+        } else {
+          // Last bgSettingRef item (presetNameInputRef): go to first background option
+          backgroundOptionRefs.current[0]?.focus();
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (focusedIndex === 0) {
+          backgroundTabButtonRef.current?.focus();
+        } else {
+          elements[focusedIndex - 1]?.focus();
+        }
+      }
+    };
+
+    // ArrowDown from savePresetButtonRef → first background option
+    const handleSavePresetArrowDown = (e: KeyboardEvent) => {
+      if (e.key !== "ArrowDown") return;
+      if (document.activeElement !== savePresetButtonRef.current) return;
+      const inEditPanel = (document.activeElement as HTMLElement)?.closest('[data-arrow-scope="edit-panel"]');
+      if (!inEditPanel) return;
+      e.preventDefault();
+      if (dashboardPresets.length > 0) {
+        presetApplyButtonRefs.current[0]?.focus();
+        return;
+      }
+      backgroundOptionRefs.current[0]?.focus();
+    };
+    window.addEventListener("keydown", handleSavePresetArrowDown);
+
+    window.addEventListener("keydown", handleBgSettingsArrows);
+    return () => {
+      window.removeEventListener("keydown", handleBgSettingsArrows);
+      window.removeEventListener("keydown", handleSavePresetArrowDown);
+    };
+  }, [open, viewMode, activeSlider, dashboardPresets]);
   
   const handleCustomBackgroundUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -254,7 +834,8 @@ export default function EditPanel({
   };
 
   const handleSavePreset = () => {
-    saveCurrentAsPreset(presetName);
+    const presetId = saveCurrentAsPreset(presetName);
+    setPendingPresetFocusId(presetId);
     setPresetName("");
   };
 
@@ -314,6 +895,9 @@ export default function EditPanel({
 
   return (
     <div
+      ref={panelRef}
+      data-arrow-scope="edit-panel"
+      aria-hidden={!open}
       style={{
         position: "fixed",
         top: 0,
@@ -327,6 +911,8 @@ export default function EditPanel({
         boxShadow: "16px 0 42px rgba(15, 23, 42, 0.18)",
         display: "flex",
         flexDirection: "column",
+        visibility: open ? "visible" : "hidden",
+        pointerEvents: open ? "auto" : "none",
         background: panelBaseLayerColor,
         overflow: "hidden",
       }}
@@ -349,6 +935,7 @@ export default function EditPanel({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <button
+            ref={norwegianButtonRef}
             onClick={() => setLanguage('no')}
             style={language === 'no' ? selectedTopButtonStyle : topButtonStyle}
             title="Norsk"
@@ -356,6 +943,7 @@ export default function EditPanel({
             Norsk
           </button>
           <button
+            ref={englishButtonRef}
             onClick={() => setLanguage('en')}
             style={language === 'en' ? selectedTopButtonStyle : topButtonStyle}
             title="English"
@@ -384,12 +972,14 @@ export default function EditPanel({
         }}
       >
         <button
+          ref={widgetsTabButtonRef}
           onClick={() => setViewMode("widgets")}
           style={viewMode === "widgets" ? selectedTopButtonStyle : topButtonStyle}
         >
           {t('editPanel.modeWidgets')}
         </button>
         <button
+          ref={backgroundTabButtonRef}
           onClick={() => setViewMode("background")}
           style={viewMode === "background" ? selectedTopButtonStyle : topButtonStyle}
         >
@@ -398,16 +988,21 @@ export default function EditPanel({
       </div>
 
       <div
+        ref={scrollContainerRef}
+        className="edit-panel-scroll"
         style={{
           marginTop: 22,
           overflowY: "auto",
           flex: 1,
           paddingRight: 6,
+          outline: "none",
+          msOverflowStyle: "none",
+          scrollbarWidth: "none",
         }}
       >
 
         {viewMode === "widgets" &&
-          availableWidgets.map(widget => {
+          availableWidgets.map((widget, index) => {
             const widgetLabel =
               widget.id === "notes" && notesWidgetCount > 0
                 ? `${widget.label} (${notesWidgetCount})`
@@ -419,9 +1014,11 @@ export default function EditPanel({
                 : activeWidgets.includes(widget.id);
 
             return (
-              <div
+              <button
                 //alle widgets
                 key={widget.id}
+                type="button"
+                ref={(element) => { widgetItemRefs.current[index] = element; }}
                 onClick={() => toggleWidget(widget.id)}
                 style={{
                   padding: "14px 16px",
@@ -473,12 +1070,14 @@ export default function EditPanel({
                   </span>
                 </div>
                 {isActive && ""}
-              </div>
+                </button>
             );
           })}
         
         {viewMode === "widgets" && (
-          <div
+            <button
+              type="button"
+              ref={(element) => { widgetItemRefs.current[availableWidgets.length] = element; }}
             onClick={() => setModalOpen(true)}
             style={{
               padding: "14px 16px",
@@ -494,7 +1093,7 @@ export default function EditPanel({
             }}
           >
             {t('editPanel.addCustomButton')}
-          </div>
+          </button>
         )}
 
         {viewMode === "background" && (
@@ -522,17 +1121,21 @@ export default function EditPanel({
               }}
             >
               <input
+                ref={fontSizeSliderRef}
                 type="range"
                 min={MIN_FONT_SIZE}
                 max={MAX_FONT_SIZE}
                 step={1}
                 value={widgetFontSize}
                 onChange={(event) => setFontSize(Number(event.target.value))}
+                onBlur={() => setActiveSlider(null)}
                 aria-label={t('editPanel.fontSize')}
                 style={{
                   flex: 1,
                   accentColor: widgetTextColor,
                   cursor: "pointer",
+                  outline: activeSlider === "fontSize" ? `2px solid ${buttonColorHighlight}` : undefined,
+                  borderRadius: 4,
                 }}
               />
               <span
@@ -561,13 +1164,19 @@ export default function EditPanel({
             
             >
              <button 
+                      ref={widgetColorResetRef}
                       onClick={handleResetWidgetColor}
                       style={{ ...topButtonStyle, position: "relative", width: "fit-content", marginTop: 5 }}>
                           {t('editPanel.reset')}
                       
 
                     </button>
-            <label
+            <button
+              ref={widgetColorButtonRef}
+              type="button"
+              onClick={() => setActiveColorPicker((prev) => (prev === "widget" ? null : "widget"))}
+              onFocus={() => setFocusedColorButton("widget")}
+              onBlur={() => setFocusedColorButton((current) => (current === "widget" ? null : current))}
               style={{
                 position: "relative",
                 display: "flex",
@@ -584,21 +1193,6 @@ export default function EditPanel({
                 boxShadow: innerShadow,
               }}
             >
-              <input
-                type="color"
-                value={toColorInputValue(widgetSurfaceColor)}
-                onChange={(event) =>
-                  setWidgetSurfaceColor(withAlpha(event.target.value, widgetSurfaceAlpha))
-                }
-                aria-label={t('editPanel.widgetColorButton')}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  opacity: 0,
-                  cursor: "pointer",
-                  color:widgetTextColor,
-                }}
-              />
               <span
                 style={{
                   width: 18,
@@ -611,8 +1205,16 @@ export default function EditPanel({
               <span style={{ fontSize, fontWeight: 500,color:widgetTextColor, }}>
                 {t('editPanel.widgetColorButton')}
               </span>
-            </label>
+            </button>
             </div>
+            {activeColorPicker === "widget" && (
+              <ColorPicker
+                value={toColorInputValue(widgetSurfaceColor)}
+                onChange={(hex) => setWidgetSurfaceColor(withAlpha(hex, widgetSurfaceAlpha))}
+                onClose={() => { setActiveColorPicker(null); requestAnimationFrame(() => widgetColorButtonRef.current?.focus()); }}
+                autoFocus
+              />
+            )}
             <label
               style={{
                 display: "block",
@@ -649,6 +1251,7 @@ export default function EditPanel({
               {t('editPanel.widgetOpacity')}: {Math.round(widgetSurfaceAlpha * 100)}%
             </label>
             <input
+              ref={widgetOpacitySliderRef}
               type="range"
               min={0}
               max={1}
@@ -657,10 +1260,13 @@ export default function EditPanel({
               onChange={(event) =>
                 setWidgetSurfaceColor(withAlpha(widgetSurfaceColor, Number(event.target.value)))
               }
+              onBlur={() => setActiveSlider(null)}
               aria-label={t('editPanel.widgetOpacity')}
               style={{
                 width: "100%",
                 marginTop: 5,
+                outline: activeSlider === "opacity" ? `2px solid ${buttonColorHighlight}` : undefined,
+                borderRadius: 4,
               }}
             />
           </div>
@@ -675,13 +1281,19 @@ export default function EditPanel({
               }}
             >
                 <button 
+                      ref={borderColorResetRef}
                       onClick={handleResetBorderColor}
                       style={{ ...topButtonStyle, position: "relative", width: "fit-content", marginTop: 5 }}>
                           {t('editPanel.reset')}
                       
 
                     </button>
-                <label
+                <button
+                  ref={borderColorButtonRef}
+                  type="button"
+                  onClick={() => setActiveColorPicker((prev) => (prev === "border" ? null : "border"))}
+                  onFocus={() => setFocusedColorButton("border")}
+                  onBlur={() => setFocusedColorButton((current) => (current === "border" ? null : current))}
                   style={{
                     position: "relative",
                     display: "flex",
@@ -698,24 +1310,11 @@ export default function EditPanel({
                     boxShadow: innerShadow,
                   }}
                 >
-                  <input
-                    type="color"
-                    value={toColorInputValue(widgetBorderColor)}
-                    onChange={(event) => setWidgetBorderColor(event.target.value)}
-                    aria-label={t('editPanel.widgetBorderColor')}
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      opacity: 0,
-                      cursor: "pointer",
-                    }}
-                  />
                   <span
                     style={{
                       width: 18,
                       height: 18,
                       borderRadius: 999,
-                      paddingBottom:10,
                       border: "1px solid rgba(0,0,0,0.3)",
                       background: widgetBorderColor,
                     }}
@@ -723,8 +1322,16 @@ export default function EditPanel({
                   <span style={{ fontSize, fontWeight: 500 }}>
                     {t('editPanel.widgetBorderColor')}
                   </span>
-                </label>
+                </button>
                 </div>
+                {activeColorPicker === "border" && (
+                  <ColorPicker
+                    value={toColorInputValue(widgetBorderColor)}
+                    onChange={(hex) => setWidgetBorderColor(hex)}
+                    onClose={() => { setActiveColorPicker(null); requestAnimationFrame(() => borderColorButtonRef.current?.focus()); }}
+                    autoFocus
+                  />
+                )}
                <label 
                style={{ 
                 //border-bredde
@@ -735,16 +1342,20 @@ export default function EditPanel({
               </label>
 
               <input
+                ref={borderWidthSliderRef}
                 type="range"
                 min={0}
                 max={12}
                 step={1}
                 value={widgetBorderWidth}
                 onChange={(event) => setWidgetBorderWidth(Number(event.target.value))}
+                onBlur={() => setActiveSlider(null)}
                 aria-label={t('editPanel.widgetBorderWidth')}
                 style={{ 
                   width: "100%",
                   marginTop: 5,
+                  outline: activeSlider === "borderWidth" ? `2px solid ${buttonColorHighlight}` : undefined,
+                  borderRadius: 4,
                  }}
               />
             </div>
@@ -759,13 +1370,19 @@ export default function EditPanel({
                   }}
                 >
                 <button 
+                    ref={textColorResetRef}
                     onClick={handleResetTextColor}
                     style={{ ...topButtonStyle, position: "relative", width: "fit-content", marginTop: 5 }}>
                         {t('editPanel.reset')}
                     
 
                   </button>  
-                <label
+                <button
+                  ref={textColorButtonRef}
+                  type="button"
+                  onClick={() => setActiveColorPicker((prev) => (prev === "text" ? null : "text"))}
+                  onFocus={() => setFocusedColorButton("text")}
+                  onBlur={() => setFocusedColorButton((current) => (current === "text" ? null : current))}
                   style={{
                     position: "relative",
                     display: "flex",
@@ -782,21 +1399,7 @@ export default function EditPanel({
                     boxShadow: innerShadow,
                   }}
                 >
-                  
-                  <input
-                    type="color"
-                    value={toColorInputValue(selectedWidgetTextColor)}
-                    onChange={(event) => setWidgetTextColor(event.target.value)}
-                    aria-label={t('editPanel.widgetTextColor')}
-                    style={{
-                      position: "absolute",
-                      inset: 0,
-                      opacity: 0,
-                      cursor: "pointer",
-                    }}
-                  />
                   <span
-                  //liten sirkel
                     style={{
                       width: 18,
                       height: 18,
@@ -808,12 +1411,21 @@ export default function EditPanel({
                   <span style={{ fontSize, fontWeight: 500 }}>
                     {t('editPanel.widgetColorButton')}
                   </span>
-                </label>
+                </button>
                 </div>
+                {activeColorPicker === "text" && (
+                  <ColorPicker
+                    value={toColorInputValue(selectedWidgetTextColor)}
+                    onChange={(hex) => setWidgetTextColor(hex)}
+                    onClose={() => { setActiveColorPicker(null); requestAnimationFrame(() => textColorButtonRef.current?.focus()); }}
+                    autoFocus
+                  />
+                )}
             </div> 
             
             <div style={{ ...sectionCardStyle, alignItems:"center" }}>     
               <button
+                ref={resetAllButtonRef}
                 onClick={() => setResetConfirmOpen(true)}
                 style={{
                   marginTop: 8,
@@ -843,6 +1455,7 @@ export default function EditPanel({
               />
 
               <button
+                ref={uploadBgButtonRef}
                 onClick={() => !uploadingBackground && customBackgroundInputRef.current?.click()}
                 disabled={uploadingBackground}
                 style={{
@@ -911,6 +1524,7 @@ export default function EditPanel({
             }}
           >
             <input
+              ref={presetNameInputRef}
               value={presetName}
               onChange={(event) => setPresetName(event.target.value)}
               placeholder={t('editPanel.presetNamePlaceholder')}
@@ -926,6 +1540,7 @@ export default function EditPanel({
             />
 
             <button
+              ref={savePresetButtonRef}
               onClick={handleSavePreset}
               style={{
                 padding: "8px 10px",
@@ -960,7 +1575,7 @@ export default function EditPanel({
             </div>
           )}
 
-          {dashboardPresets.map((preset) => (
+          {dashboardPresets.map((preset, index) => (
             <div
               key={preset.id}
               style={{
@@ -979,6 +1594,7 @@ export default function EditPanel({
 
               <div style={{ display: "flex", gap: 8 }}>
                 <button
+                  ref={(element) => { presetApplyButtonRefs.current[index] = element; }}
                   onClick={() => handleApplyPreset(preset.id)}
                   style={{
                     flex: 1,
@@ -996,6 +1612,7 @@ export default function EditPanel({
                 </button>
 
                 <button
+                  ref={(element) => { presetDeleteButtonRefs.current[index] = element; }}
                   onClick={() => deleteDashboardPreset(preset.id)}
                   style={{
                     padding: "8px 10px",
@@ -1015,13 +1632,14 @@ export default function EditPanel({
           ))}
         </div>
 
-            {BACKGROUND_OPTIONS.map((option) => {
+            {BACKGROUND_OPTIONS.map((option, index) => {
               const selected = dashboardBackgroundId === option.id;
 
               if (option.preview) {
                 return (
                   <button
                     key={option.id}
+                    ref={(el) => { backgroundOptionRefs.current[index] = el; }}
                     onClick={() => setDashboardBackgroundId(option.id)}
                     aria-label={t(option.labelKey)}
                     style={{
@@ -1135,6 +1753,7 @@ export default function EditPanel({
             background: "rgba(0,0,0,0.45)",
           }}
           onClick={() => setResetConfirmOpen(false)}
+          ref={(el) => { if (el) requestAnimationFrame(() => resetConfirmUnlockedRef.current?.focus()); }}
         >
           <div
             style={{
@@ -1158,10 +1777,17 @@ export default function EditPanel({
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 4 }}>
               <button
+                ref={resetConfirmUnlockedRef}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") { e.preventDefault(); resetConfirmAllRef.current?.focus(); }
+                  if (e.key === "ArrowUp") { e.preventDefault(); resetConfirmCancelRef.current?.focus(); }
+                  if (e.key === "Escape") { e.preventDefault(); setResetConfirmOpen(false); }
+                }}
                 onClick={() => {
                   handleResetWidgetStyle();
                   clearUnlockedWidgetStyles();
                   setResetConfirmOpen(false);
+                  requestAnimationFrame(() => resetAllButtonRef.current?.focus());
                 }}
                 style={{
                   padding: "10px 16px",
@@ -1178,10 +1804,17 @@ export default function EditPanel({
                 {t('editPanel.resetUnlockedWidgets')}
               </button>
               <button
+                ref={resetConfirmAllRef}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") { e.preventDefault(); resetConfirmCancelRef.current?.focus(); }
+                  if (e.key === "ArrowUp") { e.preventDefault(); resetConfirmUnlockedRef.current?.focus(); }
+                  if (e.key === "Escape") { e.preventDefault(); setResetConfirmOpen(false); }
+                }}
                 onClick={() => {
                   handleResetWidgetStyle();
                   clearAllWidgetStyles();
                   setResetConfirmOpen(false);
+                  requestAnimationFrame(() => resetAllButtonRef.current?.focus());
                 }}
                 style={{
                   padding: "10px 16px",
@@ -1198,7 +1831,16 @@ export default function EditPanel({
                 {t('editPanel.resetAllWidgets')}
               </button>
               <button
-                onClick={() => setResetConfirmOpen(false)}
+                ref={resetConfirmCancelRef}
+                onKeyDown={(e) => {
+                  if (e.key === "ArrowDown") { e.preventDefault(); resetConfirmUnlockedRef.current?.focus(); }
+                  if (e.key === "ArrowUp") { e.preventDefault(); resetConfirmAllRef.current?.focus(); }
+                  if (e.key === "Escape") { e.preventDefault(); setResetConfirmOpen(false); }
+                }}
+                onClick={() => {
+                  setResetConfirmOpen(false);
+                  requestAnimationFrame(() => resetAllButtonRef.current?.focus());
+                }}
                 style={{
                   padding: "8px 16px",
                   borderRadius: 10,
@@ -1221,4 +1863,4 @@ export default function EditPanel({
       </div>
     </div>
   );
-}
+});

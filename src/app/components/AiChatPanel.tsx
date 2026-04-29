@@ -1,6 +1,6 @@
-import type { CSSProperties } from "react";
+import { forwardRef, useImperativeHandle, useRef, type CSSProperties } from "react";
 import { useLanguage } from "../providers/languageProvider";
-import Chat from "./chatUI";
+import Chat, { type ChatHandle } from "./chatUI";
 
 type AiChatPanelProps = {
   open: boolean;
@@ -8,13 +8,24 @@ type AiChatPanelProps = {
   sidebarWidth: number;
 };
 
-export default function AiChatPanel({
+export type AiChatPanelHandle = {
+  focusMessageInput: () => void;
+};
+
+const AiChatPanel = forwardRef<AiChatPanelHandle, AiChatPanelProps>(function AiChatPanel({
   open,
   onClose,
   sidebarWidth,
-}: AiChatPanelProps) {
+}: AiChatPanelProps, ref) {
   const { t } = useLanguage();
   const panelWidth = "min(390px, calc(100vw - 118px))";
+  const chatRef = useRef<ChatHandle | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    focusMessageInput: () => {
+      chatRef.current?.focusInput();
+    },
+  }), []);
 
   return (
     <aside
@@ -45,11 +56,13 @@ export default function AiChatPanel({
       </div>
 
       <div style={styles.content}>
-        <Chat variant="panel" autoFocus={open} />
+        <Chat ref={chatRef} variant="panel" autoFocus={open} />
       </div>
     </aside>
   );
-}
+});
+
+export default AiChatPanel;
 
 const styles: Record<string, CSSProperties> = {
   panel: {
