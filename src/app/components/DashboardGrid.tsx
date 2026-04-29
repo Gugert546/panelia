@@ -214,7 +214,7 @@ export default function DashboardGrid({
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
-  const handleLayoutChange = (newLayout: Layout) => {
+  const persistLayout = (newLayout: Layout) => {
     const newLayouts: Record<string, { x: number; y: number; w: number; h: number }> = {};
 
     newLayout.forEach(item => {
@@ -247,15 +247,18 @@ export default function DashboardGrid({
         width={gridWidth}
         isDraggable={isMovable}
         isResizable={isMovable}
+        isBounded={true}
         draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
         compactType={null}
         preventCollision={true}
+        allowOverlap={false}
         margin={[0, 0]}
         maxRows={BASE_GRID_ROWS}
         containerPadding={[0, 0]}
         autoSize={false}
         style={{ height: "100%" }}
-        onLayoutChange={handleLayoutChange}
+        onDragStop={(layout) => persistLayout(layout)}
+        onResizeStop={(layout) => persistLayout(layout)}
       >
         {activeWidgets.map((widgetId, index) => {
 
