@@ -80,7 +80,8 @@ class ProviderApiError extends Error {
 const router = express.Router();
 const ENABLED_PROVIDERS: EmailProvider[] = ["gmail", "outlook"];
 const GMAIL_SCOPE = "https://www.googleapis.com/auth/gmail.readonly";
-const OUTLOOK_SCOPE = "offline_access User.Read Mail.Read";
+const OUTLOOK_EMAIL_SCOPE = "offline_access User.Read Mail.Read";
+const OUTLOOK_CALENDAR_SCOPE = "offline_access User.Read Mail.Read Calendars.ReadWrite";
 
 function getBaseUrl(req: express.Request) {
   const configuredBaseUrl =
@@ -151,7 +152,13 @@ function createPkceChallenge(verifier: string) {
   return createHash("sha256").update(verifier).digest("base64url");
 }
 
-function encodeState(data: { uid: string; returnTo: string; provider: EmailProvider; codeVerifier?: string }) {
+function encodeState(data: {
+  uid: string;
+  returnTo: string;
+  provider: EmailProvider;
+  codeVerifier?: string;
+  outlookScope?: string;
+}) {
   const payload = Buffer.from(JSON.stringify(data), "utf8").toString("base64url");
   const sig = signState(payload);
   return `${payload}.${sig}`;
@@ -172,6 +179,7 @@ function decodeState(state?: string | string[]) {
       returnTo?: string;
       provider?: string;
       codeVerifier?: string;
+      outlookScope?: string;
     };
 
     const provider = parseProvider(parsed.provider);
@@ -181,6 +189,7 @@ function decodeState(state?: string | string[]) {
       returnTo: parsed.returnTo,
       provider,
       codeVerifier: typeof parsed.codeVerifier === "string" ? parsed.codeVerifier : undefined,
+      outlookScope: typeof parsed.outlookScope === "string" ? parsed.outlookScope : undefined,
     };
   } catch {
     return null;
@@ -228,14 +237,14 @@ function getOutlookCredentials() {
   return { clientId, clientSecret };
 }
 
-function buildOutlookAuthUrl(req: express.Request, state: string, codeVerifier: string) {
+function buildOutlookAuthUrl(req: express.Request, state: string, codeVerifier: string, scope: string) {
   const { clientId } = getOutlookCredentials();
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: getOutlookRedirectUri(req),
     response_type: "code",
     response_mode: "query",
-    scope: OUTLOOK_SCOPE,
+    scope,
     state,
     code_challenge: createPkceChallenge(codeVerifier),
     code_challenge_method: "S256",
@@ -244,7 +253,13 @@ function buildOutlookAuthUrl(req: express.Request, state: string, codeVerifier: 
   return `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?${params.toString()}`;
 }
 
-function buildEmailAuthUrl(req: express.Request, provider: EmailProvider, state: string, codeVerifier?: string) {
+function buildEmailAuthUrl(
+  req: express.Request,
+  provider: EmailProvider,
+  state: string,
+  codeVerifier?: string,
+  outlookScope = OUTLOOK_EMAIL_SCOPE
+) {
   if (provider === "gmail") {
     return buildGmailAuthUrl(req, state);
   }
@@ -253,7 +268,7 @@ function buildEmailAuthUrl(req: express.Request, provider: EmailProvider, state:
     throw new Error("Outlook OAuth PKCE verifier is missing");
   }
 
-  return buildOutlookAuthUrl(req, state, codeVerifier);
+  return buildOutlookAuthUrl(req, state, codeVerifier, outlookScope);
 }
 
 function getIntegrationDocPath(uid: string, provider: EmailProvider) {
@@ -293,7 +308,7 @@ async function refreshAccessTokenIfNeeded(
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
         ...getTokenCredentials(provider),
-        ...(provider === "outlook" ? { scope: OUTLOOK_SCOPE } : {}),
+        ...(provider === "outlook" ? { scope: OUTLOOK_EMAIL_SCOPE } : {}),
         grant_type: "refresh_token",
         refresh_token: integration.refreshToken ?? "",
       }),
@@ -569,8 +584,12 @@ router.post("/connect-url", async (req, res) => {
 
   try {
     const codeVerifier = provider === "outlook" ? createPkceVerifier() : undefined;
-    const state = encodeState({ uid, returnTo, provider, codeVerifier });
-    const url = buildEmailAuthUrl(req, provider, state, codeVerifier);
+    const outlookScope =
+      provider === "outlook" && req.body?.scope === "calendar"
+        ? OUTLOOK_CALENDAR_SCOPE
+        : OUTLOOK_EMAIL_SCOPE;
+    const state = encodeState({ uid, returnTo, provider, codeVerifier, outlookScope });
+    const url = buildEmailAuthUrl(req, provider, state, codeVerifier, outlookScope);
     return res.json({ provider, url });
   } catch (err) {
     console.error("Email connect-url error:", err);
@@ -622,7 +641,9 @@ router.get("/callback", async (req, res) => {
         body: new URLSearchParams({
           code,
           ...getTokenCredentials(stateData.provider),
-          ...(stateData.provider === "outlook" ? { scope: OUTLOOK_SCOPE } : {}),
+          ...(stateData.provider === "outlook"
+            ? { scope: stateData.outlookScope || OUTLOOK_EMAIL_SCOPE }
+            : {}),
           ...(stateData.provider === "outlook" && stateData.codeVerifier
             ? { code_verifier: stateData.codeVerifier }
             : {}),
@@ -659,6 +680,7 @@ router.get("/callback", async (req, res) => {
         scope: payload.scope ?? null,
         tokenType: payload.token_type ?? null,
         expiresAt,
+        calendarDisabled: false,
         updatedAt: Date.now(),
       },
       { merge: true }

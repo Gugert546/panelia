@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import type { GoogleCalendarMeta } from "../../../../../types/firestore";
+import type { CalendarMeta } from "../../../../../types/firestore";
 
 type Props = {
-  calendars: GoogleCalendarMeta[];
+  calendars: CalendarMeta[];
   selectedCalendarIds: string[];
   fontSize: number;
   loading?: boolean;

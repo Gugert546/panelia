@@ -11,6 +11,12 @@ import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 import { useWidgets } from "../../../dashboard/hooks/WidgetsContext";
 import { useWidgetInstance } from "../../components/WidgetInstanceContext";
 
+type BookmarkIconProps = {
+  url: string;
+  favicon?: string;
+  title: string;
+};
+
 function toRgba(color: string, alpha: number) {
   const trimmed = color.trim();
   const rgbaMatch = trimmed.match(
@@ -36,6 +42,30 @@ function toRgba(color: string, alpha: number) {
   }
 
   return color;
+}
+
+function BookmarkIcon({ url, favicon, title }: BookmarkIconProps) {
+  const candidates = useMemo(() => getFaviconCandidates(url, favicon), [url, favicon]);
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    setIndex(0);
+  }, [url, favicon, candidates.length]);
+
+  const current = candidates[index] ?? "";
+
+  if (current) {
+    return (
+      <img
+        src={current}
+        alt=""
+        onError={() => setIndex((prev) => Math.min(prev + 1, candidates.length - 1))}
+        style={{ width: 18, height: 18, objectFit: "contain" }}
+      />
+    );
+  }
+
+  return <span>{title.slice(0, 1).toUpperCase()}</span>;
 }
 
 export default function BookmarkUi() {
@@ -70,6 +100,17 @@ export default function BookmarkUi() {
   const raisedSurface = toRgba(resolvedSurfaceColor, 0.22);
   const inputSurface = toRgba(resolvedSurfaceColor, 0.42);
   const strongSurface = toRgba(resolvedSurfaceColor, 0.3);
+  const editPanelButtonStyle = {
+    padding: "8px 12px",
+    fontSize: 13,
+    background: "rgba(255,255,255,0.54)",
+    color: "#0f172a",
+    border: "1px solid rgba(20, 26, 41, 0.16)",
+    borderRadius: 12,
+    cursor: "pointer",
+    fontWeight: 600,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
+  } as const;
 
   const activeCategory = useMemo(() => {
     if (categories.length === 0) return null;
@@ -90,26 +131,6 @@ export default function BookmarkUi() {
     setSelectedCategoryId(categories[nextIndex].id);
     setSelectedCategoryForBookmark(null);
   };
-
-    function BookmarkIcon({ url, favicon, title }: { url: string; favicon?: string; title: string }) {
-    const candidates = useMemo(() => getFaviconCandidates(url, favicon), [url, favicon]);
-    const [index, setIndex] = useState(0);
-    useEffect(() => setIndex(0), [url, favicon, candidates.length]);
-    const current = candidates[index] ?? "";
-  
-    if (current) {
-      return (
-        <img
-          src={current}
-          alt=""
-          onError={() => setIndex((prev) => Math.min(prev + 1, candidates.length - 1))}
-          style={{ width: 18, height: 18, objectFit: "contain" }}
-        />
-      );
-    }
-  
-    return <span>{title.slice(0, 1).toUpperCase()}</span>;
-  }
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -238,15 +259,8 @@ export default function BookmarkUi() {
               <button
                 onClick={() => setShowCategoryForm(false)}
                 style={{
+                  ...editPanelButtonStyle,
                   marginTop: 8,
-                  padding: "4px 8px",
-                  fontSize: 12,
-                  background: strongSurface,
-                  color: resolvedTextColor,
-                  border: `1px solid ${resolvedBorderColor}`,
-                  borderRadius: 8,
-                  cursor: "pointer",
-                  fontWeight: 500,
                 }}
               >
                 {t("widgets.bookmarkWidget.cancel")}
@@ -433,16 +447,9 @@ export default function BookmarkUi() {
                     <button
                       onClick={() => setSelectedCategoryForBookmark(null)}
                       style={{
+                        ...editPanelButtonStyle,
                         marginTop: 8,
-                        padding: "6px 8px",
-                        fontSize: 12,
-                        background: strongSurface,
-                        color: resolvedTextColor,
-                        border: `1px solid ${resolvedBorderColor}`,
-                        borderRadius: 8,
-                        cursor: "pointer",
                         width: "100%",
-                        fontWeight: 500,
                       }}
                     >
                       {t("widgets.bookmarkWidget.cancel")}

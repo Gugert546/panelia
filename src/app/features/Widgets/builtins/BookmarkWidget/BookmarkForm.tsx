@@ -13,12 +13,32 @@ export default function BookmarkForm({
   onSubmit,
   isLoading = false,
   textColor = "inherit",
-  surfaceColor = "rgba(255,255,255,0.22)",
-  borderColor = "rgba(17,24,39,0.2)",
 }: BookmarkFormProps) {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const readableInputStyle = {
+    padding: "8px 10px",
+    borderRadius: 12,
+    border: "1px solid rgba(20, 26, 41, 0.16)",
+    fontSize: 13,
+    background: "rgba(255,255,255,0.76)",
+    color: "#0f172a",
+    outline: "none",
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
+  } as const;
+  const editPanelButtonStyle = {
+    padding: "8px 12px",
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.54)",
+    color: "#0f172a",
+    border: "1px solid rgba(20, 26, 41, 0.16)",
+    cursor: isLoading ? "not-allowed" : "pointer",
+    opacity: isLoading ? 0.6 : 1,
+    fontSize: 13,
+    fontWeight: 600,
+    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.42)",
+  } as const;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,55 +85,29 @@ export default function BookmarkForm({
           {error}
         </div>
       )}
-
+      <label style={{fontWeight:600}}>{t("widgets.bookmarkWidget.bookmarkTitle")}:</label>
       <input
         type="text"
-        placeholder= {t("widgets.bookmarkWidget.bookmarkTitle")}
+        placeholder={t("widgets.bookmarkWidget.bookmarkTitle")}
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         disabled={isLoading}
-        style={{
-          padding: "7px 10px",
-          borderRadius: 8,
-          border: `1px solid ${borderColor}`,
-          fontSize: 13,
-          background: surfaceColor,
-          color: textColor,
-          outline: "none",
-        }}
+        style={readableInputStyle}
       />
-
+      <label style={{fontWeight:600}}>{t("widgets.bookmarkWidget.bookmarkURL")}:</label>
       <input
         type="url"
         placeholder={t("widgets.bookmarkWidget.bookmarkURL")}
         value={url}
         onChange={(e) => setUrl(e.target.value)}
         disabled={isLoading}
-        style={{
-          padding: "7px 10px",
-          borderRadius: 8,
-          border: `1px solid ${borderColor}`,
-          fontSize: 13,
-          background: surfaceColor,
-          color: textColor,
-          outline: "none",
-        }}
+        style={readableInputStyle}
       />
 
       <button
         type="submit"
         disabled={isLoading}
-        style={{
-          padding: "7px 10px",
-          borderRadius: 8,
-          background: surfaceColor,
-          color: textColor,
-          border: `1px solid ${borderColor}`,
-          cursor: isLoading ? "not-allowed" : "pointer",
-          opacity: isLoading ? 0.6 : 1,
-          fontSize: 13,
-          fontWeight: 600,
-        }}
+        style={editPanelButtonStyle}
       >
         {isLoading ? t("widgets.bookmarkWidgets.adding") : t("widgets.bookmarkWidget.addBookmark")}
       </button>

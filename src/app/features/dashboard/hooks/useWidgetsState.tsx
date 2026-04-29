@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../../../lib/firebase/client";
+import { isUserDataDeletionInProgress } from "../../../../lib/firebase/userDataDeletion";
 import { useAuth } from "../../auth/useAuth";
 import { useFontSize } from "../../../providers/themeProviders";
 
@@ -25,6 +26,7 @@ export type CustomButtonConfig = {
 
 // Displaymodus for klokke-widget
 export type ClockMode = "digital" | "analog";
+export type ClockBackgrounds = Record<string, boolean>;
 
 // En instans av en widget med sitt unike ID, type og konfigurasjonsdata
 export type WidgetInstance = {
@@ -40,6 +42,7 @@ export type WidgetStyleOverrides = {
   widgetBorderColor?: string;
   widgetTextColor?: string;
   widgetOpacity?: number;
+  widgetBlur?: number;
   widgetBorderWidth?: number;
   widgetFontSize?: number;
   lockSnapshot?: boolean;
@@ -65,12 +68,14 @@ export type DashboardPreset = {
   layouts: Record<string, LayoutItem>;
   widgetLocks: Record<string, boolean>;
   clockModes: Record<string, ClockMode>;
+  clockBackgrounds: ClockBackgrounds;
   customButtonConfigs: Record<string, CustomButtonConfig>;
   widgetStyles: Record<string, WidgetStyleOverrides>;
   widgetSurfaceColor: string;
   widgetBorderColor: string;
   widgetTextColor: string;
   widgetOpacity: number;
+  widgetBlur: number;
   widgetBorderWidth: number;
   widgetFontSize: number;
   widgetSizeMode: WidgetSizeMode;
@@ -87,12 +92,14 @@ type WidgetLayoutDocument = {
   layouts?: Record<string, LayoutItem>;
   widgetLocks?: Record<string, boolean>;
   clockModes?: Record<string, ClockMode>;
+  clockBackgrounds?: ClockBackgrounds;
   customButtonConfigs?: Record<string, CustomButtonConfig>;
   widgetStyles?: Record<string, WidgetStyleOverrides>;
   widgetSurfaceColor?: string;
   widgetBorderColor?: string;
   widgetTextColor?: string;
   widgetOpacity?: number;
+  widgetBlur?: number;
   widgetBorderWidth?: number;
   widgetFontSize?: number;
   widgetSizeMode?: WidgetSizeMode;
@@ -137,6 +144,7 @@ const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
 const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
+const DEFAULT_WIDGET_BLUR = 10;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_FONT_SIZE = 14;
 const MIN_WIDGET_FONT_SIZE = 10;
@@ -317,6 +325,14 @@ function normalizeBackgroundOpacity(color: string, opacity: unknown) {
   return withAlpha(color, normalizedOpacity);
 }
 
+function normalizeWidgetBlur(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return DEFAULT_WIDGET_BLUR;
+  }
+
+  return Math.min(20, Math.max(0, Math.round(value)));
+}
+
 function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
   if (!value || typeof value !== "object") return {};
 
@@ -340,6 +356,10 @@ function normalizeWidgetStyleOverride(value: unknown): WidgetStyleOverrides {
       normalized.widgetSurfaceColor ?? DEFAULT_WIDGET_SURFACE_COLOR,
       rawStyle.widgetOpacity
     );
+  }
+
+  if (typeof rawStyle.widgetBlur === "number" && Number.isFinite(rawStyle.widgetBlur)) {
+    normalized.widgetBlur = normalizeWidgetBlur(rawStyle.widgetBlur);
   }
 
   if (typeof rawStyle.widgetBorderWidth === "number" && Number.isFinite(rawStyle.widgetBorderWidth)) {
@@ -406,6 +426,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
       typeof preset.widgetOpacity === "number" && Number.isFinite(preset.widgetOpacity)
         ? Math.min(1, Math.max(0.2, Number(preset.widgetOpacity.toFixed(2))))
         : DEFAULT_WIDGET_OPACITY;
+    const widgetBlur = normalizeWidgetBlur(preset.widgetBlur);
 
     const normalizedPreset = {
       id:
@@ -417,6 +438,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
       layouts: normalizeLayouts(preset.layouts),
       widgetLocks: normalizeWidgetLocks(preset.widgetLocks),
       clockModes: normalizeClockModes(preset.clockModes),
+      clockBackgrounds: normalizeClockBackgrounds(preset.clockBackgrounds),
       customButtonConfigs: normalizeCustomButtonConfigs(preset.customButtonConfigs),
       widgetStyles: normalizeWidgetStyles(preset.widgetStyles),
       widgetSurfaceColor:
@@ -432,6 +454,7 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
           ? preset.widgetTextColor
           : DEFAULT_WIDGET_TEXT_COLOR,
       widgetOpacity,
+      widgetBlur,
       widgetBorderWidth,
       widgetFontSize:
         typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
@@ -491,6 +514,16 @@ function normalizeCustomBackgroundType(
   return value === "image" || value === "video" ? value : fallback;
 }
 
+function normalizeClockBackgrounds(value: unknown): ClockBackgrounds {
+  if (!value || typeof value !== "object") return {};
+
+  return Object.fromEntries(
+    Object.entries(value as Record<string, unknown>).filter(
+      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
+    )
+  );
+}
+
 function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset {
   const sanitizedPreset = reconcileCustomButtonState(preset);
 
@@ -511,6 +544,7 @@ function reconcileCustomButtonState<T extends {
   widgetLocks: Record<string, boolean>;
   widgetStyles: Record<string, WidgetStyleOverrides>;
   clockModes?: Record<string, ClockMode>;
+  clockBackgrounds?: ClockBackgrounds;
 }>(state: T): T {
   const activeCustomButtonIds = new Set(
     state.activeWidgets.filter(isCustomButtonWidgetId)
@@ -547,6 +581,13 @@ function reconcileCustomButtonState<T extends {
         )
       )
     : undefined;
+  const clockBackgrounds = state.clockBackgrounds
+    ? Object.fromEntries(
+        Object.entries(state.clockBackgrounds).filter(
+          ([id]) => !isCustomButtonWidgetId(id) || validCustomButtonIds.has(id)
+        )
+      )
+    : undefined;
 
   return {
     ...state,
@@ -556,6 +597,7 @@ function reconcileCustomButtonState<T extends {
     widgetLocks,
     widgetStyles,
     ...(clockModes ? { clockModes } : {}),
+    ...(clockBackgrounds ? { clockBackgrounds } : {}),
   };
 }
 
@@ -566,13 +608,13 @@ const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
   notes: { x: 0, y: 0, w: 8, h: 8 },
   calendar: { x: 0, y: 0, w: 16, h: 12 },
   google_search: { x: 0, y: 0, w: 14, h: 3 },
-  weather: { x: 0, y: 0, w: 5, h: 4 },
+  weather: { x: 0, y: 0, w: 5, h: 5 },
   news: { x: 0, y: 0, w: 10, h: 10 },
-  spotify: { x: 0, y: 0, w: 4, h: 3 },
+  spotify: { x: 0, y: 0, w: 8, h: 16 },
   minesweeper: { x: 0, y: 0, w: 6, h: 6 },
-  bookmark: { x: 0, y: 0, w: 4, h: 4 },
-  info: { x: 0, y: 0, w: 6, h: 6 },
-  ai_chat: { x: 0, y: 0, w: 6, h: 8 },
+  bookmark: { x: 0, y: 0, w: 7, h: 16 },
+  info: { x: 0, y: 0, w: 10, h: 12 },
+  ai_chat: { x: 0, y: 0, w: 8, h: 16 },
   email: { x: 0, y: 0, w: 8, h: 8 },
   customButton: { x: 0, y: 0, w: 2, h: 2 },
 };
@@ -653,11 +695,13 @@ function applyPublicDashboardDefaults() {
     layouts: { ...PUBLIC_LAYOUTS },
     widgetLocks: {},
     clockModes: {},
+    clockBackgrounds: {},
     widgetStyles: {},
     widgetSurfaceColor: DEFAULT_WIDGET_SURFACE_COLOR,
     widgetBorderColor: DEFAULT_WIDGET_BORDER_COLOR,
     widgetTextColor: DEFAULT_WIDGET_TEXT_COLOR,
     widgetOpacity: DEFAULT_WIDGET_OPACITY,
+    widgetBlur: DEFAULT_WIDGET_BLUR,
     widgetBorderWidth: DEFAULT_WIDGET_BORDER_WIDTH,
     widgetFontSize: DEFAULT_WIDGET_FONT_SIZE,
     widgetSizeMode: DEFAULT_WIDGET_SIZE_MODE,
@@ -677,6 +721,7 @@ export function useWidgetsState() {
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
   const [widgetLocks, setWidgetLocks] = useState<Record<string, boolean>>({});
   const [clockModes, setClockModes] = useState<Record<string, ClockMode>>({});
+  const [clockBackgrounds, setClockBackgrounds] = useState<ClockBackgrounds>({});
   const [widgetStyles, setWidgetStyles] = useState<Record<string, WidgetStyleOverrides>>({});
   const [widgetSurfaceColor, setWidgetSurfaceColor] = useState(
     DEFAULT_WIDGET_SURFACE_COLOR
@@ -689,6 +734,9 @@ export function useWidgetsState() {
   );
   const [widgetOpacity, setWidgetOpacity] = useState(
     DEFAULT_WIDGET_OPACITY
+  );
+  const [widgetBlur, setWidgetBlur] = useState(
+    DEFAULT_WIDGET_BLUR
   );
   const [widgetBorderWidth, setWidgetBorderWidth] = useState(
     DEFAULT_WIDGET_BORDER_WIDTH
@@ -715,11 +763,12 @@ export function useWidgetsState() {
       widgetBorderColor: existingStyle?.widgetBorderColor ?? widgetBorderColor,
       widgetTextColor: existingStyle?.widgetTextColor ?? widgetTextColor,
       widgetOpacity: existingStyle?.widgetOpacity ?? widgetOpacity,
+      widgetBlur: existingStyle?.widgetBlur ?? widgetBlur,
       widgetBorderWidth: existingStyle?.widgetBorderWidth ?? widgetBorderWidth,
       widgetFontSize: existingStyle?.widgetFontSize ?? fontSize,
       lockSnapshot: true,
     } satisfies WidgetStyleOverrides;
-  }, [fontSize, widgetBorderColor, widgetBorderWidth, widgetOpacity, widgetSurfaceColor, widgetTextColor]);
+  }, [fontSize, widgetBlur, widgetBorderColor, widgetBorderWidth, widgetOpacity, widgetSurfaceColor, widgetTextColor]);
 
   // Load widget layout from Firestore
   const loadLayout = useCallback(async () => {
@@ -733,11 +782,13 @@ export function useWidgetsState() {
       setLayouts(publicDefaults.layouts);
       setWidgetLocks(publicDefaults.widgetLocks);
       setClockModes(publicDefaults.clockModes);
+      setClockBackgrounds(publicDefaults.clockBackgrounds);
       setWidgetStyles(publicDefaults.widgetStyles);
       setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
       setWidgetBorderColor(publicDefaults.widgetBorderColor);
       setWidgetTextColor(publicDefaults.widgetTextColor);
       setWidgetOpacity(publicDefaults.widgetOpacity);
+      setWidgetBlur(publicDefaults.widgetBlur);
       setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
       setFontSize(publicDefaults.widgetFontSize);
       setWidgetSizeMode(publicDefaults.widgetSizeMode);
@@ -762,11 +813,13 @@ export function useWidgetsState() {
         setLayouts(publicDefaults.layouts);
         setWidgetLocks(publicDefaults.widgetLocks);
         setClockModes(publicDefaults.clockModes);
+        setClockBackgrounds(publicDefaults.clockBackgrounds);
         setWidgetStyles(publicDefaults.widgetStyles);
         setWidgetSurfaceColor(publicDefaults.widgetSurfaceColor);
         setWidgetBorderColor(publicDefaults.widgetBorderColor);
         setWidgetTextColor(publicDefaults.widgetTextColor);
         setWidgetOpacity(publicDefaults.widgetOpacity);
+        setWidgetBlur(publicDefaults.widgetBlur);
         setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
         setFontSize(publicDefaults.widgetFontSize);
         setWidgetSizeMode(publicDefaults.widgetSizeMode);
@@ -788,6 +841,9 @@ export function useWidgetsState() {
       const migratedLayouts = migrateLegacyMap(data.layouts ?? {});
       const migratedWidgetLocks = migrateLegacyMap(normalizeWidgetLocks(data.widgetLocks));
       const migratedClockModes = migrateLegacyMap(normalizeClockModes(data.clockModes));
+      const migratedClockBackgrounds = migrateLegacyMap(
+        normalizeClockBackgrounds(data.clockBackgrounds)
+      );
       const migratedWidgetStyles = migrateLegacyMap(normalizeWidgetStyles(data.widgetStyles));
 
       const reconciledState = reconcileCustomButtonState({
@@ -796,6 +852,7 @@ export function useWidgetsState() {
         layouts: migratedLayouts,
         widgetLocks: migratedWidgetLocks,
         clockModes: migratedClockModes,
+        clockBackgrounds: migratedClockBackgrounds,
         widgetStyles: migratedWidgetStyles,
       });
 
@@ -804,6 +861,7 @@ export function useWidgetsState() {
       setLayouts(reconciledState.layouts);
       setWidgetLocks(reconciledState.widgetLocks);
       setClockModes(reconciledState.clockModes ?? {});
+      setClockBackgrounds(reconciledState.clockBackgrounds ?? {});
       setWidgetStyles(reconciledState.widgetStyles);
       setWidgetSurfaceColor(
         normalizeBackgroundOpacity(
@@ -824,6 +882,7 @@ export function useWidgetsState() {
           : DEFAULT_WIDGET_TEXT_COLOR
       );
       setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
+      setWidgetBlur(normalizeWidgetBlur(data.widgetBlur));
       setWidgetBorderWidth(
         typeof data.widgetBorderWidth === "number" && Number.isFinite(data.widgetBorderWidth)
           ? Math.min(12, Math.max(0, Math.round(data.widgetBorderWidth)))
@@ -875,9 +934,18 @@ export function useWidgetsState() {
   // Autosave-effekt: lagrer endringer til Firestore med debounce-forsinkelse
   // Dette minimerer antall Firestore-writes under rask oppfølging av endringer (f.eks. drag/resize)
   useEffect(() => {
-    if (!user || isLoading || !hasLoadedRef.current) return;
+    if (
+      !user ||
+      isLoading ||
+      !hasLoadedRef.current ||
+      isUserDataDeletionInProgress(user.uid)
+    ) {
+      return;
+    }
 
     const timeout = setTimeout(async () => {
+      if (isUserDataDeletionInProgress(user.uid)) return;
+
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
         const reconciledState = reconcileCustomButtonState({
@@ -886,6 +954,7 @@ export function useWidgetsState() {
           layouts,
           widgetLocks,
           clockModes,
+          clockBackgrounds,
           widgetStyles,
         });
 
@@ -895,11 +964,13 @@ export function useWidgetsState() {
           layouts: reconciledState.layouts,
           widgetLocks: reconciledState.widgetLocks,
           clockModes: reconciledState.clockModes,
+          clockBackgrounds: reconciledState.clockBackgrounds,
           widgetStyles: reconciledState.widgetStyles,
           widgetSurfaceColor,
           widgetBorderColor,
           widgetTextColor,
           widgetOpacity,
+          widgetBlur,
           widgetBorderWidth,
           widgetFontSize: fontSize,
           widgetSizeMode,
@@ -922,11 +993,13 @@ export function useWidgetsState() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     fontSize,
     widgetSizeMode,
@@ -966,7 +1039,14 @@ export function useWidgetsState() {
 
   const persistPresetsImmediately = useCallback(
     async (nextPresets: DashboardPreset[]) => {
-      if (!user || isLoading || !hasLoadedRef.current) return;
+      if (
+        !user ||
+        isLoading ||
+        !hasLoadedRef.current ||
+        isUserDataDeletionInProgress(user.uid)
+      ) {
+        return;
+      }
 
       try {
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
@@ -995,6 +1075,7 @@ export function useWidgetsState() {
       layouts: { ...layouts },
       widgetLocks: { ...widgetLocks },
       clockModes: { ...clockModes },
+      clockBackgrounds: { ...clockBackgrounds },
       customButtonConfigs: { ...customButtonConfigs },
       widgetStyles: Object.fromEntries(
         Object.entries(widgetStyles).map(([widgetId, style]) => [widgetId, { ...style }])
@@ -1003,6 +1084,7 @@ export function useWidgetsState() {
       widgetBorderColor,
       widgetTextColor,
       widgetOpacity,
+      widgetBlur,
       widgetBorderWidth,
       widgetFontSize: fontSize,
       widgetSizeMode,
@@ -1028,11 +1110,13 @@ export function useWidgetsState() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     persistPresetsImmediately,
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     fontSize,
     widgetSizeMode,
@@ -1049,6 +1133,7 @@ export function useWidgetsState() {
     setLayouts({ ...reconciledPreset.layouts });
     setWidgetLocks({ ...reconciledPreset.widgetLocks });
     setClockModes({ ...reconciledPreset.clockModes });
+    setClockBackgrounds({ ...reconciledPreset.clockBackgrounds });
     setCustomButtonConfigs({ ...reconciledPreset.customButtonConfigs });
     setWidgetStyles(
       Object.fromEntries(
@@ -1059,6 +1144,7 @@ export function useWidgetsState() {
     setWidgetBorderColor(reconciledPreset.widgetBorderColor);
     setWidgetTextColor(reconciledPreset.widgetTextColor);
     setWidgetOpacity(reconciledPreset.widgetOpacity);
+    setWidgetBlur(reconciledPreset.widgetBlur);
     setWidgetBorderWidth(reconciledPreset.widgetBorderWidth);
     setFontSize(reconciledPreset.widgetFontSize);
     setWidgetSizeMode(reconciledPreset.widgetSizeMode);
@@ -1290,6 +1376,13 @@ export function useWidgetsState() {
     }));
   }, []);
 
+  const toggleClockBackground = useCallback((widgetId: string) => {
+    setClockBackgrounds((prev) => ({
+      ...prev,
+      [widgetId]: !(prev[widgetId] ?? (clockModes[widgetId] === "analog")),
+    }));
+  }, [clockModes]);
+
   const clearUnlockedWidgetStyles = useCallback(() => {
     setWidgetStyles((prevStyles) => {
       let hasChanges = false;
@@ -1332,6 +1425,11 @@ export function useWidgetsState() {
 
   const updateWidgetOpacity = useCallback((value: number) => {
     setWidgetOpacity(value);
+    clearUnlockedWidgetStyles();
+  }, [clearUnlockedWidgetStyles]);
+
+  const updateWidgetBlur = useCallback((value: number) => {
+    setWidgetBlur(normalizeWidgetBlur(value));
     clearUnlockedWidgetStyles();
   }, [clearUnlockedWidgetStyles]);
 
@@ -1380,11 +1478,13 @@ export function useWidgetsState() {
     layouts,
     widgetLocks,
     clockModes,
+    clockBackgrounds,
     widgetStyles,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
+    widgetBlur,
     widgetBorderWidth,
     widgetSizeMode,
     dashboardBackgroundId,
@@ -1400,6 +1500,7 @@ export function useWidgetsState() {
     removeCustomButton,
     toggleWidgetLock,
     toggleClockMode,
+    toggleClockBackground,
     setWidgetStyle,
     resetWidgetStyle,
     clearUnlockedWidgetStyles,
@@ -1408,6 +1509,7 @@ export function useWidgetsState() {
     setWidgetBorderColor: updateWidgetBorderColor,
     setWidgetTextColor: updateWidgetTextColor,
     setWidgetOpacity: updateWidgetOpacity,
+    setWidgetBlur: updateWidgetBlur,
     setWidgetBorderWidth: updateWidgetBorderWidth,
     setWidgetSizeMode,
     setDashboardBackgroundId,

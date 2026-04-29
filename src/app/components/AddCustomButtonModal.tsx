@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { useWidgets } from "../features/dashboard/hooks/WidgetsContext";
 import type { CustomButtonConfig } from "../features/dashboard/hooks/useWidgetsState";
 import { useLanguage } from "../providers/languageProvider";
@@ -74,7 +75,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -86,7 +87,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        zIndex: 1000,
+        zIndex: 2000,
       }}
       onClick={onClose}
     >
@@ -114,8 +115,9 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
         >
           {t('addCustomButtonModal.title')}
         </h3>
-
+        
         <div style={{ flex: 1 }}>
+          <label> {t("addCustomButtonModal.buttonName")}:</label>
           <input
             type="text"
             placeholder={t('addCustomButtonModal.buttonName')}
@@ -129,6 +131,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
               border: "1px solid #ccc",
             }}
           />
+          <label> {t('addCustomButtonModal.link')}:</label>
           <input
             type="text"
             placeholder={t('addCustomButtonModal.link')}
@@ -207,6 +210,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

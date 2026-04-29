@@ -12,6 +12,7 @@ import {
 } from "./customButtons";
 import {
   addDashboardWidgetTool,
+  arrangeDashboardWidgetsTool,
   removeDashboardWidgetTool,
   listDashboardWidgetsTool,
 } from "./dashboardWidgets";
@@ -34,6 +35,7 @@ export const tools = [
   removeCustomButtonTool,
   listCustomButtonsTool,
   addDashboardWidgetTool,
+  arrangeDashboardWidgetsTool,
   removeDashboardWidgetTool,
   listDashboardWidgetsTool,
   setClockModeTool,

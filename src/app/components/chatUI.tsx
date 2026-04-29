@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import WidgetContainer from "../features/Widgets/components/WidgetContainer";
 import WidgetPane from "../features/Widgets/components/WidgetPane";
 import { useLanguage } from "../providers/languageProvider";
 import { useAiChat } from "./useAiChat";
@@ -195,7 +196,11 @@ export default function Chat({ variant = "widget", autoFocus = false }: ChatProp
     return chatContent;
   }
 
-  return <WidgetPane title={t("chat.title")}>{chatContent}</WidgetPane>;
+  return (
+    <WidgetContainer>
+      <WidgetPane title={t("chat.title")}>{chatContent}</WidgetPane>
+    </WidgetContainer>
+  );
 }
 
 const styles: Record<string, CSSProperties> = {
