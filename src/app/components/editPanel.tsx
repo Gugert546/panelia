@@ -853,6 +853,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const dialogTitleFontSize = Math.max(fontSize + 4, 18);
   const buttonBorder = `1px solid ${panelBorderColor}`;
   const buttonBorderHighlight = `1px solid ${activeBorderColor}`;
+  const buttonColorHighlight = activeBorderColor;
   const sectionCardStyle = {
     background: backgroundColor,
     borderRadius: borderRadiusThemeElements,
@@ -1185,7 +1186,10 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
                 width: "fit-content",
                 padding: "8px 12px",
                 borderRadius: 12,
-                border: buttonBorder,
+                border:
+                  focusedColorButton === "widget" || activeColorPicker === "widget"
+                    ? buttonBorderHighlight
+                    : buttonBorder,
                 background: buttonColor,
                 cursor: "pointer",
                 marginTop:5,
@@ -1302,7 +1306,10 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
                     width: "fit-content",
                     padding: "8px 12px",
                     borderRadius: 12,
-                    border: buttonBorder,
+                    border:
+                      focusedColorButton === "border" || activeColorPicker === "border"
+                        ? buttonBorderHighlight
+                        : buttonBorder,
                     background: buttonColor,
                     cursor: "pointer",
                     marginTop: 5,
@@ -1391,7 +1398,10 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
                     width: "fit-content",
                     padding: "8px 12px",
                     borderRadius: 12,
-                    border: buttonBorder,
+                    border:
+                      focusedColorButton === "text" || activeColorPicker === "text"
+                        ? buttonBorderHighlight
+                        : buttonBorder,
                     background: buttonColor,
                     cursor: "pointer",
                     marginTop: 5,

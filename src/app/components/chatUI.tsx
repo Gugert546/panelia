@@ -213,7 +213,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat({ variant = "widget
       <WidgetPane title={t("chat.title")}>{chatContent}</WidgetPane>
     </WidgetContainer>
   );
-}
+});
 
 const styles: Record<string, CSSProperties> = {
   root: {
@@ -319,3 +319,4 @@ const styles: Record<string, CSSProperties> = {
     transition: "opacity 0.2s ease, background-color 0.2s ease",
   },
 };
+export default Chat;
