@@ -40,11 +40,8 @@ const GRID_MIN_WIDTH = 320;
 const GRID_MIN_HEIGHT = 360;
 
 function resolveGridColumns(width: number) {
-  if (width >= 1500) return 40;
-  if (width >= 1200) return 32;
-  if (width >= 900) return 24;
-  if (width >= 700) return 18;
-  return 12;
+  void width;
+  return BASE_GRID_COLUMNS;
 }
 
 function resolveGridRowHeight(height: number) {
