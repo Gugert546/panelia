@@ -87,6 +87,14 @@
     "calendar": "Kalender",
     "email": "E-post",
     "minesweeper": "Minesweeper",
+    "widgetKeyboard": {
+      "moveEnabled": "Flyttemodus aktivert",
+      "moveDisabled": "Flyttemodus avsluttet",
+      "moveBlocked": "Flytting blokkert av en annen widget",
+      "position": "Posisjon",
+      "moveActiveHint": "Flyttemodus: piltaster, Shift+piler for større steg, Esc for avslutt",
+      "moveInactiveHint": "Trykk Enter for flyttemodus"
+    },
     "bookmarkWidget": {
       "title": "Bokmerker",
       "loading": "Laster bokmerker...",

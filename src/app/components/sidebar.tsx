@@ -38,9 +38,11 @@ export default function Sidebar({
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (e.defaultPrevented) return;
 
       const activeElement = document.activeElement as HTMLElement | null;
       if (
+        activeElement?.closest('[data-arrow-scope="dashboard-grid"]') ||
         activeElement?.closest('[data-arrow-scope="edit-panel"]') ||
         activeElement?.closest('[data-arrow-scope="calendar-panel"]')
       ) {
@@ -69,7 +71,6 @@ export default function Sidebar({
           return;
         }
 
-        setActive(focusedItem.key);
         onSidebarArrowRight?.(focusedItem.key);
         return;
       }

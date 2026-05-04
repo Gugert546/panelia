@@ -87,6 +87,14 @@
     "calendar": "Calendar",
     "email": "Email",
     "minesweeper": "Minesweeper",
+    "widgetKeyboard": {
+      "moveEnabled": "Move mode enabled",
+      "moveDisabled": "Move mode exited",
+      "moveBlocked": "Move blocked by another widget",
+      "position": "Position",
+      "moveActiveHint": "Move mode: arrows, Shift+arrows for larger steps, Esc to exit",
+      "moveInactiveHint": "Press Enter for move mode"
+    },
     "bookmarkWidget": {
       "title": "Bookmarks",
       "loading": "Loading bookmarks...",
