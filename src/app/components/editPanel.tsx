@@ -941,7 +941,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
             style={language === 'no' ? selectedTopButtonStyle : topButtonStyle}
             title="Norsk"
           >
-            Norsk
+            <img src="https://flagcdn.com/w40/no.png" alt="Norsk" style={{ width: 20, height: 15, borderRadius: 2, objectFit: 'cover', display: 'block' }} />
           </button>
           <button
             ref={englishButtonRef}
@@ -949,7 +949,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
             style={language === 'en' ? selectedTopButtonStyle : topButtonStyle}
             title="English"
           >
-            English
+            <img src="https://flagcdn.com/w40/gb.png" alt="English" style={{ width: 20, height: 15, borderRadius: 2, objectFit: 'cover', display: 'block' }} />
           </button>
         </div>
         <button style={topButtonStyle} onClick={onClose}>{t('editPanel.close')}</button>
