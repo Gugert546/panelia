@@ -70,10 +70,6 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
     }
   }
 
-  const controlInset = isDarkMode
-    ? "calc(clamp(8px, 2.2cqw, 14px) + 20px)"
-    : "clamp(8px, 2.2cqw, 14px)";
-
   const paneContentStyle: CSSProperties = isDarkMode
     ? {
       width: "calc(100% + 40px)",
@@ -146,8 +142,8 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
           <div
             style={{
               position: "absolute",
-              top: controlInset,
-              left: controlInset,
+              top: 0,
+              left: 0,
               zIndex: 1,
               display: "flex",
               opacity: controlsAreVisible ? 1 : 0,
@@ -163,8 +159,8 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
               title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
               aria-pressed={isDarkMode}
               style={{
-                width: "clamp(24px, 6cqw, 32px)",
-                height: "clamp(24px, 6cqw, 32px)",
+                width: 24,
+                height: 24,
                 borderRadius: "999px",
                 border: "1px solid rgba(255, 255, 255, 0.35)",
                 display: "grid",
@@ -179,7 +175,7 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
               <span
                 className="material-symbols-rounded"
                 aria-hidden="true"
-                style={{ fontSize: "clamp(14px, 3.8cqw, 18px)", lineHeight: 1 }}
+                style={{ fontSize: 14, lineHeight: 1 }}
               >
                 dark_mode
               </span>
@@ -287,14 +283,10 @@ export function SpotifyPlayingView({
       height: "100%"
     };
 
-  const controlInset = isDarkMode
-    ? "calc(clamp(8px, 2.2cqw, 14px) + 20px)"
-    : "clamp(8px, 2.2cqw, 14px)";
-
   const floatingControlsStyle: CSSProperties = {
     position: "absolute" as const,
-    top: controlInset,
-    left: controlInset,
+    top: 0,
+    left: 0,
     zIndex: 2,
     display: "flex",
     gap: "clamp(6px, 1.5cqw, 10px)",
@@ -305,8 +297,8 @@ export function SpotifyPlayingView({
   };
 
   const controlButtonStyle: CSSProperties = {
-    width: "clamp(24px, 6cqw, 32px)",
-    height: "clamp(24px, 6cqw, 32px)",
+    width: 24,
+    height: 24,
     borderRadius: "999px",
     border: "1px solid rgba(255, 255, 255, 0.35)",
     display: "grid",
