@@ -199,6 +199,42 @@ html, body, #root {
   text-underline-offset: 3px;
 }
 
+.dashboard-sun-orbit {
+  position: fixed;
+  left: 50%;
+  top: 56%;
+  z-index: 1;
+  width: min(116vw, 118vh);
+  aspect-ratio: 1;
+  pointer-events: none;
+  transform: translate(-50%, -50%) rotate(0deg);
+  animation: dashboard-sun-orbit-clockwise 120s linear infinite;
+}
+
+.dashboard-sun {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  width: clamp(72px, 10vw, 140px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  background: #ffd45f;
+  box-shadow:
+    0 0 28px rgba(255,212,95,0.5),
+    0 0 72px rgba(255,178,64,0.32);
+  opacity: 0.78;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes dashboard-sun-orbit-clockwise {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
 .privacy-page,
 .legal-page {
   height: 100%;
@@ -726,6 +762,11 @@ html, body, #root {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .dashboard-sun-orbit,
+  .dashboard-sun {
+    animation: none;
+  }
+
   .weather-widget-cloud,
   .weather-widget-fog-band,
   .weather-widget-sun-glow,

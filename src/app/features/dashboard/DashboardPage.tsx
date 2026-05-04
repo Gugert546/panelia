@@ -82,7 +82,7 @@ function getImageBackgroundSource(
   customBackgroundType: CustomBackgroundMediaType
 ) {
   if (backgroundId === "customMedia" && customBackgroundType === "image") {
-    return customBackgroundUrl || null;
+    return customBackgroundUrl || resolveDashboardBackground("defaultbg");
   }
   return resolveDashboardBackground(backgroundId);
 }
@@ -572,6 +572,10 @@ function DashboardPageContent() {
         />
       )}
 
+      <div className="dashboard-sun-orbit" aria-hidden="true">
+        <div className="dashboard-sun" />
+      </div>
+
       <Sidebar
         disabled={!isAuthenticated}
         onEditArrowRight={focusEditPanelWidgetList}
@@ -637,6 +641,7 @@ function DashboardPageContent() {
           width: `calc(100vw - ${SIDEBAR_WIDTH}px)`,
           height: "100vh",
           position: "relative",
+          zIndex: 2,
         }}
       >
         <DashboardGrid
