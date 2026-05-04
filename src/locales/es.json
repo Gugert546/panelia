@@ -1,0 +1,256 @@
+{
+  "editPanel": {
+    "close": "Cerrar",
+    "selectWidgets": "Seleccionar widgets",
+    "styleWidgets": "Estilo de widgets",
+    "modeWidgets": "Widgets",
+    "modeColors": "Colores",
+    "modeBackground": "Tema",
+    "backgroundHelp": "Elige un fondo fijo.",
+    "backgroundSol1": "Sol 1",
+    "backgroundSol2": "Sol 2",
+    "backgroundSol3": "Sol 3",
+    "backgroundNatt1": "Noche 1",
+    "backgroundNatt2": "Noche 2",
+    "backgroundNatt3": "Noche 3",
+    "backgroundAnimAurora": "Animado: Aurora",
+    "backgroundAnimNebula": "Animado: Nebulosa",
+    "backgroundAnimPulse": "Animado: Pulso",
+    "backgroundCustomMedia": "Medios personalizados",
+    "uploadCustomBackground": "Subir fondo personalizado",
+    "uploading": "Subiendo...",
+    "uploadNotSignedIn": "Inicia sesión para subir fondos",
+    "fileTooLarge": "El archivo es demasiado grande. El tamaño máximo es 100 MB.",
+    "unsupportedBackgroundFile": "Tipo de archivo no compatible. Sube una imagen o vídeo.",
+    "customBackgroundSyncNote": "Los fondos se almacenan en la nube y se pueden acceder desde otros dispositivos. Se admiten imágenes y vídeos.",
+    "widgetColorMenu": "Widgets:",
+    "widgetColorButton": "Elegir color",
+    "widgetColorHelp": "Usa hex (por ejemplo #cde8ff) o rgba (por ejemplo rgba(255,255,255,0.15)).",
+    "widgetBorderColor": "Elegir color",
+    "widgetTextColor": "Color de texto",
+    "widgetBlur": "desenfoque",
+    "widgetOpacity": "opacidad",
+    "widgetBorderColorTitle": "Borde",
+    "widgetBorderWidth": "Grosor",
+    "widgetSize": "Tamaño del widget",
+    "resetWidgetStyle": "Restablecer estilo del widget",
+    "resetConfirmDescription": "Elige qué widgets restablecer a su estilo predeterminado.",
+    "resetUnlockedWidgets": "Restablecer todos los widgets desbloqueados",
+    "resetAllWidgets": "Restablecer todos los widgets (incl. bloqueados)",
+    "cancel": "Cancelar",
+    "reset": "Restablecer",
+    "addCustomButton": "Botones personalizados",
+    "customPresets": "Diseños personalizados",
+    "presetNamePlaceholder": "Nombre del diseño",
+    "savePreset": "Guardar diseño",
+    "applyPreset": "Aplicar",
+    "deletePreset": "Eliminar",
+    "noPresets": "Aún no hay diseños guardados. Guarda tu diseño actual para crear uno.",
+    "widgetStyleThis": "Estilizar este widget",
+    "widgetStyleOpen": "Personalizar este widget",
+    "widgetStyleResetThis": "Restablecer este",
+    "fontSize": "Tamaño de fuente",
+    "small": "Pequeño",
+    "medium": "Mediano",
+    "large": "Grande"
+  },
+  "addCustomButtonModal": {
+    "title": "Añadir botón personalizado",
+    "buttonName": "Nombre del botón",
+    "link": "Enlace",
+    "adding": "Añadiendo...",
+    "add": "Añadir",
+    "cancel": "Cancelar",
+    "existingButtons": "Botones existentes:",
+    "deleteButton": "Eliminar botón",
+    "closeModalComment": "Cerrar modal al añadir el botón",
+    "fetchPreviewError": "No se pudo obtener la vista previa del enlace:"
+  },
+  "chat": {
+    "title": "Chat IA",
+    "placeholder": "Escribe un mensaje...",
+    "send": "Enviar",
+    "sending": "Pensando...",
+    "error": "Lo siento, algo salió mal.",
+    "welcome": "¡Hola! Puedo ayudarte a trabajar con Panelia y tu panel.\n\nPuedo responder preguntas, ayudarte a planificar widgets y diseños, y usar herramientas conectadas cuando estén disponibles, como calendario, correo, clima, búsqueda, notas, marcadores, Spotify y configuración del panel. Pregúntame lo que quieras hacer."
+  },
+  "widgets": {
+    "clock": "Reloj",
+    "google_search": "Búsqueda",
+    "news": "Noticias",
+    "weather": "Clima",
+    "bookmark": "Marcador",
+    "info": "Info",
+    "ai_chat": "Chat IA",
+    "notes": "Notas",
+    "spotify": "Spotify",
+    "calendar": "Calendario",
+    "email": "Correo",
+    "minesweeper": "Buscaminas",
+    "widgetKeyboard": {
+      "moveEnabled": "Modo mover activado",
+      "moveDisabled": "Modo mover desactivado",
+      "moveBlocked": "Movimiento bloqueado por otro widget",
+      "position": "Posición",
+      "moveActiveHint": "Modo mover: flechas, Shift+flechas para pasos más grandes, Esc para salir",
+      "moveInactiveHint": "Presiona Enter para el modo mover"
+    },
+    "bookmarkWidget": {
+      "title": "Marcadores",
+      "loading": "Cargando marcadores...",
+      "addCategory": "+ Añadir categoría",
+      "cancel": "Cancelar",
+      "noCategories": "No hay categorías aún. ¡Crea una para empezar!",
+      "noBookmarks": "No hay marcadores en esta categoría",
+      "addBookmark": "Añadir marcador",
+      "to": "a",
+      "delete": "Eliminar",
+      "Categori": "Categoría",
+      "deleteCategory": "Eliminar categoría",
+      "deleteCategoryTitle": "¿Eliminar categoría?",
+      "deleteCategoryConfirm": "¿Estás seguro de que quieres eliminar",
+      "deleteCategoryWarning": "Esto también eliminará todos los marcadores de esta categoría.",
+      "confirmDeleteCategory": "Sí, eliminarla",
+      "deletingCategory": "Eliminando...",
+      "categoryHover": "Haz clic para elegir categoría, o desplázate con el cursor",
+      "newCategoryName": "Nombre de nueva categoría",
+      "bookmarkTitle": "Título del marcador",
+      "bookmarkURL": "URL del marcador"
+    },
+    "newsWidget": {
+      "title": "Noticias del mundo",
+      "placeholder": "Código de país (no, us...)",
+      "getHeadlines": "Obtener titulares",
+      "loading": "Cargando..."
+    },
+    "weatherWidget": {
+      "loading": "Obteniendo el clima...",
+      "wind": "Viento",
+      "humidity": "Humedad",
+      "showWind": "Mostrar viento",
+      "hideWind": "Ocultar viento",
+      "showHumidity": "Mostrar humedad",
+      "hideHumidity": "Ocultar humedad",
+      "windDirection": "Dirección del viento",
+      "chanceOfRain": "Probabilidad de lluvia",
+      "uvIndex": "Índice UV",
+      "showUvIndex": "Mostrar índice UV",
+      "hideUvIndex": "Ocultar índice UV"
+    },
+    "customButtons": {
+      "title": "Botones personalizados",
+      "buttonName": "Nombre del botón",
+      "link": "Enlace",
+      "add": "Añadir"
+    },
+    "searchWidget": {
+      "chooseEngine": "Elegir motor de búsqueda",
+      "searchPlaceholder": "Buscar con"
+    },
+    "notesWidget": {
+      "closeNote": "Cerrar nota",
+      "placeholder": "Escribe notas aquí..."
+    },
+    "minesweeperWidget": {
+      "mines": "Minas",
+      "flags": "Banderas",
+      "time": "Tiempo",
+      "newGame": "Nuevo juego",
+      "idle": "El primer movimiento siempre es seguro",
+      "instructions": "Clic izquierdo para revelar, clic derecho para marcar",
+      "won": "Despejaste el campo",
+      "lost": "¡Boom! Inténtalo de nuevo",
+      "cell": "Celda",
+      "congratsTitle": "¡Felicitaciones!",
+      "congratsBody": "Despejaste todas las minas y ganaste el tablero."
+    },
+    "spotifyWidget": {
+      "connect": "Conectar Spotify",
+      "startPlaying": "Empieza a reproducir Spotify en un dispositivo",
+      "nowPlaying": "Reproduciendo ahora",
+      "expandPlayer": "Expandir reproductor",
+      "minimizePlayer": "Minimizar reproductor",
+      "enableDarkMode": "Activar modo oscuro",
+      "disableDarkMode": "Desactivar modo oscuro",
+      "darkModeOn": "Modo oscuro activado",
+      "darkModeOff": "Modo oscuro desactivado",
+      "openSpotifyDeviceFirst": "Abre Spotify en un dispositivo primero"
+    },
+    "calendarWidget": {
+      "connected": "Conectado",
+      "connectCalendar": "Conectar calendario",
+      "checking": "Comprobando...",
+      "refreshing": "Actualizando...",
+      "refreshFromGoogle": "Actualizar desde Google",
+      "refreshFromOutlook": "Actualizar desde Outlook",
+      "time": "Hora",
+      "today": "Hoy"
+    },
+    "emailWidget": {
+      "title": "Correo",
+      "checking": "Comprobando conexión de correo...",
+      "soon": "pronto",
+      "refresh": "Actualizar correo",
+      "connectGmailHelp": "Conecta Gmail para mostrar los mensajes recientes del buzón aquí.",
+      "connectOutlookHelp": "Conecta Outlook para mostrar los mensajes recientes del buzón aquí.",
+      "connectGmail": "Conectar Gmail",
+      "connectOutlook": "Conectar Outlook",
+      "connecting": "Conectando...",
+      "disconnect": "Desconectar",
+      "unreadFirst": "No leídos primero",
+      "unread": "No leído",
+      "empty": "No hay mensajes recientes en el buzón.",
+      "signInRequired": "Inicia sesión para conectar el correo.",
+      "providerUnavailable": "Este proveedor está planeado, pero ahora se admiten Gmail y Outlook.",
+      "statusError": "No se pudo comprobar el estado del correo.",
+      "messagesError": "No se pudieron cargar los mensajes de correo.",
+      "connectError": "No se pudo iniciar la conexión de correo.",
+      "disconnectError": "No se pudo desconectar el correo.",
+      "oauthConnected": "Correo conectado. Cargando buzón...",
+      "oauthError": "Error en la conexión de correo. Revisa el terminal del servidor para el error OAuth."
+    },
+    "infoWidget": {
+      "title": "Bienvenido a Panelia",
+      "slideCounter": "Diapositiva",
+      "previousSlide": "Diapositiva anterior",
+      "nextSlide": "Siguiente diapositiva",
+      "slides": {
+        "welcome": {
+          "logoAlt": "Logo de Panelia",
+          "body": "Lee aquí cómo usar la página."
+        },
+        "panelia": {
+          "title": "¿Qué es Panelia?",
+          "body": "Panelia es una página de inicio personal basada en widgets. Puedes elegir qué widgets quieres usar, colocarlos donde quieras y ajustar la apariencia para que el panel sea tuyo. Tú construyes tu propia página de inicio."
+        },
+        "gettingStarted": {
+          "title": "¡Empieza!",
+          "points": {
+            "signIn": "Inicia sesión para empezar a colocar widgets, guardar tu diseño y sincronizar preferencias.",
+            "addWidgets": "Abre el panel de edición a la izquierda y añade los widgets que quieras.",
+            "aiHjelp": "Usa el asistente de IA para cambiar la apariencia de la página de forma más eficiente.",
+            "moveResize": "Arrastra y redimensiona los widgets para crear un buen diseño de flujo de trabajo. Arrastra la esquina inferior derecha del widget para redimensionarlo, y arrastra en cualquier lugar sin contenido, por ejemplo a lo largo del borde, para moverlo.",
+            "customize": "Cambia el tema, los colores y el tamaño de fuente en la configuración. ¡Haz que tu página tenga un aspecto genial y único!"
+          }
+        },
+        "widgets": {
+          "title": "Ejemplos de widgets",
+          "points": {
+            "weather": "El widget del clima te da una visión rápida de las condiciones actuales.",
+            "calendar": "El widget de calendario te ayuda a llevar un registro de planes y plazos.",
+            "news": "El widget de noticias obtiene titulares actualizados en segundos.",
+            "notes": "El widget de notas facilita capturar ideas y recordatorios."
+          }
+        },
+        "project": {
+          "title": "Sobre el proyecto",
+          "body": "Panelia fue desarrollado como un proyecto de bachillerato para explorar diseño, arquitectura frontend e integración con servicios de terceros. ¡Gracias por usar Panelia!",
+          "points": {
+            "team": "Somos Audun, Sindre, Jonas y Einar, de la Universidad del Sureste de Noruega.",
+            "learning": "..."
+          }
+        }
+      }
+    }
+  }
+}
