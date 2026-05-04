@@ -485,23 +485,70 @@ function DashboardPageContent() {
     }
   };
 
-  const handleSidebarArrowRight = (itemKey: string) => {
+  const focusFirstDashboardWidget = () => {
+    if (!isAuthenticated) return;
+    if (activePanel !== null) return;
+
+    requestAnimationFrame(() => {
+      const widgetNodes = Array.from(
+        document.querySelectorAll(
+          '[data-arrow-scope="dashboard-grid"] [role="group"][aria-roledescription="dashboard widget"]'
+        )
+      ) as HTMLElement[];
+
+      if (widgetNodes.length === 0) return;
+
+      const closestToSidebar = widgetNodes
+        .map((node) => ({
+          node,
+          rect: node.getBoundingClientRect(),
+        }))
+        .sort((first, second) => {
+          const leftDiff = first.rect.left - second.rect.left;
+          if (leftDiff !== 0) return leftDiff;
+          return first.rect.top - second.rect.top;
+        })[0]?.node;
+
+      closestToSidebar?.focus();
+    });
+  };
+
+  const focusEditPanelContent = () => {
+    if (!isAuthenticated) return;
+    if (activePanel !== "edit") return;
+
+    requestAnimationFrame(() => {
+      editPanelRef.current?.focusFirstWidget();
+    });
+  };
+
+  const handleSidebarArrowRight = (_itemKey: string) => {
     if (!isAuthenticated) return;
 
-    if (itemKey === "calendar") {
-      setActivePanel("calendar");
+    if (activePanel === "calendar") {
       requestAnimationFrame(() => {
         calendarPanelRef.current?.focusTopLeftArrowButton();
       });
       return;
     }
 
-    if (itemKey === "chat") {
-      setActivePanel("chat");
+    if (activePanel === "chat") {
       requestAnimationFrame(() => {
         chatPanelRef.current?.focusMessageInput();
       });
+      return;
     }
+
+    focusFirstDashboardWidget();
+  };
+
+  const handleEditArrowRight = () => {
+    if (activePanel === "edit") {
+      focusEditPanelContent();
+      return;
+    }
+
+    focusFirstDashboardWidget();
   };
 
   const handleSidebarArrowLeft = (itemKey: string) => {
@@ -525,18 +572,6 @@ function DashboardPageContent() {
   const focusSidebarCalendarButton = () => {
     const calendarButton = document.querySelector('button[aria-label="Calendar"]') as HTMLButtonElement | null;
     calendarButton?.focus();
-  };
-
-  const focusEditPanelWidgetList = () => {
-    if (!isAuthenticated) return;
-
-    if (activePanel !== "edit") {
-      setActivePanel("edit");
-    }
-
-    requestAnimationFrame(() => {
-      editPanelRef.current?.focusFirstWidget();
-    });
   };
 
   return (
@@ -574,7 +609,7 @@ function DashboardPageContent() {
 
       <Sidebar
         disabled={!isAuthenticated}
-        onEditArrowRight={focusEditPanelWidgetList}
+        onEditArrowRight={handleEditArrowRight}
         onSidebarNav={handleSidebarNavigation}
         onSidebarArrowRight={handleSidebarArrowRight}
         onSidebarArrowLeft={handleSidebarArrowLeft}
@@ -658,6 +693,7 @@ function DashboardPageContent() {
           onToggleClockBackground={toggleClockBackground}
           onSetWidgetStyle={setWidgetStyle}
           onResetWidgetStyle={resetWidgetStyle}
+          onRequestSidebarFocus={focusSidebarEditButton}
           containerWidth={gridContainerWidth}
           isInteractive={isAuthenticated}
           isMovable={true}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import GridLayout from "react-grid-layout/legacy";
 import type { Layout } from "react-grid-layout";
 import { WIDGETS } from "../features/Widgets/registry/WidgetRegistry";
@@ -26,6 +26,7 @@ type Props = {
   onToggleClockBackground: (widgetId: string) => void;
   onSetWidgetStyle: (widgetId: string, patch: WidgetStyleOverrides) => void;
   onResetWidgetStyle: (widgetId: string) => void;
+  onRequestSidebarFocus?: () => void;
   containerWidth?: number;
   isInteractive?: boolean;
   isMovable?: boolean;
@@ -153,6 +154,7 @@ export default function DashboardGrid({
   onToggleClockBackground,
   onSetWidgetStyle,
   onResetWidgetStyle,
+  onRequestSidebarFocus,
   containerWidth,
   isInteractive = true,
   isMovable = isInteractive,
@@ -160,6 +162,10 @@ export default function DashboardGrid({
 }: Props) {
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
   const [styleEditorWidgetId, setStyleEditorWidgetId] = useState<string | null>(null);
+  const [focusedWidgetId, setFocusedWidgetId] = useState<string | null>(null);
+  const [keyboardMoveWidgetId, setKeyboardMoveWidgetId] = useState<string | null>(null);
+  const [keyboardStatusMessage, setKeyboardStatusMessage] = useState("");
+  const widgetElementRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const { t } = useLanguage();
   const { fontSize: globalFontSize } = useFontSize();
 
@@ -211,6 +217,213 @@ export default function DashboardGrid({
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
+  useEffect(() => {
+    if (!keyboardMoveWidgetId) return;
+    if (widgetLocks[keyboardMoveWidgetId]) {
+      setKeyboardMoveWidgetId(null);
+    }
+  }, [keyboardMoveWidgetId, widgetLocks]);
+
+  const overlaps = (
+    first: { x: number; y: number; w: number; h: number },
+    second: { x: number; y: number; w: number; h: number }
+  ) => {
+    return (
+      first.x < second.x + second.w &&
+      first.x + first.w > second.x &&
+      first.y < second.y + second.h &&
+      first.y + first.h > second.y
+    );
+  };
+
+  const moveWidgetByKeyboard = (widgetId: string, deltaX: number, deltaY: number) => {
+    const widgetLayout = computedLayout.find((item) => item.i === widgetId);
+    if (!widgetLayout) return;
+
+    const maxX = Math.max(0, activeGridColumns - widgetLayout.w);
+    const maxY = Math.max(0, BASE_GRID_ROWS - widgetLayout.h);
+
+    const nextX = clampGridValue(widgetLayout.x + deltaX, 0, maxX);
+    const nextY = clampGridValue(widgetLayout.y + deltaY, 0, maxY);
+
+    if (nextX === widgetLayout.x && nextY === widgetLayout.y) return;
+
+    const collides = computedLayout.some((item) => {
+      if (item.i === widgetId) return false;
+      return overlaps(
+        { x: nextX, y: nextY, w: widgetLayout.w, h: widgetLayout.h },
+        { x: item.x, y: item.y, w: item.w, h: item.h }
+      );
+    });
+
+    if (collides) {
+      setKeyboardStatusMessage(t("widgets.widgetKeyboard.moveBlocked"));
+      return;
+    }
+
+    const nextLayout = computedLayout.map((item) =>
+      item.i === widgetId ? { ...item, x: nextX, y: nextY } : item
+    );
+
+    persistLayout(nextLayout);
+    setKeyboardStatusMessage(
+      `${t("widgets.widgetKeyboard.position")}: ${nextX + 1}, ${nextY + 1}`
+    );
+  };
+
+  const focusAdjacentWidget = (
+    widgetId: string,
+    direction: "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown"
+  ): boolean => {
+    const current = computedLayout.find((item) => item.i === widgetId);
+    if (!current) return false;
+
+    const cx = current.x + current.w / 2;
+    const cy = current.y + current.h / 2;
+    const isHorizontal = direction === "ArrowLeft" || direction === "ArrowRight";
+
+    // Step 1: Filter to only widgets in the target direction (by center)
+    const inDirection = computedLayout.filter((item) => {
+      if (item.i === widgetId) return false;
+      const nx = item.x + item.w / 2;
+      const ny = item.y + item.h / 2;
+      if (direction === "ArrowLeft")  return nx < cx;
+      if (direction === "ArrowRight") return nx > cx;
+      if (direction === "ArrowUp")    return ny < cy;
+      return ny > cy; // ArrowDown
+    });
+
+    if (inDirection.length === 0) return false;
+
+    // Step 2: Prefer widgets that share overlap on the perpendicular axis (same row/col).
+    //         If any exist, use only those. Otherwise fall back to all in-direction widgets.
+    const overlapping = inDirection.filter((item) =>
+      isHorizontal
+        ? current.y < item.y + item.h && current.y + current.h > item.y
+        : current.x < item.x + item.w && current.x + current.w > item.x
+    );
+
+    const pool = overlapping.length > 0 ? overlapping : inDirection;
+
+    // Step 3: Among the pool, pick the one closest in the primary direction
+    const best = pool.reduce((a, b) => {
+      const distA = isHorizontal
+        ? Math.abs((a.x + a.w / 2) - cx)
+        : Math.abs((a.y + a.h / 2) - cy);
+      const distB = isHorizontal
+        ? Math.abs((b.x + b.w / 2) - cx)
+        : Math.abs((b.y + b.h / 2) - cy);
+      return distA <= distB ? a : b;
+    });
+
+    const nextElement = document.querySelector(
+      `[data-widget-id="${best.i}"]`
+    ) as HTMLElement | null;
+    if (!nextElement) return false;
+
+    setFocusedWidgetId(best.i);
+    nextElement.focus();
+    return true;
+  };
+
+  const focusSidebarFallback = () => {
+    const editButton = document.querySelector(
+      'aside button[aria-label="Rediger"]:not([disabled])'
+    ) as HTMLButtonElement | null;
+
+    if (editButton) {
+      editButton.focus();
+      return;
+    }
+
+    const firstSidebarButton = document.querySelector(
+      "aside button:not([disabled])"
+    ) as HTMLButtonElement | null;
+    firstSidebarButton?.focus();
+  };
+
+  const handleWidgetKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, widgetId: string) => {
+    if (event.target !== event.currentTarget) return;
+    if (widgetLocks[widgetId]) return;
+
+    const isInMoveMode = keyboardMoveWidgetId === widgetId;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      event.stopPropagation();
+      const nextIsMoveMode = !isInMoveMode;
+      setKeyboardMoveWidgetId(nextIsMoveMode ? widgetId : null);
+      setKeyboardStatusMessage(
+        nextIsMoveMode
+          ? t("widgets.widgetKeyboard.moveEnabled")
+          : t("widgets.widgetKeyboard.moveDisabled")
+      );
+      return;
+    }
+
+    if (!isInMoveMode) {
+      if (
+        event.key === "ArrowLeft" ||
+        event.key === "ArrowRight" ||
+        event.key === "ArrowUp" ||
+        event.key === "ArrowDown"
+      ) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const succeeded = focusAdjacentWidget(widgetId, event.key);
+
+        if (!succeeded && event.key === "ArrowLeft") {
+          setFocusedWidgetId(null);
+          setKeyboardMoveWidgetId(null);
+          if (onRequestSidebarFocus) {
+            onRequestSidebarFocus();
+          } else {
+            focusSidebarFallback();
+          }
+        }
+      }
+      return;
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setKeyboardMoveWidgetId(null);
+      setKeyboardStatusMessage(t("widgets.widgetKeyboard.moveDisabled"));
+      return;
+    }
+
+    const step = event.shiftKey ? 4 : 1;
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      moveWidgetByKeyboard(widgetId, -step, 0);
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      event.stopPropagation();
+      moveWidgetByKeyboard(widgetId, step, 0);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      event.stopPropagation();
+      moveWidgetByKeyboard(widgetId, 0, -step);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      event.stopPropagation();
+      moveWidgetByKeyboard(widgetId, 0, step);
+    }
+  };
+
   const persistLayout = (newLayout: Layout) => {
     const newLayouts: Record<string, { x: number; y: number; w: number; h: number }> = {};
 
@@ -235,7 +448,24 @@ export default function DashboardGrid({
   };
 
   return (
-    <div style={{ width: "100%", height: "100%", display: "flex", justifyContent: "flex-start" }}>
+    <div
+      data-arrow-scope="dashboard-grid"
+      style={{ width: "100%", height: "100%", display: "flex", justifyContent: "flex-start" }}
+    >
+      <div
+        aria-live="polite"
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+          clip: "rect(0 0 0 0)",
+          clipPath: "inset(50%)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {keyboardStatusMessage}
+      </div>
       <GridLayout
         className="layout"
         layout={computedLayout}
@@ -292,9 +522,22 @@ export default function DashboardGrid({
         const clockMode = clockModes[widgetId] ?? "digital";
         const showClockBackground = clockBackgrounds[widgetId] ?? (clockMode === "analog");
         const isStyleEditorOpen = styleEditorWidgetId === widgetId;
+        const isKeyboardFocused = focusedWidgetId === widgetId;
+        const isKeyboardMoveActive = keyboardMoveWidgetId === widgetId;
         return (
           <div
             key={widgetId}
+            ref={(element) => {
+              if (element) {
+                widgetElementRefs.current[widgetId] = element;
+              }
+            }}
+            data-widget-id={widgetId}
+            tabIndex={isInteractive ? 0 : -1}
+            role="group"
+            aria-label={`${widgetType} widget`}
+            aria-roledescription="dashboard widget"
+            aria-keyshortcuts="Enter Space ArrowLeft ArrowRight ArrowUp ArrowDown Escape Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
             data-grid={{
               ...currentLayout,
               x:
@@ -310,11 +553,54 @@ export default function DashboardGrid({
             style={{
               position: "relative",
               overflow: "visible",
+              outline:
+                isKeyboardFocused
+                  ? isKeyboardMoveActive
+                    ? "2px solid rgba(59,130,246,0.95)"
+                    : "2px solid rgba(255,255,255,0.75)"
+                  : "none",
+              outlineOffset: 2,
               zIndex: isStyleEditorOpen ? 50 : hoveredWidgetId === widgetId ? 10 : 1,
             }}
+            onFocus={() => setFocusedWidgetId(widgetId)}
+            onBlur={(event) => {
+              const nextTarget = event.relatedTarget;
+              // If focus is moving to another widget child, don't clear (e.g., button inside widget)
+              if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
+                return;
+              }
+
+              // Always clear the focused widget ID for this widget when it loses focus
+              setFocusedWidgetId((prev) => (prev === widgetId ? null : prev));
+              setKeyboardMoveWidgetId((prev) => (prev === widgetId ? null : prev));
+            }}
+            onKeyDown={(event) => handleWidgetKeyDown(event, widgetId)}
             onMouseEnter={() => setHoveredWidgetId(widgetId)}
             onMouseLeave={() => setHoveredWidgetId((prev) => (prev === widgetId ? null : prev))}
           >
+            {isInteractive && isKeyboardFocused && !isLocked && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 8,
+                  left: 8,
+                  zIndex: 3,
+                  padding: "4px 8px",
+                  borderRadius: 999,
+                  background: isKeyboardMoveActive ? "rgba(37, 99, 235, 0.95)" : "rgba(15, 23, 42, 0.72)",
+                  color: "#fff",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  lineHeight: 1.2,
+                  letterSpacing: 0.2,
+                  pointerEvents: "none",
+                }}
+              >
+                {isKeyboardMoveActive
+                  ? t("widgets.widgetKeyboard.moveActiveHint")
+                  : t("widgets.widgetKeyboard.moveInactiveHint")}
+              </div>
+            )}
             {isInteractive && hoveredWidgetId === widgetId && (
               <div
                 style={{
