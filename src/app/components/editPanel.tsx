@@ -1023,8 +1023,9 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         }}
       >
 
-        {viewMode === "widgets" &&
-          availableWidgets.map((widget, index) => {
+        {viewMode === "widgets" && (
+          <div style={{ marginTop: 12 }}>
+          {availableWidgets.map((widget, index) => {
             const widgetLabel =
               widget.id === "notes" && notesWidgetCount > 0
                 ? `${widget.label} (${notesWidgetCount})`
@@ -1116,6 +1117,8 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
           >
             {t('editPanel.addCustomButton')}
           </button>
+        )}
+        </div>
         )}
 
         {viewMode === "background" && (
