@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { getUserCoordinates, getUserLocation } from "../../hooks/userLocation";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 export type WeatherView = {
   placeLabel: string;
@@ -31,7 +32,7 @@ async function fetchWeatherFromProxy(lat: number, lon: number) {
   const r = await fetch(
     `${apiBase}/api/weather?lat=${lat}&lon=${lon}`
   );
-  if (!r.ok) throw new Error(`Værkall feilet (${r.status})`);
+  if (!r.ok) throw new Error(`WEATHER_FETCH_FAILED:${r.status}`);
   return r.json();
 }
 
@@ -81,6 +82,7 @@ function writeCachedWeather(view: WeatherView) {
 }
 
 export function useWeatherWidget() {
+  const { t } = useLanguage();
   const [state, setState] = useState<WeatherState>(() => {
     const cached = readCachedWeather();
     return cached ? { status: "success", data: cached } : { status: "idle" };
@@ -111,7 +113,7 @@ export function useWeatherWidget() {
       const chanceOfRain = json?.chanceOfRain;
 
       if (typeof temperature !== "number") {
-        throw new Error("Fant ikke temperatur i respons");
+        throw new Error("WEATHER_NO_TEMP");
       }
 
       const view: WeatherView = {
@@ -135,7 +137,16 @@ export function useWeatherWidget() {
         if (prev.status === "success") {
           return { ...prev, refreshing: false };
         }
-        const error = e instanceof Error ? e.message : "Ukjent feil";
+        const raw = e instanceof Error ? e.message : "";
+        let error: string;
+        if (raw.startsWith("WEATHER_FETCH_FAILED:")) {
+          const status = raw.split(":")[1];
+          error = `${t("widgets.weatherWidget.errorFailed")} (${status})`;
+        } else if (raw === "WEATHER_NO_TEMP") {
+          error = t("widgets.weatherWidget.errorNoTemp");
+        } else {
+          error = raw || t("widgets.weatherWidget.errorUnknown");
+        }
         return { status: "error", error, refreshing: false };
       });
     }

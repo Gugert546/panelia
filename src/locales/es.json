@@ -135,7 +135,10 @@
       "chanceOfRain": "Probabilidad de lluvia",
       "uvIndex": "Índice UV",
       "showUvIndex": "Mostrar índice UV",
-      "hideUvIndex": "Ocultar índice UV"
+      "hideUvIndex": "Ocultar índice UV",
+      "errorFailed": "La solicitud del clima falló",
+      "errorNoTemp": "No se encontró la temperatura en la respuesta",
+      "errorUnknown": "Error desconocido"
     },
     "customButtons": {
       "title": "Botones personalizados",
