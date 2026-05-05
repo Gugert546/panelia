@@ -136,7 +136,10 @@
       "chanceOfRain":"Nedbørsjanse",
       "uvIndex": "UV-indeks",
       "showUvIndex": "Vis UV-indeks",
-      "hideUvIndex": "Skjul UV-indeks"
+      "hideUvIndex": "Skjul UV-indeks",
+      "errorFailed": "Værkall feilet",
+      "errorNoTemp": "Fant ikke temperatur i respons",
+      "errorUnknown": "Ukjent feil"
     },
     "customButtons": {
       "title": "Egne knapper",

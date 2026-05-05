@@ -173,8 +173,8 @@ export default function WeatherWidgetUI() {
               <div
                 style={{
                   position: "absolute",
-                  top: "clamp(8px, 2.2cqw, 14px)",
-                  left: "clamp(8px, 2.2cqw, 14px)",
+                  top: 0,
+                  left: 0,
                   zIndex: 4,
                   display: "flex",
                   gap: "clamp(6px, 1.5cqw, 10px)",
