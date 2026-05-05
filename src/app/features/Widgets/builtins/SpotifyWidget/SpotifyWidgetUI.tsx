@@ -7,47 +7,73 @@ import type { SpotifyDevice, SpotifyPlayerState } from "./SpotifyWidgetLogic";
 
 type ConnectViewProps = {
   onConnect: () => void;
+  isDarkMode: boolean;
 };
 
-export function SpotifyConnectView({ onConnect }: ConnectViewProps) {
+export function SpotifyConnectView({ onConnect, isDarkMode }: ConnectViewProps) {
   const { t } = useLanguage();
+
+  const paneContentStyle: CSSProperties = isDarkMode
+    ? {
+      width: "calc(100% + 40px)",
+      height: "calc(100% + 40px)",
+      margin: -20,
+      padding: 20,
+      background: "#121212",
+      color: "#FFFFFF",
+      display: "flex",
+      boxSizing: "border-box" as const,
+    }
+    : {
+      width: "100%",
+      height: "100%",
+      display: "flex",
+      color: "inherit",
+    };
 
   return (
     <WidgetContainer>
       <WidgetPane title="">
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            width: "100%",
-            padding: "10%"
+            ...paneContentStyle,
           }}
         >
-          <img
-            src={spotifyLogo}
-            alt="Spotify"
-            width="40%"
-            style={{ objectFit: "contain", display: "block" }}
-          />
-          <button
-            onClick={onConnect}
+          <div
             style={{
-              padding: 10,
-              marginTop: "10%",
-              background: "#1DB954",
-              color: "white",
-              border: "none",
-              borderRadius: 8,
-              cursor: "pointer",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
               width: "100%",
-              fontWeight: 600
+              height: "100%",
+              padding: "10%"
             }}
           >
-            {t("widgets.spotifyWidget.connect")}
-          </button>
+            <img
+              src={spotifyLogo}
+              alt="Spotify"
+              width="40%"
+              style={{ objectFit: "contain", display: "block" }}
+            />
+            <button
+              onClick={onConnect}
+              style={{
+                padding: 10,
+                marginTop: "10%",
+                background: "#1DB954",
+                color: "white",
+                border: "none",
+                borderRadius: 8,
+                cursor: "pointer",
+                width: "100%",
+                fontWeight: 600
+              }}
+            >
+              {t("widgets.spotifyWidget.connect")}
+            </button>
+          </div>
         </div>
       </WidgetPane>
     </WidgetContainer>
@@ -57,18 +83,10 @@ export function SpotifyConnectView({ onConnect }: ConnectViewProps) {
 type IdleViewProps = {
   fontSize: number;
   isDarkMode: boolean;
-  onToggleDarkMode: () => void;
 };
 
-export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: IdleViewProps) {
+export function SpotifyIdleView({ fontSize, isDarkMode }: IdleViewProps) {
   const { t } = useLanguage();
-  const [controlsAreVisible, setControlsAreVisible] = useState(false);
-
-  function handleWidgetBlur(event: FocusEvent<HTMLDivElement>) {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-      setControlsAreVisible(false);
-    }
-  }
 
   const paneContentStyle: CSSProperties = isDarkMode
     ? {
@@ -134,54 +152,7 @@ export function SpotifyIdleView({ fontSize, isDarkMode, onToggleDarkMode }: Idle
             ...paneContentStyle,
             position: "relative"
           }}
-          onMouseEnter={() => setControlsAreVisible(true)}
-          onMouseLeave={() => setControlsAreVisible(false)}
-          onFocus={() => setControlsAreVisible(true)}
-          onBlur={handleWidgetBlur}
         >
-          <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              zIndex: 1,
-              display: "flex",
-              opacity: controlsAreVisible ? 1 : 0,
-              transform: controlsAreVisible ? "translateY(0)" : "translateY(-4px)",
-              pointerEvents: controlsAreVisible ? "auto" : "none",
-              transition: "opacity 160ms ease, transform 160ms ease"
-            }}
-          >
-            <button
-              type="button"
-              onClick={onToggleDarkMode}
-              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
-              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
-              aria-pressed={isDarkMode}
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "999px",
-                border: "1px solid rgba(255, 255, 255, 0.35)",
-                display: "grid",
-                placeItems: "center",
-                background: isDarkMode ? "rgba(15, 23, 42, 0.78)" : "rgba(15, 23, 42, 0.58)",
-                color: "#f8fafc",
-                cursor: "pointer",
-                backdropFilter: "blur(10px)",
-                boxShadow: "0 8px 22px rgba(15, 23, 42, 0.3)"
-              }}
-            >
-              <span
-                className="material-symbols-rounded"
-                aria-hidden="true"
-                style={{ fontSize: 14, lineHeight: 1 }}
-              >
-                dark_mode
-              </span>
-            </button>
-          </div>
-
           <div
             style={{
               display: "flex",
@@ -218,7 +189,6 @@ type PlayingViewProps = {
   fontSize: number;
   isDarkMode: boolean;
   isMinimized: boolean;
-  onToggleDarkMode: () => void;
   onToggleMinimized: () => void;
   onExpandFromCover: () => void;
   onPrevTrack: () => void;
@@ -236,7 +206,6 @@ export function SpotifyPlayingView({
   fontSize,
   isDarkMode,
   isMinimized,
-  onToggleDarkMode,
   onToggleMinimized,
   onExpandFromCover,
   onPrevTrack,
@@ -416,18 +385,6 @@ export function SpotifyPlayingView({
           onBlur={handleWidgetBlur}
         >
           <div style={floatingControlsStyle}>
-            <button
-              type="button"
-              onClick={onToggleDarkMode}
-              style={controlButtonStyle}
-              aria-label={isDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
-              title={isDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
-              aria-pressed={isDarkMode}
-            >
-              <span className="material-symbols-rounded" aria-hidden="true" style={floatingControlIconStyle}>
-                dark_mode
-              </span>
-            </button>
             <button
               type="button"
               onClick={isMinimized ? onExpandFromCover : onToggleMinimized}

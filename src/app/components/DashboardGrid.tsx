@@ -151,6 +151,21 @@ function getNewsCountryStorageKey(widgetId: string) {
   return `panelia:news:selected-country:${widgetId}`;
 }
 
+const SPOTIFY_DARK_MODE_STORAGE_KEY = "spotify_widget_dark_mode";
+const SPOTIFY_DARK_MODE_EVENT = "panelia:spotify:dark-mode-change";
+
+function readSpotifyDarkModeSetting() {
+  if (typeof window === "undefined") return true;
+
+  try {
+    const raw = localStorage.getItem(SPOTIFY_DARK_MODE_STORAGE_KEY);
+    if (raw === null) return true;
+    return raw === "true";
+  } catch {
+    return true;
+  }
+}
+
 export default function DashboardGrid({
   activeWidgets,
   layouts,
@@ -183,6 +198,9 @@ export default function DashboardGrid({
     { widgetId: string; target: "surface" | "border" | "text" } | null
   >(null);
   const [newsCountryMenuWidgetId, setNewsCountryMenuWidgetId] = useState<string | null>(null);
+  const [spotifyDarkMode, setSpotifyDarkMode] = useState<boolean>(() =>
+    readSpotifyDarkModeSetting()
+  );
   const [newsCountries, setNewsCountries] = useState<Record<string, string>>(() => {
     const initial: Record<string, string> = {};
     try {
@@ -211,6 +229,23 @@ export default function DashboardGrid({
     setActiveStyleSliderId(null);
     setActiveStyleColorPicker(null);
   }, [styleEditorWidgetId]);
+
+  useEffect(() => {
+    const handleSpotifyDarkModeChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ enabled?: boolean }>;
+      if (typeof customEvent.detail?.enabled === "boolean") {
+        setSpotifyDarkMode(customEvent.detail.enabled);
+        return;
+      }
+
+      setSpotifyDarkMode(readSpotifyDarkModeSetting());
+    };
+
+    window.addEventListener(SPOTIFY_DARK_MODE_EVENT, handleSpotifyDarkModeChange as EventListener);
+    return () => {
+      window.removeEventListener(SPOTIFY_DARK_MODE_EVENT, handleSpotifyDarkModeChange as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     const handleGlobalKeyDown = () => {
@@ -435,7 +470,7 @@ export default function DashboardGrid({
 
     const controls = Array.from(
       controlsContainer.querySelectorAll<HTMLButtonElement>(
-        "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-style-btn, button.widget-lock-btn"
+        "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-news-country-btn, button.widget-spotify-darkmode-btn, button.widget-style-btn, button.widget-lock-btn"
       )
     ).filter((button) => !button.disabled);
 
@@ -483,7 +518,7 @@ export default function DashboardGrid({
       }
 
       const firstInnerControl = widgetRoot.querySelector(
-        'textarea,input,select,button:not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn),[href],[tabindex]:not([tabindex="-1"])'
+        'textarea,input,select,button:not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn):not(.widget-news-country-btn):not(.widget-spotify-darkmode-btn),[href],[tabindex]:not([tabindex="-1"])'
       ) as HTMLElement | null;
 
       firstInnerControl?.focus();
@@ -621,7 +656,7 @@ export default function DashboardGrid({
       const widgetRoot = event.currentTarget;
       const contentElements = Array.from(
         widgetRoot.querySelectorAll<HTMLElement>(
-          'textarea,input,select,button:not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn),[href],[tabindex]:not([tabindex="-1"])'
+          'textarea,input,select,button:not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn):not(.widget-news-country-btn):not(.widget-spotify-darkmode-btn),[href],[tabindex]:not([tabindex="-1"])'
         )
       ).filter((el) => !el.closest(".widget-style-control"));
 
@@ -632,7 +667,7 @@ export default function DashboardGrid({
       if (isFirst) {
         const topControls = Array.from(
           widgetRoot.querySelectorAll<HTMLElement>(
-            "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-style-btn, button.widget-lock-btn"
+            "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-news-country-btn, button.widget-spotify-darkmode-btn, button.widget-style-btn, button.widget-lock-btn"
           )
         ).filter((btn) => !(btn as HTMLButtonElement).disabled);
 
@@ -760,7 +795,7 @@ export default function DashboardGrid({
         isDraggable={isMovable}
         isResizable={isMovable}
         isBounded={true}
-        draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control,.widget-news-country-btn,.widget-news-country-menu"
+        draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control,.widget-news-country-btn,.widget-news-country-menu,.widget-spotify-darkmode-btn"
         compactType={null}
         preventCollision={true}
         allowOverlap={false}
@@ -805,6 +840,7 @@ export default function DashboardGrid({
           : baseGrid;
         const isClockWidget = widgetType === "clock";
         const isNewsWidget = widgetType === "news";
+        const isSpotifyWidget = widgetType === "spotify";
         const clockMode = clockModes[widgetId] ?? "digital";
         const showClockBackground = clockBackgrounds[widgetId] ?? (clockMode === "analog");
         const isStyleEditorOpen = styleEditorWidgetId === widgetId;
@@ -972,6 +1008,48 @@ export default function DashboardGrid({
                       style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
                     >
                       flag
+                    </span>
+                  </button>
+                )}
+                {isSpotifyWidget && (
+                  <button
+                    type="button"
+                    className="widget-spotify-darkmode-btn"
+                    aria-label={spotifyDarkMode ? t("widgets.spotifyWidget.disableDarkMode") : t("widgets.spotifyWidget.enableDarkMode")}
+                    title={spotifyDarkMode ? t("widgets.spotifyWidget.darkModeOn") : t("widgets.spotifyWidget.darkModeOff")}
+                    aria-pressed={spotifyDarkMode}
+                    onClick={() => {
+                      const next = !spotifyDarkMode;
+                      setSpotifyDarkMode(next);
+                      localStorage.setItem(SPOTIFY_DARK_MODE_STORAGE_KEY, String(next));
+                      window.dispatchEvent(
+                        new CustomEvent(SPOTIFY_DARK_MODE_EVENT, {
+                          detail: { enabled: next },
+                        })
+                      );
+                    }}
+                    onKeyDown={handleWidgetTopControlKeyDown}
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: spotifyDarkMode
+                        ? widgetControlActiveBackground
+                        : widgetControlBackground,
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      dark_mode
                     </span>
                   </button>
                 )}
