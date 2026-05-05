@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import GridLayout from "react-grid-layout/legacy";
 import type { Layout } from "react-grid-layout";
+import { ColorPicker } from "./ColorPicker";
 import { WIDGETS } from "../features/Widgets/registry/WidgetRegistry";
 import { WidgetInstanceProvider } from "../features/Widgets/components/WidgetInstanceContext";
 import type { WidgetStyleOverrides } from "../features/dashboard/hooks/useWidgetsState";
@@ -162,12 +163,40 @@ export default function DashboardGrid({
 }: Props) {
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
   const [styleEditorWidgetId, setStyleEditorWidgetId] = useState<string | null>(null);
+  const [activeStyleSliderId, setActiveStyleSliderId] = useState<string | null>(null);
+  const [activeStyleColorPicker, setActiveStyleColorPicker] = useState<
+    { widgetId: string; target: "surface" | "border" | "text" } | null
+  >(null);
   const [focusedWidgetId, setFocusedWidgetId] = useState<string | null>(null);
-  const [keyboardMoveWidgetId, setKeyboardMoveWidgetId] = useState<string | null>(null);
+  const [focusVisibleWidgetId, setFocusVisibleWidgetId] = useState<string | null>(null);
   const [keyboardStatusMessage, setKeyboardStatusMessage] = useState("");
   const widgetElementRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const lastInteractionWasKeyboardRef = useRef(false);
   const { t } = useLanguage();
   const { fontSize: globalFontSize } = useFontSize();
+
+  useEffect(() => {
+    setActiveStyleSliderId(null);
+    setActiveStyleColorPicker(null);
+  }, [styleEditorWidgetId]);
+
+  useEffect(() => {
+    const handleGlobalKeyDown = () => {
+      lastInteractionWasKeyboardRef.current = true;
+    };
+
+    const handleGlobalPointerDown = () => {
+      lastInteractionWasKeyboardRef.current = false;
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown, true);
+    window.addEventListener("pointerdown", handleGlobalPointerDown, true);
+
+    return () => {
+      window.removeEventListener("keydown", handleGlobalKeyDown, true);
+      window.removeEventListener("pointerdown", handleGlobalPointerDown, true);
+    };
+  }, []);
 
   const fallbackWidth = typeof window === "undefined" ? 1200 : window.innerWidth;
   const resolvedContainerWidth =
@@ -216,13 +245,6 @@ export default function DashboardGrid({
       };
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
-
-  useEffect(() => {
-    if (!keyboardMoveWidgetId) return;
-    if (widgetLocks[keyboardMoveWidgetId]) {
-      setKeyboardMoveWidgetId(null);
-    }
-  }, [keyboardMoveWidgetId, widgetLocks]);
 
   const overlaps = (
     first: { x: number; y: number; w: number; h: number },
@@ -342,85 +364,316 @@ export default function DashboardGrid({
     firstSidebarButton?.focus();
   };
 
-  const handleWidgetKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, widgetId: string) => {
-    if (event.target !== event.currentTarget) return;
-    if (widgetLocks[widgetId]) return;
+  const focusStyleButton = (widgetId: string) => {
+    const widgetRoot = document.querySelector(`[data-widget-id="${widgetId}"]`);
+    if (!(widgetRoot instanceof HTMLElement)) return;
+    const styleButton = widgetRoot.querySelector("button.widget-style-btn") as HTMLButtonElement | null;
+    styleButton?.focus();
+  };
 
-    const isInMoveMode = keyboardMoveWidgetId === widgetId;
+  const focusStyleColorButton = (
+    widgetId: string,
+    target: "surface" | "border" | "text"
+  ) => {
+    const widgetRoot = document.querySelector(`[data-widget-id="${widgetId}"]`);
+    if (!(widgetRoot instanceof HTMLElement)) return;
+    const colorButton = widgetRoot.querySelector(
+      `button[data-style-color-target="${target}"]`
+    ) as HTMLButtonElement | null;
+    colorButton?.focus();
+  };
 
-    if (event.key === "Enter" || event.key === " ") {
+  const closeStyleEditorAndFocusButton = (widgetId: string) => {
+    setStyleEditorWidgetId(null);
+    setActiveStyleSliderId(null);
+    setActiveStyleColorPicker(null);
+    setFocusedWidgetId(widgetId);
+
+    requestAnimationFrame(() => {
+      focusStyleButton(widgetId);
+    });
+  };
+
+  const handleWidgetTopControlKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>
+  ) => {
+    const currentButton = event.currentTarget;
+    const controlsContainer = currentButton.parentElement;
+    if (!controlsContainer) return;
+
+    const controls = Array.from(
+      controlsContainer.querySelectorAll<HTMLButtonElement>(
+        "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-style-btn, button.widget-lock-btn"
+      )
+    ).filter((button) => !button.disabled);
+
+    const index = controls.indexOf(currentButton);
+    if (index === -1) return;
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
       event.stopPropagation();
-      const nextIsMoveMode = !isInMoveMode;
-      setKeyboardMoveWidgetId(nextIsMoveMode ? widgetId : null);
-      setKeyboardStatusMessage(
-        nextIsMoveMode
-          ? t("widgets.widgetKeyboard.moveEnabled")
-          : t("widgets.widgetKeyboard.moveDisabled")
-      );
-      return;
-    }
 
-    if (!isInMoveMode) {
-      if (
-        event.key === "ArrowLeft" ||
-        event.key === "ArrowRight" ||
-        event.key === "ArrowUp" ||
-        event.key === "ArrowDown"
-      ) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        const succeeded = focusAdjacentWidget(widgetId, event.key);
-
-        if (!succeeded && event.key === "ArrowLeft") {
-          setFocusedWidgetId(null);
-          setKeyboardMoveWidgetId(null);
-          if (onRequestSidebarFocus) {
-            onRequestSidebarFocus();
-          } else {
-            focusSidebarFallback();
-          }
-        }
-      }
-      return;
-    }
-
-    if (event.key === "Escape") {
-      event.preventDefault();
-      event.stopPropagation();
-      setKeyboardMoveWidgetId(null);
-      setKeyboardStatusMessage(t("widgets.widgetKeyboard.moveDisabled"));
-      return;
-    }
-
-    const step = event.shiftKey ? 4 : 1;
-
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      event.stopPropagation();
-      moveWidgetByKeyboard(widgetId, -step, 0);
-      return;
-    }
-
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      event.stopPropagation();
-      moveWidgetByKeyboard(widgetId, step, 0);
+      const delta = event.key === "ArrowRight" ? 1 : -1;
+      const nextIndex = (index + delta + controls.length) % controls.length;
+      controls[nextIndex]?.focus();
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
-      moveWidgetByKeyboard(widgetId, 0, -step);
+
+      const prevIndex = (index - 1 + controls.length) % controls.length;
+      controls[prevIndex]?.focus();
       return;
     }
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
       event.stopPropagation();
+
+      const nextControl = controls[index + 1];
+      if (nextControl) {
+        nextControl.focus();
+        return;
+      }
+
+      const widgetRoot = currentButton.closest("[data-widget-id]");
+      if (!(widgetRoot instanceof HTMLElement)) return;
+
+      const firstArticleLink = widgetRoot.querySelector(
+        '.news-widget-list a[href]'
+      ) as HTMLElement | null;
+      if (firstArticleLink) {
+        firstArticleLink.focus();
+        return;
+      }
+
+      const firstInnerControl = widgetRoot.querySelector(
+        'textarea,input,select,button:not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn),[href],[tabindex]:not([tabindex="-1"])'
+      ) as HTMLElement | null;
+
+      firstInnerControl?.focus();
+    }
+  };
+
+  const handleStyleControlKeyDown = (
+    event: React.KeyboardEvent<HTMLDivElement>,
+    widgetId: string
+  ) => {
+    if (event.key === "Escape") {
+      if (activeStyleSliderId) return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeStyleEditorAndFocusButton(widgetId);
+      return;
+    }
+
+    if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    const controls = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>(
+        'input:not([disabled]),select:not([disabled]),textarea:not([disabled]),button:not([disabled]),[href],[tabindex]:not([tabindex="-1"])'
+      )
+    );
+
+    if (controls.length === 0) return;
+
+    const target = event.target as HTMLElement;
+    const currentIndex = controls.findIndex((control) => control === target || control.contains(target));
+
+    if (currentIndex === -1) {
+      controls[0]?.focus();
+      return;
+    }
+
+    const delta = event.key === "ArrowDown" ? 1 : -1;
+    const nextIndex = (currentIndex + delta + controls.length) % controls.length;
+    setActiveStyleSliderId(null);
+    controls[nextIndex]?.focus();
+  };
+
+  const handleStyleSliderKeyDown = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+    sliderId: string
+  ) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+      setActiveStyleSliderId((prev) => (prev === sliderId ? null : sliderId));
+      return;
+    }
+
+    if (event.key === "Escape") {
+      if (activeStyleSliderId === sliderId) {
+        event.preventDefault();
+        event.stopPropagation();
+        setActiveStyleSliderId(null);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      if (activeStyleSliderId !== sliderId) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+  };
+
+  const handleStyleActionButtonKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    action: "reset" | "close"
+  ) => {
+    if (event.key === "ArrowRight" && action === "reset") {
+      event.preventDefault();
+      event.stopPropagation();
+      const stylePanel = event.currentTarget.closest(".widget-style-control");
+      const closeButton = stylePanel?.querySelector(
+        'button[data-style-action="close"]'
+      ) as HTMLButtonElement | null;
+      closeButton?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowLeft" && action === "close") {
+      event.preventDefault();
+      event.stopPropagation();
+      const stylePanel = event.currentTarget.closest(".widget-style-control");
+      const resetButton = stylePanel?.querySelector(
+        'button[data-style-action="reset"]'
+      ) as HTMLButtonElement | null;
+      resetButton?.focus();
+    }
+  };
+
+  const focusFirstWidgetControl = (container: HTMLDivElement, widgetId: string) => {
+    if (widgetId === "calendar" || widgetId.startsWith("calendar:")) {
+      const calendarPrevButton = container.querySelector(
+        'button[data-calendar-nav="previous-week"]:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (calendarPrevButton) {
+        calendarPrevButton.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
+    const firstFocusable = container.querySelector(
+      'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable="true"]'
+    ) as HTMLElement | null;
+
+    if (!firstFocusable) {
+      setKeyboardStatusMessage(t("widgets.widgetKeyboard.noFocusableContent"));
+      return;
+    }
+
+    firstFocusable.focus();
+    setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+  };
+
+  const handleWidgetKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, widgetId: string) => {
+    if (event.key === "Escape" && event.target !== event.currentTarget) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.currentTarget.focus();
+      return;
+    }
+
+    if (event.key === "ArrowUp" && event.target !== event.currentTarget) {
+      const widgetRoot = event.currentTarget;
+      const contentElements = Array.from(
+        widgetRoot.querySelectorAll<HTMLElement>(
+          'textarea,input,select,button:not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn),[href],[tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.closest(".widget-style-control"));
+
+      const target = event.target as HTMLElement;
+      const isFirst =
+        contentElements[0] === target || contentElements[0]?.contains(target);
+
+      if (isFirst) {
+        const topControls = Array.from(
+          widgetRoot.querySelectorAll<HTMLElement>(
+            "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-style-btn, button.widget-lock-btn"
+          )
+        ).filter((btn) => !(btn as HTMLButtonElement).disabled);
+
+        const lastControl = topControls[topControls.length - 1];
+        if (lastControl) {
+          event.preventDefault();
+          event.stopPropagation();
+          lastControl.focus();
+          return;
+        }
+      }
+    }
+
+    if (event.target !== event.currentTarget) return;
+    if (widgetLocks[widgetId]) return;
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+      focusFirstWidgetControl(event.currentTarget, widgetId);
+      return;
+    }
+
+    if (
+      event.ctrlKey &&
+      (event.key === "ArrowLeft" ||
+        event.key === "ArrowRight" ||
+        event.key === "ArrowUp" ||
+        event.key === "ArrowDown")
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const step = event.shiftKey ? 4 : 1;
+
+      if (event.key === "ArrowLeft") {
+        moveWidgetByKeyboard(widgetId, -step, 0);
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        moveWidgetByKeyboard(widgetId, step, 0);
+        return;
+      }
+
+      if (event.key === "ArrowUp") {
+        moveWidgetByKeyboard(widgetId, 0, -step);
+        return;
+      }
+
       moveWidgetByKeyboard(widgetId, 0, step);
+      return;
+    }
+
+    if (
+      event.key === "ArrowLeft" ||
+      event.key === "ArrowRight" ||
+      event.key === "ArrowUp" ||
+      event.key === "ArrowDown"
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const succeeded = focusAdjacentWidget(widgetId, event.key);
+
+      if (!succeeded && event.key === "ArrowLeft") {
+        setFocusedWidgetId(null);
+        if (onRequestSidebarFocus) {
+          onRequestSidebarFocus();
+        } else {
+          focusSidebarFallback();
+        }
+      }
     }
   };
 
@@ -522,8 +775,8 @@ export default function DashboardGrid({
         const clockMode = clockModes[widgetId] ?? "digital";
         const showClockBackground = clockBackgrounds[widgetId] ?? (clockMode === "analog");
         const isStyleEditorOpen = styleEditorWidgetId === widgetId;
-        const isKeyboardFocused = focusedWidgetId === widgetId;
-        const isKeyboardMoveActive = keyboardMoveWidgetId === widgetId;
+        const isFocused = focusedWidgetId === widgetId;
+        const isKeyboardFocused = focusVisibleWidgetId === widgetId;
         return (
           <div
             key={widgetId}
@@ -537,7 +790,7 @@ export default function DashboardGrid({
             role="group"
             aria-label={`${widgetType} widget`}
             aria-roledescription="dashboard widget"
-            aria-keyshortcuts="Enter Space ArrowLeft ArrowRight ArrowUp ArrowDown Escape Shift+ArrowLeft Shift+ArrowRight Shift+ArrowUp Shift+ArrowDown"
+            aria-keyshortcuts="Enter ArrowLeft ArrowRight ArrowUp ArrowDown Ctrl+ArrowLeft Ctrl+ArrowRight Ctrl+ArrowUp Ctrl+ArrowDown Ctrl+Shift+ArrowLeft Ctrl+Shift+ArrowRight Ctrl+Shift+ArrowUp Ctrl+Shift+ArrowDown"
             data-grid={{
               ...currentLayout,
               x:
@@ -553,16 +806,14 @@ export default function DashboardGrid({
             style={{
               position: "relative",
               overflow: "visible",
-              outline:
-                isKeyboardFocused
-                  ? isKeyboardMoveActive
-                    ? "2px solid rgba(59,130,246,0.95)"
-                    : "2px solid rgba(255,255,255,0.75)"
-                  : "none",
+              outline: isKeyboardFocused ? "2px solid rgba(255,255,255,0.75)" : "none",
               outlineOffset: 2,
               zIndex: isStyleEditorOpen ? 50 : hoveredWidgetId === widgetId ? 10 : 1,
             }}
-            onFocus={() => setFocusedWidgetId(widgetId)}
+            onFocus={() => {
+              setFocusedWidgetId(widgetId);
+              setFocusVisibleWidgetId(lastInteractionWasKeyboardRef.current ? widgetId : null);
+            }}
             onBlur={(event) => {
               const nextTarget = event.relatedTarget;
               // If focus is moving to another widget child, don't clear (e.g., button inside widget)
@@ -572,36 +823,13 @@ export default function DashboardGrid({
 
               // Always clear the focused widget ID for this widget when it loses focus
               setFocusedWidgetId((prev) => (prev === widgetId ? null : prev));
-              setKeyboardMoveWidgetId((prev) => (prev === widgetId ? null : prev));
+              setFocusVisibleWidgetId((prev) => (prev === widgetId ? null : prev));
             }}
             onKeyDown={(event) => handleWidgetKeyDown(event, widgetId)}
             onMouseEnter={() => setHoveredWidgetId(widgetId)}
             onMouseLeave={() => setHoveredWidgetId((prev) => (prev === widgetId ? null : prev))}
           >
-            {isInteractive && isKeyboardFocused && !isLocked && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 8,
-                  left: 8,
-                  zIndex: 3,
-                  padding: "4px 8px",
-                  borderRadius: 999,
-                  background: isKeyboardMoveActive ? "rgba(37, 99, 235, 0.95)" : "rgba(15, 23, 42, 0.72)",
-                  color: "#fff",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  lineHeight: 1.2,
-                  letterSpacing: 0.2,
-                  pointerEvents: "none",
-                }}
-              >
-                {isKeyboardMoveActive
-                  ? t("widgets.widgetKeyboard.moveActiveHint")
-                  : t("widgets.widgetKeyboard.moveInactiveHint")}
-              </div>
-            )}
-            {isInteractive && hoveredWidgetId === widgetId && (
+            {isInteractive && (hoveredWidgetId === widgetId || isFocused) && (
               <div
                 style={{
                   position: "absolute",
@@ -620,6 +848,7 @@ export default function DashboardGrid({
                     aria-label={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
                     title={clockMode === "analog" ? "Use digital clock" : "Use analog clock"}
                     onClick={() => onToggleClockMode(widgetId)}
+                    onKeyDown={handleWidgetTopControlKeyDown}
                     style={{
                       width: 24,
                       height: 24,
@@ -652,6 +881,7 @@ export default function DashboardGrid({
                     aria-label={showClockBackground ? "Hide clock background" : "Show clock background"}
                     title={showClockBackground ? "Hide clock background" : "Show clock background"}
                     onClick={() => onToggleClockBackground(widgetId)}
+                    onKeyDown={handleWidgetTopControlKeyDown}
                     style={{
                       width: 24,
                       height: 24,
@@ -685,6 +915,7 @@ export default function DashboardGrid({
                     onClick={() =>
                       setStyleEditorWidgetId((prev) => (prev === widgetId ? null : widgetId))
                     }
+                    onKeyDown={handleWidgetTopControlKeyDown}
                     style={{
                       width: 24,
                       height: 24,
@@ -723,6 +954,7 @@ export default function DashboardGrid({
                       setStyleEditorWidgetId(null);
                     }
                   }}
+                  onKeyDown={handleWidgetTopControlKeyDown}
                   style={{
                     width: 24,
                     height: 24,
@@ -752,6 +984,7 @@ export default function DashboardGrid({
             {isInteractive && !isLocked && isStyleEditorOpen && (
               <div
                 className="widget-style-control"
+                onKeyDown={(event) => handleStyleControlKeyDown(event, widgetId)}
                 style={{
                   position: "absolute",
                   top: 0,
@@ -775,15 +1008,58 @@ export default function DashboardGrid({
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
                   {t("editPanel.widgetColorMenu")}
-                  <input
-                    type="color"
-                    value={toColorInputValue(resolvedSurfaceColor)}
-                    onChange={(event) =>
-                      onSetWidgetStyle(widgetId, {
-                        widgetSurfaceColor: withAlpha(event.target.value, surfaceAlpha),
-                      })
+                  <button
+                    type="button"
+                    data-style-color-target="surface"
+                    onClick={() =>
+                      setActiveStyleColorPicker((prev) =>
+                        prev?.widgetId === widgetId && prev.target === "surface"
+                          ? null
+                          : { widgetId, target: "surface" }
+                      )
                     }
-                  />
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "fit-content",
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: "rgba(255,255,255,0.15)",
+                      color: "#fff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: 999,
+                        border: "1px solid rgba(255,255,255,0.6)",
+                        background: resolvedSurfaceColor,
+                      }}
+                    />
+                    <span style={{ fontSize: 12 }}>{t("editPanel.widgetColorButton")}</span>
+                  </button>
+                  {activeStyleColorPicker?.widgetId === widgetId &&
+                    activeStyleColorPicker.target === "surface" && (
+                      <ColorPicker
+                        value={toColorInputValue(resolvedSurfaceColor)}
+                        onChange={(hex) =>
+                          onSetWidgetStyle(widgetId, {
+                            widgetSurfaceColor: withAlpha(hex, surfaceAlpha),
+                          })
+                        }
+                        onClose={() => {
+                          setActiveStyleColorPicker(null);
+                          requestAnimationFrame(() => {
+                            focusStyleColorButton(widgetId, "surface");
+                          });
+                        }}
+                        autoFocus
+                      />
+                    )}
                 </label>
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -794,6 +1070,12 @@ export default function DashboardGrid({
                     max={20}
                     step={1}
                     value={resolvedBlur}
+                    onKeyDown={(event) => handleStyleSliderKeyDown(event, `${widgetId}:blur`)}
+                    onBlur={() => {
+                      setActiveStyleSliderId((prev) =>
+                        prev === `${widgetId}:blur` ? null : prev
+                      );
+                    }}
                     onChange={(event) =>
                       onSetWidgetStyle(widgetId, {
                         widgetBlur: Number(event.target.value),
@@ -810,6 +1092,12 @@ export default function DashboardGrid({
                     max={1}
                     step={0.05}
                     value={surfaceAlpha}
+                    onKeyDown={(event) => handleStyleSliderKeyDown(event, `${widgetId}:opacity`)}
+                    onBlur={() => {
+                      setActiveStyleSliderId((prev) =>
+                        prev === `${widgetId}:opacity` ? null : prev
+                      );
+                    }}
                     onChange={(event) =>
                       onSetWidgetStyle(widgetId, {
                         widgetSurfaceColor: withAlpha(resolvedSurfaceColor, Number(event.target.value)),
@@ -820,24 +1108,114 @@ export default function DashboardGrid({
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
                   {t("editPanel.widgetBorderColorTitle")}
-                  <input
-                    type="color"
-                    value={toColorInputValue(resolvedBorderColor)}
-                    onChange={(event) =>
-                      onSetWidgetStyle(widgetId, { widgetBorderColor: event.target.value })
+                  <button
+                    type="button"
+                    data-style-color-target="border"
+                    onClick={() =>
+                      setActiveStyleColorPicker((prev) =>
+                        prev?.widgetId === widgetId && prev.target === "border"
+                          ? null
+                          : { widgetId, target: "border" }
+                      )
                     }
-                  />
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "fit-content",
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: "rgba(255,255,255,0.15)",
+                      color: "#fff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: 999,
+                        border: "1px solid rgba(255,255,255,0.6)",
+                        background: resolvedBorderColor,
+                      }}
+                    />
+                    <span style={{ fontSize: 12 }}>{t("editPanel.widgetColorButton")}</span>
+                  </button>
+                  {activeStyleColorPicker?.widgetId === widgetId &&
+                    activeStyleColorPicker.target === "border" && (
+                      <ColorPicker
+                        value={toColorInputValue(resolvedBorderColor)}
+                        onChange={(hex) =>
+                          onSetWidgetStyle(widgetId, {
+                            widgetBorderColor: hex,
+                          })
+                        }
+                        onClose={() => {
+                          setActiveStyleColorPicker(null);
+                          requestAnimationFrame(() => {
+                            focusStyleColorButton(widgetId, "border");
+                          });
+                        }}
+                        autoFocus
+                      />
+                    )}
                 </label>
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
                   {t("editPanel.widgetTextColor")}
-                  <input
-                    type="color"
-                    value={toColorInputValue(resolvedTextColor)}
-                    onChange={(event) =>
-                      onSetWidgetStyle(widgetId, { widgetTextColor: event.target.value })
+                  <button
+                    type="button"
+                    data-style-color-target="text"
+                    onClick={() =>
+                      setActiveStyleColorPicker((prev) =>
+                        prev?.widgetId === widgetId && prev.target === "text"
+                          ? null
+                          : { widgetId, target: "text" }
+                      )
                     }
-                  />
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      width: "fit-content",
+                      padding: "6px 10px",
+                      borderRadius: 8,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background: "rgba(255,255,255,0.15)",
+                      color: "#fff",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: 999,
+                        border: "1px solid rgba(255,255,255,0.6)",
+                        background: resolvedTextColor,
+                      }}
+                    />
+                    <span style={{ fontSize: 12 }}>{t("editPanel.widgetColorButton")}</span>
+                  </button>
+                  {activeStyleColorPicker?.widgetId === widgetId &&
+                    activeStyleColorPicker.target === "text" && (
+                      <ColorPicker
+                        value={toColorInputValue(resolvedTextColor)}
+                        onChange={(hex) =>
+                          onSetWidgetStyle(widgetId, {
+                            widgetTextColor: hex,
+                          })
+                        }
+                        onClose={() => {
+                          setActiveStyleColorPicker(null);
+                          requestAnimationFrame(() => {
+                            focusStyleColorButton(widgetId, "text");
+                          });
+                        }}
+                        autoFocus
+                      />
+                    )}
                 </label>
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
@@ -848,6 +1226,12 @@ export default function DashboardGrid({
                     max={22}
                     step={1}
                     value={resolvedFontSize}
+                    onKeyDown={(event) => handleStyleSliderKeyDown(event, `${widgetId}:fontSize`)}
+                    onBlur={() => {
+                      setActiveStyleSliderId((prev) =>
+                        prev === `${widgetId}:fontSize` ? null : prev
+                      );
+                    }}
                     onChange={(event) =>
                       onSetWidgetStyle(widgetId, {
                         widgetFontSize: Number(event.target.value),
@@ -864,6 +1248,12 @@ export default function DashboardGrid({
                     max={12}
                     step={1}
                     value={resolvedBorderWidth}
+                    onKeyDown={(event) => handleStyleSliderKeyDown(event, `${widgetId}:borderWidth`)}
+                    onBlur={() => {
+                      setActiveStyleSliderId((prev) =>
+                        prev === `${widgetId}:borderWidth` ? null : prev
+                      );
+                    }}
                     onChange={(event) =>
                       onSetWidgetStyle(widgetId, {
                         widgetBorderWidth: Number(event.target.value),
@@ -875,7 +1265,9 @@ export default function DashboardGrid({
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
                     type="button"
+                    data-style-action="reset"
                     onClick={() => onResetWidgetStyle(widgetId)}
+                    onKeyDown={(event) => handleStyleActionButtonKeyDown(event, "reset")}
                     style={{
                       flex: 1,
                       borderRadius: 8,
@@ -891,7 +1283,9 @@ export default function DashboardGrid({
                   </button>
                   <button
                     type="button"
-                    onClick={() => setStyleEditorWidgetId(null)}
+                    data-style-action="close"
+                    onClick={() => closeStyleEditorAndFocusButton(widgetId)}
+                    onKeyDown={(event) => handleStyleActionButtonKeyDown(event, "close")}
                     style={{
                       borderRadius: 8,
                       border: "1px solid rgba(255,255,255,0.35)",

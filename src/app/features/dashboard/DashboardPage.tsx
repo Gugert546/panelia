@@ -564,7 +564,6 @@ function DashboardPageContent() {
   };
 
   const focusSidebarEditButton = () => {
-    setActivePanel((prev) => (prev === "edit" ? null : prev));
     const editButton = document.querySelector('button[aria-label="Rediger"]') as HTMLButtonElement | null;
     editButton?.focus();
   };
@@ -572,6 +571,11 @@ function DashboardPageContent() {
   const focusSidebarCalendarButton = () => {
     const calendarButton = document.querySelector('button[aria-label="Calendar"]') as HTMLButtonElement | null;
     calendarButton?.focus();
+  };
+
+  const focusSidebarChatButton = () => {
+    const chatButton = document.querySelector('button[aria-label="Chat"]') as HTMLButtonElement | null;
+    chatButton?.focus();
   };
 
   return (
@@ -715,6 +719,7 @@ function DashboardPageContent() {
         open={activePanel === "chat"}
         onClose={() => setActivePanel(null)}
         sidebarWidth={SIDEBAR_WIDTH}
+        onFocusSidebarChatButton={focusSidebarChatButton}
       />
 
       {activePanel === "calendar" && (

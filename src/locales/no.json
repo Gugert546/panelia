@@ -93,7 +93,9 @@
       "moveBlocked": "Flytting blokkert av en annen widget",
       "position": "Posisjon",
       "moveActiveHint": "Flyttemodus: piltaster, Shift+piler for større steg, Esc for avslutt",
-      "moveInactiveHint": "Trykk Enter for flyttemodus"
+      "moveInactiveHint": "Trykk Enter for å gå inn i widgeten. Hold Ctrl + piltaster for flytting (Shift for større steg)",
+      "contentNavigationEnabled": "Innholdsnavigasjon aktivert",
+      "noFocusableContent": "Ingen fokusbare elementer i denne widgeten"
     },
     "bookmarkWidget": {
       "title": "Bokmerker",
