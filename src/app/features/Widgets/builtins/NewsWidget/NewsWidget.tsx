@@ -3,6 +3,7 @@ import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
+import { useWidgetInstance } from "../../components/WidgetInstanceContext";
 import { getCountryCodeFromLocale, useUserLocation } from "../../hooks/userLocation";
 import { getFaviconCandidates } from "../../../../../lib/utils/favicon";
 
@@ -21,6 +22,38 @@ type NewsResponse = {
 
 const NEWS_CACHE_KEY_PREFIX = "panelia:news:v2:";
 const NEWS_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+const NEWS_DEFAULT_COUNTRY = "no";
+
+const COUNTRY_OPTIONS = [
+  { code: "no", label: "Norway" },
+  { code: "se", label: "Sweden" },
+  { code: "dk", label: "Denmark" },
+  { code: "gb", label: "United Kingdom" },
+  { code: "us", label: "United States" },
+  { code: "de", label: "Germany" },
+  { code: "fr", label: "France" },
+  { code: "es", label: "Spain" },
+] as const;
+
+function getNewsCountryStorageKey(widgetId?: string) {
+  return widgetId
+    ? `panelia:news:selected-country:${widgetId}`
+    : "panelia:news:selected-country";
+}
+
+function readSavedCountry(widgetId?: string): string | null {
+  try {
+    const key = getNewsCountryStorageKey(widgetId);
+    const value = localStorage.getItem(key)?.trim().toLowerCase();
+    if (!value) return null;
+
+    const isSupported = COUNTRY_OPTIONS.some((option) => option.code === value);
+    return isSupported ? value : null;
+  } catch {
+    return null;
+  }
+}
+
 
 function readCachedNews(country: string) {
   try {
@@ -146,8 +179,12 @@ function NewsArticleImage({ article }: { article: NewsArticle }) {
 }
 
 export default function NewsWidget() {
+  const widgetInstance = useWidgetInstance();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [loading, setLoading] = useState(false);
+  const [savedCountry, setSavedCountry] = useState<string | null>(() =>
+    readSavedCountry(widgetInstance?.widgetId)
+  );
   const lastFetchedCountryRef = useRef<string | undefined>(undefined);
   const listRef = useRef<HTMLDivElement | null>(null);
   const articleRefs = useRef<Array<HTMLAnchorElement | null>>([]);
@@ -157,9 +194,29 @@ export default function NewsWidget() {
   const { t } = useLanguage();
   const { state: locationState } = useUserLocation();
 
-  const country = locationState.status === "success"
-    ? locationState.data.countryCode ?? getCountryCodeFromLocale()
-    : getCountryCodeFromLocale();
+  const locationCountry =
+    locationState.status === "success"
+      ? locationState.data.countryCode ?? getCountryCodeFromLocale()
+      : getCountryCodeFromLocale();
+
+  const selectedCountry = savedCountry ?? locationCountry ?? NEWS_DEFAULT_COUNTRY;
+  const country = selectedCountry;
+
+  useEffect(() => {
+    setSavedCountry(readSavedCountry(widgetInstance?.widgetId));
+  }, [widgetInstance?.widgetId]);
+
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ widgetId: string; country: string }>).detail;
+      if (detail.widgetId === widgetInstance?.widgetId) {
+        setSavedCountry(detail.country);
+      }
+    };
+
+    window.addEventListener("panelia:news:country-change", handler);
+    return () => window.removeEventListener("panelia:news:country-change", handler);
+  }, [widgetInstance?.widgetId]);
 
   useEffect(() => {
     if (!country || lastFetchedCountryRef.current === country) return;

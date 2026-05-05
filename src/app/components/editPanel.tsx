@@ -177,6 +177,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const widgetItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const norwegianButtonRef = useRef<HTMLButtonElement | null>(null);
   const englishButtonRef = useRef<HTMLButtonElement | null>(null);
+  const spanishButtonRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const widgetsTabButtonRef = useRef<HTMLButtonElement | null>(null);
   const backgroundTabButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -304,13 +305,17 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   useEffect(() => {
     if (!open) return;
 
-    const focusTarget = (target: "norsk" | "english" | "close" | "widgets" | "background") => {
+    const focusTarget = (target: "norsk" | "english" | "spanish" | "close" | "widgets" | "background") => {
       if (target === "norsk") {
         norwegianButtonRef.current?.focus();
         return;
       }
       if (target === "english") {
         englishButtonRef.current?.focus();
+        return;
+      }
+      if (target === "spanish") {
+        spanishButtonRef.current?.focus();
         return;
       }
       if (target === "close") {
@@ -339,13 +344,15 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
           ? "norsk"
           : activeElement === englishButtonRef.current
             ? "english"
-            : activeElement === closeButtonRef.current
-              ? "close"
-            : activeElement === widgetsTabButtonRef.current
-              ? "widgets"
-              : activeElement === backgroundTabButtonRef.current
-                ? "background"
-                : null;
+            : activeElement === spanishButtonRef.current
+              ? "spanish"
+              : activeElement === closeButtonRef.current
+                ? "close"
+                : activeElement === widgetsTabButtonRef.current
+                  ? "widgets"
+                  : activeElement === backgroundTabButtonRef.current
+                    ? "background"
+                    : null;
 
       if (!currentKey) return;
 
@@ -380,28 +387,34 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         return;
       }
 
-      const nextMap: Record<"norsk" | "english" | "close" | "widgets" | "background", {
-        ArrowUp: "norsk" | "english" | "close" | "widgets" | "background";
-        ArrowDown: "norsk" | "english" | "close" | "widgets" | "background";
-        ArrowLeft: "norsk" | "english" | "close" | "widgets" | "background";
-        ArrowRight: "norsk" | "english" | "close" | "widgets" | "background";
+      const nextMap: Record<"norsk" | "english" | "spanish" | "close" | "widgets" | "background", {
+        ArrowUp: "norsk" | "english" | "spanish" | "close" | "widgets" | "background";
+        ArrowDown: "norsk" | "english" | "spanish" | "close" | "widgets" | "background";
+        ArrowLeft: "norsk" | "english" | "spanish" | "close" | "widgets" | "background";
+        ArrowRight: "norsk" | "english" | "spanish" | "close" | "widgets" | "background";
       }> = {
         norsk: {
           ArrowUp: "widgets",
           ArrowDown: "widgets",
-          ArrowLeft: "english",
+          ArrowLeft: "close",
           ArrowRight: "english",
         },
         english: {
           ArrowUp: "background",
           ArrowDown: "background",
           ArrowLeft: "norsk",
+          ArrowRight: "spanish",
+        },
+        spanish: {
+          ArrowUp: "background",
+          ArrowDown: "background",
+          ArrowLeft: "english",
           ArrowRight: "close",
         },
         close: {
           ArrowUp: "background",
           ArrowDown: "background",
-          ArrowLeft: "english",
+          ArrowLeft: "spanish",
           ArrowRight: "norsk",
         },
         widgets: {
@@ -941,7 +954,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
             style={language === 'no' ? selectedTopButtonStyle : topButtonStyle}
             title="Norsk"
           >
-            Norsk
+            <img src="https://flagcdn.com/w40/no.png" alt="Norsk" style={{ width: 20, height: 15, borderRadius: 2, objectFit: 'cover', display: 'block' }} />
           </button>
           <button
             ref={englishButtonRef}
@@ -949,7 +962,15 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
             style={language === 'en' ? selectedTopButtonStyle : topButtonStyle}
             title="English"
           >
-            English
+            <img src="https://flagcdn.com/w40/gb.png" alt="English" style={{ width: 20, height: 15, borderRadius: 2, objectFit: 'cover', display: 'block' }} />
+          </button>
+          <button
+            ref={spanishButtonRef}
+            onClick={() => setLanguage('es')}
+            style={language === 'es' ? selectedTopButtonStyle : topButtonStyle}
+            title="Español"
+          >
+            <img src="https://flagcdn.com/w40/es.png" alt="Español" style={{ width: 20, height: 15, borderRadius: 2, objectFit: 'cover', display: 'block' }} />
           </button>
         </div>
         <button style={topButtonStyle} onClick={onClose}>{t('editPanel.close')}</button>
@@ -1002,8 +1023,9 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         }}
       >
 
-        {viewMode === "widgets" &&
-          availableWidgets.map((widget, index) => {
+        {viewMode === "widgets" && (
+          <div style={{ marginTop: 12 }}>
+          {availableWidgets.map((widget, index) => {
             const widgetLabel =
               widget.id === "notes" && notesWidgetCount > 0
                 ? `${widget.label} (${notesWidgetCount})`
@@ -1095,6 +1117,8 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
           >
             {t('editPanel.addCustomButton')}
           </button>
+        )}
+        </div>
         )}
 
         {viewMode === "background" && (

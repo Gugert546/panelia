@@ -136,6 +136,21 @@ function getWidgetType(widgetId: string) {
   return widgetId.slice(0, separatorIndex);
 }
 
+const NEWS_COUNTRY_OPTIONS = [
+  { code: "no", label: "Norway" },
+  { code: "se", label: "Sweden" },
+  { code: "dk", label: "Denmark" },
+  { code: "gb", label: "United Kingdom" },
+  { code: "us", label: "United States" },
+  { code: "de", label: "Germany" },
+  { code: "fr", label: "France" },
+  { code: "es", label: "Spain" },
+] as const;
+
+function getNewsCountryStorageKey(widgetId: string) {
+  return `panelia:news:selected-country:${widgetId}`;
+}
+
 export default function DashboardGrid({
   activeWidgets,
   layouts,
@@ -167,6 +182,23 @@ export default function DashboardGrid({
   const [activeStyleColorPicker, setActiveStyleColorPicker] = useState<
     { widgetId: string; target: "surface" | "border" | "text" } | null
   >(null);
+  const [newsCountryMenuWidgetId, setNewsCountryMenuWidgetId] = useState<string | null>(null);
+  const [newsCountries, setNewsCountries] = useState<Record<string, string>>(() => {
+    const initial: Record<string, string> = {};
+    try {
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key?.startsWith("panelia:news:selected-country:")) {
+          const widgetId = key.slice("panelia:news:selected-country:".length);
+          const value = localStorage.getItem(key);
+          if (value) initial[widgetId] = value;
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return initial;
+  });
   const [focusedWidgetId, setFocusedWidgetId] = useState<string | null>(null);
   const [focusVisibleWidgetId, setFocusVisibleWidgetId] = useState<string | null>(null);
   const [keyboardStatusMessage, setKeyboardStatusMessage] = useState("");
@@ -728,7 +760,7 @@ export default function DashboardGrid({
         isDraggable={isMovable}
         isResizable={isMovable}
         isBounded={true}
-        draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control"
+        draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control,.widget-news-country-btn,.widget-news-country-menu"
         compactType={null}
         preventCollision={true}
         allowOverlap={false}
@@ -772,6 +804,7 @@ export default function DashboardGrid({
             }
           : baseGrid;
         const isClockWidget = widgetType === "clock";
+        const isNewsWidget = widgetType === "news";
         const clockMode = clockModes[widgetId] ?? "digital";
         const showClockBackground = clockBackgrounds[widgetId] ?? (clockMode === "analog");
         const isStyleEditorOpen = styleEditorWidgetId === widgetId;
@@ -903,6 +936,42 @@ export default function DashboardGrid({
                       style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
                     >
                       {showClockBackground ? "crop_square" : "check_box_outline_blank"}
+                    </span>
+                  </button>
+                )}
+                {isNewsWidget && (
+                  <button
+                    type="button"
+                    className="widget-news-country-btn"
+                    aria-label="Select news country"
+                    title="Select news country"
+                    aria-haspopup="menu"
+                    aria-expanded={newsCountryMenuWidgetId === widgetId}
+                    onClick={() =>
+                      setNewsCountryMenuWidgetId((prev) => (prev === widgetId ? null : widgetId))
+                    }
+                    style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: 999,
+                      border: "1px solid rgba(255,255,255,0.35)",
+                      background:
+                        newsCountryMenuWidgetId === widgetId
+                          ? widgetControlActiveBackground
+                          : widgetControlBackground,
+                      backdropFilter: "blur(6px)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span
+                      className="material-symbols-rounded"
+                      aria-hidden="true"
+                      style={{ fontSize: 14, color: "#fff", lineHeight: 1 }}
+                    >
+                      flag
                     </span>
                   </button>
                 )}
@@ -1299,6 +1368,89 @@ export default function DashboardGrid({
                     {t("editPanel.close")}
                   </button>
                 </div>
+              </div>
+            )}
+
+            {isInteractive && isNewsWidget && newsCountryMenuWidgetId === widgetId && (
+              <div
+                className="widget-news-country-menu"
+                style={{
+                  position: "absolute",
+                  top: 36,
+                  right: 8,
+                  zIndex: 20,
+                  padding: 8,
+                  borderRadius: 12,
+                  background: "rgba(15, 23, 42, 0.88)",
+                  border: "1px solid rgba(255,255,255,0.22)",
+                  backdropFilter: "blur(10px)",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.3)",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                  gap: 6,
+                }}
+              >
+                {NEWS_COUNTRY_OPTIONS.map((option) => {
+                  const currentCountry =
+                    newsCountries[widgetId] ??
+                    (() => {
+                      try {
+                        return localStorage.getItem(getNewsCountryStorageKey(widgetId)) ?? undefined;
+                      } catch {
+                        return undefined;
+                      }
+                    })();
+                  const isActive = currentCountry === option.code;
+
+                  return (
+                    <button
+                      key={option.code}
+                      type="button"
+                      aria-label={option.label}
+                      title={option.label}
+                      aria-pressed={isActive}
+                      onClick={() => {
+                        try {
+                          localStorage.setItem(getNewsCountryStorageKey(widgetId), option.code);
+                        } catch {
+                          // ignore
+                        }
+                        setNewsCountries((prev) => ({ ...prev, [widgetId]: option.code }));
+                        window.dispatchEvent(
+                          new CustomEvent("panelia:news:country-change", {
+                            detail: { widgetId, country: option.code },
+                          })
+                        );
+                        setNewsCountryMenuWidgetId(null);
+                      }}
+                      style={{
+                        width: 34,
+                        height: 26,
+                        borderRadius: 8,
+                        border: isActive
+                          ? "1px solid rgba(255,255,255,0.95)"
+                          : "1px solid rgba(255,255,255,0.25)",
+                        background: isActive
+                          ? "rgba(255,255,255,0.24)"
+                          : "rgba(255,255,255,0.08)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: 0,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <img
+                        src={`https://flagcdn.com/w40/${option.code}.png`}
+                        alt=""
+                        loading="lazy"
+                        width={20}
+                        height={15}
+                        style={{ borderRadius: 2, objectFit: "cover" }}
+                      />
+                    </button>
+                  );
+                })}
               </div>
             )}
 

@@ -6,8 +6,9 @@ import { isUserDataDeletionInProgress } from "../../lib/firebase/userDataDeletio
 import { useAuth } from "../features/auth/useAuth";
 import nbTranslations from '../../locales/no.json';
 import enTranslations from '../../locales/en.json';
+import esTranslations from '../../locales/es.json';
 
-type Language = 'no' | 'en';
+type Language = 'no' | 'en' | 'es';
 
 type LanguageDocument = {
   language: Language;
@@ -42,6 +43,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   const translations = {
     no: nbTranslations,
     en: enTranslations,
+    es: esTranslations,
   };
 
   const getNestedValue = (obj: any, path: string): string => {

@@ -137,7 +137,10 @@
       "chanceOfRain":"Rain chance",
       "uvIndex": "UV index",
       "showUvIndex": "Show UV index",
-      "hideUvIndex": "Hide UV index"
+      "hideUvIndex": "Hide UV index",
+      "errorFailed": "Weather request failed",
+      "errorNoTemp": "Could not find temperature in response",
+      "errorUnknown": "Unknown error"
     },
     "customButtons": {
       "title": "Custom buttons",
