@@ -874,8 +874,7 @@ export default function DashboardGrid({
                   zIndex: 2,
                 }}
               >
-
-                // Klokke-spesifikk: bytter mellom digital og analog visning
+                {/* Klokke-spesifikk: bytter mellom digital og analog visning */}
                 {isClockWidget && (
                   <button
                     type="button"
@@ -909,8 +908,7 @@ export default function DashboardGrid({
                     </span>
                   </button>
                 )}
-
-                // Klokke-spesifikk: viser/skjuler bakgrunnspanel bak klokkewidgeten
+                {/* Klokke-spesifikk: viser/skjuler bakgrunnspanel bak klokkewidgeten */}
                 {isClockWidget && (
                   <button
                     type="button"
@@ -943,8 +941,7 @@ export default function DashboardGrid({
                     </span>
                   </button>
                 )}
-
-                // Nyheter-spesifikk: åpner landvelger-menyen for nyhetskilden
+                {/* Nyheter-spesifikk: åpner landvelger-menyen for nyhetskilden */}
                 {isNewsWidget && (
                   <button
                     type="button"
@@ -981,8 +978,7 @@ export default function DashboardGrid({
                     </span>
                   </button>
                 )}
-
-                // Generisk: åpner per-widget stil-editor (kun tilgjengelig når widgeten er ulåst)
+                {/* Generisk: åpner per-widget stil-editor (kun tilgjengelig når widgeten er ulåst) */}
                 {!isLocked && (
                   <button
                     type="button"
@@ -1018,8 +1014,7 @@ export default function DashboardGrid({
                     </span>
                   </button>
                 )}
-
-                // Generisk: låser/låser opp widgeten slik at den ikke kan flyttes eller resizes
+                {/* Generisk: låser/låser opp widgeten slik at den ikke kan flyttes eller resizes */}
                 <button
                   type="button"
                   className="widget-lock-btn"
@@ -1087,8 +1082,7 @@ export default function DashboardGrid({
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
                   {t("editPanel.widgetColorMenu")}
-
-                  // Åpner fargevalg for bakgrunnsfargen til denne widgeten
+                  {/* Åpner fargevalg for bakgrunnsfargen til denne widgeten */}
                   <button
                     type="button"
                     data-style-color-target="surface"
@@ -1189,8 +1183,7 @@ export default function DashboardGrid({
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
                   {t("editPanel.widgetBorderColorTitle")}
-
-                  // Åpner fargevalg for kantfargen til denne widgeten
+                  {/* Åpner fargevalg for kantfargen til denne widgeten */}
                   <button
                     type="button"
                     data-style-color-target="border"
@@ -1247,8 +1240,7 @@ export default function DashboardGrid({
 
                 <label style={{ fontSize: 12, display: "flex", flexDirection: "column", gap: 4 }}>
                   {t("editPanel.widgetTextColor")}
-
-                  // Åpner fargevalg for tekstfargen til denne widgeten
+                  {/* Åpner fargevalg for tekstfargen til denne widgeten */}
                   <button
                     type="button"
                     data-style-color-target="text"
@@ -1348,8 +1340,7 @@ export default function DashboardGrid({
                 </label>
 
                 <div style={{ display: "flex", gap: 8 }}>
-
-                  // Tilbakestiller widget-stilen til de globale standardverdiene
+                  {/* Tilbakestiller widget-stilen til de globale standardverdiene */}
                   <button
                     type="button"
                     data-style-action="reset"
@@ -1368,8 +1359,7 @@ export default function DashboardGrid({
                   >
                     {t("editPanel.widgetStyleResetThis")}
                   </button>
-
-                  // Lukker stil-editoren og returnerer fokus til stil-knappen
+                  {/* Lukker stil-editoren og returnerer fokus til stil-knappen */}
                   <button
                     type="button"
                     data-style-action="close"
