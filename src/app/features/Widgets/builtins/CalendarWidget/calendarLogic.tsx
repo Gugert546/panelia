@@ -234,11 +234,19 @@ export function useCalendarLogic(
         const end = new Date(start);
         end.setHours(end.getHours() + 1);
 
-        await createCalendarEvent({
+        const newEventId = await createCalendarEvent({
           title: "New event",
           startAt: start.toISOString(),
           endAt: end.toISOString(),
           allDay: false,
+        });
+
+        setEditingEvent({
+          id: newEventId,
+          title: "New event",
+          description: "",
+          startAt: toLocalInput(start.toISOString()),
+          endAt: toLocalInput(end.toISOString()),
         });
       } finally {
         setCreatingKey(null);
