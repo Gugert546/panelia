@@ -6,6 +6,7 @@ type AiChatPanelProps = {
   open: boolean;
   onClose: () => void;
   sidebarWidth: number;
+  onFocusSidebarChatButton?: () => void;
 };
 
 export type AiChatPanelHandle = {
@@ -16,6 +17,7 @@ const AiChatPanel = forwardRef<AiChatPanelHandle, AiChatPanelProps>(function AiC
   open,
   onClose,
   sidebarWidth,
+  onFocusSidebarChatButton,
 }: AiChatPanelProps, ref) {
   const { t } = useLanguage();
   const panelWidth = "min(390px, calc(100vw - 118px))";
@@ -56,7 +58,12 @@ const AiChatPanel = forwardRef<AiChatPanelHandle, AiChatPanelProps>(function AiC
       </div>
 
       <div style={styles.content}>
-        <Chat ref={chatRef} variant="panel" autoFocus={open} />
+        <Chat
+          ref={chatRef}
+          variant="panel"
+          autoFocus={open}
+          onRequestSidebarChatFocus={onFocusSidebarChatButton}
+        />
       </div>
     </aside>
   );

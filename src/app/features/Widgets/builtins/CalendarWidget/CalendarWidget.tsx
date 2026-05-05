@@ -1,4 +1,4 @@
-import React, { forwardRef, useCallback, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useMemo, useRef, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useCalendarLogic } from "./calendarLogic";
@@ -169,6 +169,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
   const closeButtonFontSize = Math.max(fontSize + 6, 20);
   const previousWeekButtonRef = useRef<HTMLButtonElement | null>(null);
   const nextWeekButtonRef = useRef<HTMLButtonElement | null>(null);
+  const providerSelectRef = useRef<HTMLSelectElement | null>(null);
   const connectButtonRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const gridCellRefs = useRef<(HTMLDivElement | null)[][]>([]);
@@ -179,6 +180,25 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
   const [pendingWeekFocus, setPendingWeekFocus] = useState<{ row: number; col: number } | null>(null);
   const popupHeaderRef = useRef<HTMLDivElement | null>(null);
   const [popupHeaderHeight, setPopupHeaderHeight] = useState(0);
+
+  useEffect(() => {
+    const selectElement = providerSelectRef.current;
+    if (!selectElement) return;
+
+    const handleNativeKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft") return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      connectButtonRef.current?.focus();
+    };
+
+    selectElement.addEventListener("keydown", handleNativeKeyDown, true);
+    return () => {
+      selectElement.removeEventListener("keydown", handleNativeKeyDown, true);
+    };
+  }, []);
 
   const handleConnectCalendar = () => {
     if (calendarConnectionBusy) return;
@@ -221,6 +241,14 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
     onCalendarProviderChange?.(event.target.value as CalendarProvider);
   };
 
+  const handleProviderSelectKeyDownCapture: React.KeyboardEventHandler<HTMLSelectElement> = (event) => {
+    if (event.key !== "ArrowLeft") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    connectButtonRef.current?.focus();
+  };
+
   const checking = t("widgets.calendarWidget.checking")
   const connected = t("widgets.calendarWidget.connected")
   const connectCalendar = t("widgets.calendarWidget.connectCalendar")
@@ -246,7 +274,24 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
     focusGridCell(0, focusedGridCell.col);
   };
 
+  const focusWidgetTopControl = (start: HTMLElement) => {
+    const widgetRoot = start.closest("[data-widget-id]");
+    if (!(widgetRoot instanceof HTMLElement)) return;
+
+    const preferredControl = widgetRoot.querySelector(
+      "button.widget-style-btn, button.widget-lock-btn"
+    ) as HTMLButtonElement | null;
+
+    preferredControl?.focus();
+  };
+
   const handlePreviousWeekButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusWidgetTopControl(event.currentTarget);
+      return;
+    }
+
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       onFocusSidebarCalendarButton?.();
@@ -266,6 +311,12 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
   };
 
   const handleNextWeekButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusWidgetTopControl(event.currentTarget);
+      return;
+    }
+
     if (event.key === "ArrowLeft") {
       event.preventDefault();
       previousWeekButtonRef.current?.focus();
@@ -280,14 +331,20 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
 
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      connectButtonRef.current?.focus();
+      providerSelectRef.current?.focus();
     }
   };
 
   const handleConnectButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      focusWidgetTopControl(event.currentTarget);
+      return;
+    }
+
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      nextWeekButtonRef.current?.focus();
+      providerSelectRef.current?.focus();
       return;
     }
 
@@ -900,6 +957,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <button
               ref={previousWeekButtonRef}
+              data-calendar-nav="previous-week"
               onKeyDown={handlePreviousWeekButtonKeyDown}
               onClick={goToPreviousWeek}
               style={{
@@ -966,6 +1024,8 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
           {/* sub-kalender velger*/}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <select
+              ref={providerSelectRef}
+              onKeyDownCapture={handleProviderSelectKeyDownCapture}
               value={calendarProvider}
               onChange={handleProviderChange}
               disabled={calendarConnectionBusy}

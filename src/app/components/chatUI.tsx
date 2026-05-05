@@ -9,6 +9,7 @@ type ChatVariant = "panel" | "widget";
 type ChatProps = {
   variant?: ChatVariant;
   autoFocus?: boolean;
+  onRequestSidebarChatFocus?: () => void;
 };
 
 export type ChatHandle = {
@@ -31,12 +32,16 @@ function isConfirmationPrompt(text: string) {
   );
 }
 
-const Chat = forwardRef<ChatHandle, ChatProps>(function Chat({ variant = "widget", autoFocus = false }: ChatProps, ref) {
+const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
+  { variant = "widget", autoFocus = false, onRequestSidebarChatFocus }: ChatProps,
+  ref
+) {
   const { messages, isSending, sendMessage } = useAiChat();
   const { t } = useLanguage();
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const sendButtonRef = useRef<HTMLButtonElement | null>(null);
   const isPanel = variant === "panel";
 
   useEffect(() => {
@@ -83,6 +88,17 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat({ variant = "widget
     setInput("");
     await sendMessage(reply, t("chat.error"));
     inputRef.current?.focus();
+  };
+
+  const focusWidgetTopControl = (start: HTMLElement) => {
+    const widgetRoot = start.closest("[data-widget-id]");
+    if (!(widgetRoot instanceof HTMLElement)) return;
+
+    const topControl = widgetRoot.querySelector(
+      "button.widget-style-btn, button.widget-lock-btn"
+    ) as HTMLElement | null;
+
+    topControl?.focus();
   };
 
   const chatContent = (
@@ -173,6 +189,60 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat({ variant = "widget
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
               void handleSend();
+              return;
+            }
+
+            if (
+              isPanel &&
+              event.key === "ArrowLeft" &&
+              !event.shiftKey &&
+              !event.altKey &&
+              !event.ctrlKey &&
+              !event.metaKey
+            ) {
+              const target = event.currentTarget;
+              const hasSelection = target.selectionStart !== target.selectionEnd;
+              const caretAtStart = target.selectionStart === 0 && target.selectionEnd === 0;
+
+              if (!hasSelection && caretAtStart) {
+                event.preventDefault();
+                onRequestSidebarChatFocus?.();
+                return;
+              }
+            }
+
+            if (
+              event.key === "ArrowRight" &&
+              !event.shiftKey &&
+              !event.altKey &&
+              !event.ctrlKey &&
+              !event.metaKey
+            ) {
+              const target = event.currentTarget;
+              const hasSelection = target.selectionStart !== target.selectionEnd;
+              const caretAtEnd = target.selectionEnd === target.value.length;
+
+              if (!hasSelection && caretAtEnd) {
+                event.preventDefault();
+                sendButtonRef.current?.focus();
+              }
+            }
+
+            if (
+              event.key === "ArrowUp" &&
+              !event.shiftKey &&
+              !event.altKey &&
+              !event.ctrlKey &&
+              !event.metaKey
+            ) {
+              const target = event.currentTarget;
+              const hasSelection = target.selectionStart !== target.selectionEnd;
+              const caretAtTop = target.selectionStart === 0 && target.selectionEnd === 0;
+
+              if (!hasSelection && caretAtTop) {
+                event.preventDefault();
+                focusWidgetTopControl(target);
+              }
             }
           }}
           placeholder={t("chat.placeholder")}
@@ -181,11 +251,24 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat({ variant = "widget
           style={styles.input}
         />
         <button
+          ref={sendButtonRef}
           type="button"
           onClick={() => void handleSend()}
-          disabled={isSending || !input.trim()}
+          aria-disabled={isSending || !input.trim()}
           aria-label={isSending ? t("chat.sending") : t("chat.send")}
           title={isSending ? t("chat.sending") : t("chat.send")}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft") {
+              event.preventDefault();
+              inputRef.current?.focus();
+              return;
+            }
+
+            if (event.key === "ArrowUp") {
+              event.preventDefault();
+              focusWidgetTopControl(event.currentTarget);
+            }
+          }}
           style={{
             ...styles.sendButton,
             opacity: isSending || !input.trim() ? 0.58 : 1,
