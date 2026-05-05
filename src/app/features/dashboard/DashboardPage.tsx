@@ -29,7 +29,7 @@ import natt3 from "../../../assets/panelia-bg/Natt 3.png";
 
 import {
   AVAILABLE_WIDGETS,
-} from "./hooks/useWidgets";
+} from "./hooks/useWidgetsState";
 
 import { WidgetsProvider, useWidgets } from "./hooks/WidgetsContext";
 import { useLanguage } from "../../providers/languageProvider";
