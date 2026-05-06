@@ -17,7 +17,6 @@ export default function SpotifyWidget() {
     volume,
     isDarkMode,
     isMinimized,
-    setIsDarkMode,
     setIsMinimized,
     connectSpotify,
     playPause,
@@ -31,7 +30,7 @@ export default function SpotifyWidget() {
   });
 
   if (!token) {
-    return <SpotifyConnectView onConnect={connectSpotify} />;
+    return <SpotifyConnectView onConnect={connectSpotify} isDarkMode={isDarkMode} />;
   }
 
   if (!player) {
@@ -39,7 +38,6 @@ export default function SpotifyWidget() {
       <SpotifyIdleView
         fontSize={fontSize}
         isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode((previous) => !previous)}
       />
     );
   }
@@ -52,7 +50,6 @@ export default function SpotifyWidget() {
       fontSize={fontSize}
       isDarkMode={isDarkMode}
       isMinimized={isMinimized}
-      onToggleDarkMode={() => setIsDarkMode((previous) => !previous)}
       onToggleMinimized={() => setIsMinimized((previous) => !previous)}
       onExpandFromCover={() => setIsMinimized(false)}
       onPrevTrack={prevTrack}

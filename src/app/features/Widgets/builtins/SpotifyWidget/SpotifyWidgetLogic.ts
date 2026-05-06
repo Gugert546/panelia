@@ -36,12 +36,17 @@ type SpotifyWidgetLogicOptions = {
   noDeviceAlertText?: string;
 };
 
+const SPOTIFY_DARK_MODE_STORAGE_KEY = "spotify_widget_dark_mode";
+const SPOTIFY_DARK_MODE_EVENT = "panelia:spotify:dark-mode-change";
+
 export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
   const [token, setToken] = useState<string | null>(null);
   const [player, setPlayer] = useState<SpotifyPlayerState | null>(null);
   const [devices, setDevices] = useState<SpotifyDevice[]>([]);
   const [volume, setVolume] = useState(50);
-  const [isDarkMode, setIsDarkMode] = useState(() => getStoredBool("spotify_widget_dark_mode", true));
+  const [isDarkMode, setIsDarkMode] = useState(() =>
+    getStoredBool(SPOTIFY_DARK_MODE_STORAGE_KEY, true)
+  );
   const [isMinimized, setIsMinimized] = useState(() => getStoredBool("spotify_widget_minimized", false));
   const playerRetryAtRef = useRef(0);
   const devicesRetryAtRef = useRef(0);
@@ -49,8 +54,25 @@ export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
   const isFetchingDevicesRef = useRef(false);
 
   useEffect(() => {
-    localStorage.setItem("spotify_widget_dark_mode", String(isDarkMode));
+    localStorage.setItem(SPOTIFY_DARK_MODE_STORAGE_KEY, String(isDarkMode));
   }, [isDarkMode]);
+
+  useEffect(() => {
+    const handleDarkModeChange = (event: Event) => {
+      const customEvent = event as CustomEvent<{ enabled?: boolean }>;
+      if (typeof customEvent.detail?.enabled === "boolean") {
+        setIsDarkMode(customEvent.detail.enabled);
+        return;
+      }
+
+      setIsDarkMode(getStoredBool(SPOTIFY_DARK_MODE_STORAGE_KEY, true));
+    };
+
+    window.addEventListener(SPOTIFY_DARK_MODE_EVENT, handleDarkModeChange as EventListener);
+    return () => {
+      window.removeEventListener(SPOTIFY_DARK_MODE_EVENT, handleDarkModeChange as EventListener);
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("spotify_widget_minimized", String(isMinimized));
