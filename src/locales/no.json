@@ -190,7 +190,21 @@
       "refreshFromGoogle": "Oppdater fra Google",
       "refreshFromOutlook": "Oppdater fra Outlook",
       "time": "Tid",
-      "today": "I dag"
+      "today": "I dag",
+      "eventEditModal": {
+        "heading": "Rediger hendelse",
+        "titleLabel": "Tittel",
+        "titlePlaceholder": "Hendelsens tittel",
+        "descriptionLabel": "Beskrivelse",
+        "descriptionPlaceholder": "Legg til en beskrivelse...",
+        "startLabel": "Start",
+        "endLabel": "Slutt",
+        "delete": "Slett",
+        "deleting": "Sletter…",
+        "cancel": "Avbryt",
+        "save": "Lagre",
+        "saving": "Lagrer…"
+      }
     },
     "emailWidget": {
       "title": "E-post",

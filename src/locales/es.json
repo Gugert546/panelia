@@ -187,7 +187,21 @@
       "refreshFromGoogle": "Actualizar desde Google",
       "refreshFromOutlook": "Actualizar desde Outlook",
       "time": "Hora",
-      "today": "Hoy"
+      "today": "Hoy",
+      "eventEditModal": {
+        "heading": "Editar evento",
+        "titleLabel": "Título",
+        "titlePlaceholder": "Título del evento",
+        "descriptionLabel": "Descripción",
+        "descriptionPlaceholder": "Añade una descripción...",
+        "startLabel": "Inicio",
+        "endLabel": "Fin",
+        "delete": "Eliminar",
+        "deleting": "Eliminando…",
+        "cancel": "Cancelar",
+        "save": "Guardar",
+        "saving": "Guardando…"
+      }
     },
     "emailWidget": {
       "title": "Correo",

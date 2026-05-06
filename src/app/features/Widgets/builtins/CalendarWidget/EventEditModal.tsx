@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { useLanguage } from "../../../../providers/languageProvider";
 
 type EventFormState = {
   id: string;
@@ -62,6 +63,7 @@ export default function EventEditModal({
 }: EventEditModalProps) {
   const [startAtInput, setStartAtInput] = useState("");
   const [endAtInput, setEndAtInput] = useState("");
+  const { t } = useLanguage();
 
   useEffect(() => {
     if (!open || !value) return;
@@ -74,12 +76,36 @@ export default function EventEditModal({
 
   const isBusy = saving || deleting;
 
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    boxSizing: "border-box",
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: "1.5px solid rgba(0,0,0,0.15)",
+    background: "rgba(255,255,255,0.8)",
+    fontSize: 14,
+    outline: "none",
+    fontFamily: "inherit",
+    color: "inherit",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    gap: 4,
+    fontSize: 12,
+    fontWeight: 600,
+    color: "rgba(0,0,0,0.5)",
+    letterSpacing: "0.04em",
+    textTransform: "uppercase",
+  };
+
   return (
     <div
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(0,0,0,0.28)",
+        background: "rgba(0,0,0,0.32)",
         display: "grid",
         placeItems: "center",
         zIndex: 2500,
@@ -88,80 +114,142 @@ export default function EventEditModal({
     >
       <div
         style={{
-          width: 360,
-          borderRadius: 16,
-          padding: 16,
-          background: "rgba(255,255,255,0.92)",
-          backdropFilter: "blur(12px)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
+          width: 400,
+          borderRadius: 20,
+          padding: 28,
+          background: "rgba(255,255,255,0.95)",
+          backdropFilter: "blur(16px)",
+          boxShadow: "0 12px 40px rgba(0,0,0,0.22)",
           display: "flex",
           flexDirection: "column",
-          gap: 10,
+          gap: 16,
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 style={{ margin: 0 }}>Edit event</h3>
+        <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "rgba(0,0,0,0.85)" }}>
+          {t("widgets.calendarWidget.eventEditModal.heading")}
+        </h3>
 
-        <input
-          value={value.title}
-          onChange={(e) => onChange({ title: e.target.value })}
-          placeholder="Title"
-          disabled={isBusy}
-        />
-
-        <textarea
-          value={value.description}
-          onChange={(e) => onChange({ description: e.target.value })}
-          placeholder="Description"
-          rows={3}
-          disabled={isBusy}
-        />
-
-        <label>
-          Start
+        <label style={labelStyle}>
+          {t("widgets.calendarWidget.eventEditModal.titleLabel")}
           <input
-            type="text"
-            value={startAtInput}
-            onChange={(e) => {
-              const nextValue = e.target.value;
-              setStartAtInput(nextValue);
-
-              const parsedValue = toLocalDateTime(nextValue);
-              if (parsedValue) onChange({ startAt: parsedValue });
-            }}
-            placeholder="dd.mm.åååå tt:mm"
+            value={value.title}
+            onChange={(e) => onChange({ title: e.target.value })}
+            placeholder={t("widgets.calendarWidget.eventEditModal.titlePlaceholder")}
             disabled={isBusy}
+            style={inputStyle}
           />
         </label>
 
-        <label>
-          End
-          <input
-            type="text"
-            value={endAtInput}
-            onChange={(e) => {
-              const nextValue = e.target.value;
-              setEndAtInput(nextValue);
-
-              const parsedValue = toLocalDateTime(nextValue);
-              if (parsedValue) onChange({ endAt: parsedValue });
-            }}
-            placeholder="dd.mm.åååå tt:mm"
+        <label style={labelStyle}>
+          {t("widgets.calendarWidget.eventEditModal.descriptionLabel")}
+          <textarea
+            value={value.description}
+            onChange={(e) => onChange({ description: e.target.value })}
+            placeholder={t("widgets.calendarWidget.eventEditModal.descriptionPlaceholder")}
+            rows={3}
             disabled={isBusy}
+            style={{ ...inputStyle, resize: "vertical", lineHeight: 1.5 }}
           />
         </label>
 
-        <div style={{ display: "flex", gap: 8, justifyContent: "space-between" }}>
-          <button onClick={onDelete} disabled={isBusy}>
-            {deleting ? "Deleting..." : "Delete"}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <label style={labelStyle}>
+            {t("widgets.calendarWidget.eventEditModal.startLabel")}
+            <input
+              type="text"
+              value={startAtInput}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                setStartAtInput(nextValue);
+                const parsedValue = toLocalDateTime(nextValue);
+                if (parsedValue) onChange({ startAt: parsedValue });
+              }}
+              placeholder="dd.mm.åååå tt:mm"
+              disabled={isBusy}
+              style={inputStyle}
+            />
+          </label>
+
+          <label style={labelStyle}>
+            {t("widgets.calendarWidget.eventEditModal.endLabel")}
+            <input
+              type="text"
+              value={endAtInput}
+              onChange={(e) => {
+                const nextValue = e.target.value;
+                setEndAtInput(nextValue);
+                const parsedValue = toLocalDateTime(nextValue);
+                if (parsedValue) onChange({ endAt: parsedValue });
+              }}
+              placeholder="dd.mm.åååå tt:mm"
+              disabled={isBusy}
+              style={inputStyle}
+            />
+          </label>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 4 }}>
+          <button
+            onClick={onDelete}
+            disabled={isBusy}
+            style={{
+              padding: "9px 0",
+              borderRadius: 10,
+              border: "1.5px solid rgba(220,38,38,0.35)",
+              background: "rgba(254,226,226,0.7)",
+              color: "rgb(185,28,28)",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: isBusy ? "not-allowed" : "pointer",
+              fontFamily: "inherit",
+              opacity: isBusy ? 0.6 : 1,
+            }}
+          >
+            {deleting
+              ? t("widgets.calendarWidget.eventEditModal.deleting")
+              : t("widgets.calendarWidget.eventEditModal.delete")}
           </button>
 
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={onCancel} disabled={isBusy}>Cancel</button>
-            <button onClick={onSave} disabled={isBusy}>
-              {saving ? "Saving..." : "Save"}
-            </button>
-          </div>
+          <button
+            onClick={onCancel}
+            disabled={isBusy}
+            style={{
+              padding: "9px 0",
+              borderRadius: 10,
+              border: "1.5px solid rgba(0,0,0,0.15)",
+              background: "rgba(0,0,0,0.05)",
+              color: "rgba(0,0,0,0.7)",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: isBusy ? "not-allowed" : "pointer",
+              fontFamily: "inherit",
+              opacity: isBusy ? 0.6 : 1,
+            }}
+          >
+            {t("widgets.calendarWidget.eventEditModal.cancel")}
+          </button>
+
+          <button
+            onClick={onSave}
+            disabled={isBusy}
+            style={{
+              padding: "9px 0",
+              borderRadius: 10,
+              border: "none",
+              background: "rgb(59,130,246)",
+              color: "#fff",
+              fontWeight: 600,
+              fontSize: 13,
+              cursor: isBusy ? "not-allowed" : "pointer",
+              fontFamily: "inherit",
+              opacity: isBusy ? 0.6 : 1,
+            }}
+          >
+            {saving
+              ? t("widgets.calendarWidget.eventEditModal.saving")
+              : t("widgets.calendarWidget.eventEditModal.save")}
+          </button>
         </div>
       </div>
     </div>

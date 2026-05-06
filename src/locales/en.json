@@ -189,8 +189,21 @@
       "refreshFromGoogle": "Refresh from Google",
       "refreshFromOutlook": "Refresh from Outlook",
       "time": "Time",
-      "today": "Today"
-
+      "today": "Today",
+      "eventEditModal": {
+        "heading": "Edit event",
+        "titleLabel": "Title",
+        "titlePlaceholder": "Event title",
+        "descriptionLabel": "Description",
+        "descriptionPlaceholder": "Add a description...",
+        "startLabel": "Start",
+        "endLabel": "End",
+        "delete": "Delete",
+        "deleting": "Deleting…",
+        "cancel": "Cancel",
+        "save": "Save",
+        "saving": "Saving…"
+      }
     },
     "emailWidget": {
       "title": "Email",
