@@ -14,6 +14,10 @@ import foregroundSol3 from "../../../assets/panelia-bg/IMG_1117.png";
 import foregroundNatt1 from "../../../assets/panelia-bg/IMG_1114.png";
 import foregroundNatt2 from "../../../assets/panelia-bg/IMG_1112.png";
 import foregroundNatt3 from "../../../assets/panelia-bg/IMG_1113.png";
+import waterSol1 from "../../../assets/panelia-bg/Vann S1.png";
+import waterSol3 from "../../../assets/panelia-bg/Vann S3.png";
+import waterNatt2 from "../../../assets/panelia-bg/Vann N2.png";
+import waterNatt3 from "../../../assets/panelia-bg/Vann N3.png";
 
 type DashboardBackgroundProps = {
   backgroundId: DashboardBackgroundId;
@@ -51,6 +55,18 @@ function resolveDashboardForeground(backgroundId: DashboardBackgroundId) {
   if (effectiveBackgroundId === "natt1") return foregroundNatt1;
   if (effectiveBackgroundId === "natt2") return foregroundNatt2;
   if (effectiveBackgroundId === "natt3") return foregroundNatt3;
+
+  return null;
+}
+
+function resolveDashboardWater(backgroundId: DashboardBackgroundId) {
+  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId);
+
+  if (effectiveBackgroundId === "sol2") return waterSol1;
+  if (effectiveBackgroundId === "sol3") return waterSol3;
+  if (effectiveBackgroundId === "natt1") return waterNatt3;
+  if (effectiveBackgroundId === "natt2") return waterNatt3;
+  if (effectiveBackgroundId === "natt3") return waterNatt2;
 
   return null;
 }
@@ -100,6 +116,8 @@ export default function DashboardBackground({
   );
   const foregroundImageUrl =
     backgroundId === "customMedia" ? null : resolveDashboardForeground(backgroundId);
+  const waterImageUrl =
+    backgroundId === "customMedia" ? null : resolveDashboardWater(backgroundId);
   const skyBodyType =
     backgroundId === "customMedia" ? null : getSkyBodyType(backgroundId);
   const videoBackgroundSource = getVideoBackgroundSource(
@@ -132,6 +150,12 @@ export default function DashboardBackground({
       {skyBodyType && (
         <div className="dashboard-sky-orbit" aria-hidden="true">
           <div className={`dashboard-sky-body dashboard-sky-body-${skyBodyType}`} />
+        </div>
+      )}
+
+      {waterImageUrl && (
+        <div className="dashboard-water-layer" aria-hidden="true">
+          <img className="dashboard-water-texture" src={waterImageUrl} alt="" />
         </div>
       )}
 
