@@ -199,7 +199,29 @@ html, body, #root {
   text-underline-offset: 3px;
 }
 
-.dashboard-sun-orbit {
+.dashboard-background-layer,
+.dashboard-foreground-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+.dashboard-background-layer {
+  z-index: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.dashboard-foreground-layer {
+  z-index: 2;
+  object-fit: cover;
+  object-position: center;
+}
+
+.dashboard-sky-orbit {
   position: fixed;
   left: 50%;
   top: 56%;
@@ -208,25 +230,46 @@ html, body, #root {
   aspect-ratio: 1;
   pointer-events: none;
   transform: translate(-50%, -50%) rotate(0deg);
-  animation: dashboard-sun-orbit-clockwise 120s linear infinite;
+  animation: dashboard-sky-orbit-clockwise 120s linear infinite;
 }
 
-.dashboard-sun {
+.dashboard-sky-body {
   position: absolute;
   top: 10%;
   left: 50%;
   width: clamp(72px, 10vw, 140px);
   aspect-ratio: 1;
   border-radius: 999px;
-  background: #ffd45f;
-  box-shadow:
-    0 0 28px rgba(255,212,95,0.5),
-    0 0 72px rgba(255,178,64,0.32);
   opacity: 0.78;
   transform: translate(-50%, -50%);
 }
 
-@keyframes dashboard-sun-orbit-clockwise {
+.dashboard-sky-body-sun {
+  background: #ffd45f;
+  box-shadow:
+    0 0 28px rgba(255,212,95,0.5),
+    0 0 72px rgba(255,178,64,0.32);
+}
+
+.dashboard-sky-body-moon {
+  background: #f5f0dc;
+  box-shadow:
+    0 0 544px rgba(232,238,255,0.38),
+    0 0 568px rgba(177,198,255,0.24);
+}
+
+.dashboard-sky-body-moon::after {
+  content: "";
+  position: absolute;
+  top: 14%;
+  left: 20%;
+  width: 82%;
+  height: 82%;
+  border-radius: 999px;
+  background: rgba(12,18,38,0.9);
+}
+
+@keyframes dashboard-sky-orbit-clockwise {
   0% {
     transform: translate(-50%, -50%) rotate(0deg);
   }
@@ -762,8 +805,7 @@ html, body, #root {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dashboard-sun-orbit,
-  .dashboard-sun {
+  .dashboard-sky-orbit {
     animation: none;
   }
 

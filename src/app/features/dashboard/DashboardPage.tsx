@@ -15,17 +15,7 @@ import "react-resizable/css/styles.css";
 
 import { auth } from "../../../lib/firebase/client";
 import type { CalendarProvider } from "../../../types/firestore";
-import type {
-  CustomBackgroundMediaType,
-  DashboardBackgroundId,
-} from "./hooks/useWidgetsState";
-import { getBackgroundByTime } from "./hooks/getBackgroundByTime";
-import sol1 from "../../../assets/panelia-bg/Sol 1.png";
-import sol2 from "../../../assets/panelia-bg/Sol 2.png";
-import sol3 from "../../../assets/panelia-bg/Sol 3.png";
-import natt1 from "../../../assets/panelia-bg/Natt 1.png";
-import natt2 from "../../../assets/panelia-bg/Natt 2.png";
-import natt3 from "../../../assets/panelia-bg/Natt 3.png";
+import DashboardBackground from "./DashboardBackground";
 
 import {
   AVAILABLE_WIDGETS,
@@ -42,50 +32,6 @@ const DEFAULT_CALENDAR_CONNECTIONS: Record<CalendarProvider, CalendarConnectionS
   google: "loading",
   outlook: "loading",
 };
-
-function resolveDashboardBackground(
-  backgroundId: DashboardBackgroundId
-) {
-  if (backgroundId === "defaultbg") {
-    return resolveDashboardBackground(getBackgroundByTime());
-  }
-
-  if (backgroundId === "sol1") return sol1;
-  if (backgroundId === "sol2") return sol2;
-  if (backgroundId === "sol3") return sol3;
-  if (backgroundId === "natt1") return natt1;
-  if (backgroundId === "natt2") return natt2;
-  if (backgroundId === "natt3") return natt3;
-
-  // Animated backgrounds render as CSS overlays, keep an image fallback below.
-  if (backgroundId === "customMedia") {
-    return sol1;
-  }
-
-  return sol1;
-}
-
-function getVideoBackgroundSource(
-  backgroundId: DashboardBackgroundId,
-  customBackgroundUrl: string,
-  customBackgroundType: CustomBackgroundMediaType
-) {
-  if (backgroundId === "customMedia" && customBackgroundType === "video") {
-    return customBackgroundUrl || null;
-  }
-  return null;
-}
-
-function getImageBackgroundSource(
-  backgroundId: DashboardBackgroundId,
-  customBackgroundUrl: string,
-  customBackgroundType: CustomBackgroundMediaType
-) {
-  if (backgroundId === "customMedia" && customBackgroundType === "image") {
-    return customBackgroundUrl || resolveDashboardBackground("defaultbg");
-  }
-  return resolveDashboardBackground(backgroundId);
-}
 
 function DashboardPageContent() {
   const SIDEBAR_WIDTH = 86;
@@ -164,16 +110,6 @@ function DashboardPageContent() {
 
   const [, setTime] = useState(new Date());
 
-  const backgroundImageUrl = getImageBackgroundSource(
-    dashboardBackgroundId,
-    customBackgroundUrl,
-    customBackgroundType
-  );
-  const videoBackgroundSource = getVideoBackgroundSource(
-    dashboardBackgroundId,
-    customBackgroundUrl,
-    customBackgroundType
-  );
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
     isAuthenticated && (activePanel === "calendar" || isCalendarWidgetActive);
@@ -545,36 +481,14 @@ function DashboardPageContent() {
         position: "fixed",
         inset: 0,
         overflow: "hidden",
-        backgroundImage: `url(${backgroundImageUrl})`,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        backgroundColor: "#000",
       }}
     >
-      {videoBackgroundSource && (
-        <video
-          className="dashboard-bg-video"
-          src={videoBackgroundSource}
-          autoPlay
-          loop
-          muted
-          playsInline
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            objectFit: "cover",
-            zIndex: 0,
-            pointerEvents: "none",
-          }}
-        />
-      )}
-
-      <div className="dashboard-sun-orbit" aria-hidden="true">
-        <div className="dashboard-sun" />
-      </div>
+      <DashboardBackground
+        backgroundId={dashboardBackgroundId}
+        customBackgroundUrl={customBackgroundUrl}
+        customBackgroundType={customBackgroundType}
+      />
 
       <Sidebar
         disabled={!isAuthenticated}
@@ -641,7 +555,7 @@ function DashboardPageContent() {
           width: `calc(100vw - ${SIDEBAR_WIDTH}px)`,
           height: "100vh",
           position: "relative",
-          zIndex: 2,
+          zIndex: 3,
         }}
       >
         <DashboardGrid
