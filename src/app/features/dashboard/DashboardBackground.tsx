@@ -25,6 +25,10 @@ type DashboardBackgroundProps = {
   customBackgroundType: CustomBackgroundMediaType;
 };
 
+function toCssUrl(url: string) {
+  return `url("${url.replace(/"/g, '\\"')}")`;
+}
+
 function resolveEffectiveBackgroundId(backgroundId: DashboardBackgroundId) {
   if (backgroundId === "defaultbg") {
     return getBackgroundByTime() as DashboardBackgroundId;
@@ -132,7 +136,7 @@ export default function DashboardBackground({
         className="dashboard-background-layer"
         aria-hidden="true"
         style={{
-          backgroundImage: `url(${backgroundImageUrl})`,
+          backgroundImage: toCssUrl(backgroundImageUrl),
         }}
       />
 

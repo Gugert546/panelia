@@ -212,6 +212,9 @@ html, body, #root {
 }
 
 .dashboard-background-layer {
+  inset: -2px;
+  width: calc(100vw + 4px);
+  height: calc(100vh + 4px);
   z-index: 0;
   background-size: cover;
   background-position: center;
@@ -228,8 +231,10 @@ html, body, #root {
 }
 
 .dashboard-water-texture {
+  height: calc(100vh + 2px);
   object-fit: cover;
   object-position: center;
+  transform: translateY(-2px) scale(1.005);
 }
 
 .dashboard-foreground-layer {
