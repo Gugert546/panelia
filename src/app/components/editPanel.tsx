@@ -70,6 +70,7 @@ const BACKGROUND_OPTIONS: Array<{
   preview?: string;
 }> = [
   { id: "defaultbg", labelKey: "editPanel.paneliabgmashup", preview: paneliabgmashup },
+  { id: "customMedia", labelKey: "editPanel.backgroundCustomMedia" },
 ];
 
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";

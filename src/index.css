@@ -200,6 +200,9 @@ html, body, #root {
 }
 
 .dashboard-background-layer,
+.dashboard-bg-video,
+.dashboard-water-layer,
+.dashboard-water-texture,
 .dashboard-foreground-layer {
   position: fixed;
   inset: 0;
@@ -209,10 +212,29 @@ html, body, #root {
 }
 
 .dashboard-background-layer {
+  inset: -2px;
+  width: calc(100vw + 4px);
+  height: calc(100vh + 4px);
   z-index: 0;
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+.dashboard-bg-video {
+  z-index: 0;
+  object-fit: cover;
+}
+
+.dashboard-water-layer {
+  z-index: 2;
+}
+
+.dashboard-water-texture {
+  height: calc(100vh + 2px);
+  object-fit: cover;
+  object-position: center;
+  transform: translateY(-2px) scale(1.005);
 }
 
 .dashboard-foreground-layer {
@@ -247,15 +269,19 @@ html, body, #root {
 .dashboard-sky-body-sun {
   background: #ffd45f;
   box-shadow:
-    0 0 28px rgba(255,212,95,0.5),
-    0 0 72px rgba(255,178,64,0.32);
+    0 0 22px rgba(255,246,178,0.95),
+    0 0 58px rgba(255,212,95,0.82),
+    0 0 128px rgba(255,178,64,0.56),
+    0 0 230px rgba(255,238,161,0.32);
 }
 
 .dashboard-sky-body-moon {
   background: #f5f0dc;
   box-shadow:
-    0 0 544px rgba(232,238,255,0.38),
-    0 0 568px rgba(177,198,255,0.24);
+    0 0 24px rgba(255,255,244,0.92),
+    0 0 72px rgba(232,238,255,0.78),
+    0 0 160px rgba(177,198,255,0.58),
+    0 0 300px rgba(148,177,255,0.34);
 }
 
 .dashboard-sky-body-moon::after {
