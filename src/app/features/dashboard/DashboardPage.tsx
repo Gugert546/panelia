@@ -108,7 +108,7 @@ function DashboardPageContent() {
     label: t(`widgets.${widget.id}`)
   }));
 
-  const [, setTime] = useState(new Date());
+  const [time, setTime] = useState(new Date());
 
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
@@ -527,6 +527,7 @@ function DashboardPageContent() {
         backgroundId={dashboardBackgroundId}
         customBackgroundUrl={customBackgroundUrl}
         customBackgroundType={customBackgroundType}
+        date={time}
       />
 
       <Sidebar

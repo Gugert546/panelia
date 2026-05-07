@@ -251,8 +251,15 @@ html, body, #root {
   width: min(116vw, 118vh);
   aspect-ratio: 1;
   pointer-events: none;
-  transform: translate(-50%, -50%) rotate(0deg);
-  animation: dashboard-sky-orbit-clockwise 120s linear infinite;
+  transform: translate(-50%, -50%);
+}
+
+.dashboard-sky-orbit.dashboard-sky-orbit-sun {
+  animation: dashboard-sky-orbit-sun 50400s linear infinite;
+}
+
+.dashboard-sky-orbit.dashboard-sky-orbit-moon {
+  animation: dashboard-sky-orbit-moon 36000s linear infinite;
 }
 
 .dashboard-sky-body {
@@ -301,6 +308,24 @@ html, body, #root {
   }
   100% {
     transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+@keyframes dashboard-sky-orbit-sun {
+  from {
+    transform: translate(-50%, -50%) rotate(-90deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+}
+
+@keyframes dashboard-sky-orbit-moon {
+  from {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(270deg);
   }
 }
 
