@@ -176,6 +176,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const [activeColorPicker, setActiveColorPicker] = useState<"widget" | "border" | "text" | null>(null);
   const [activeSlider, setActiveSlider] = useState<"fontSize" | "blur" | "opacity" | "borderWidth" | null>(null);
   const widgetItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const customButtonOpenerRef = useRef<HTMLButtonElement | null>(null);
   const norwegianButtonRef = useRef<HTMLButtonElement | null>(null);
   const englishButtonRef = useRef<HTMLButtonElement | null>(null);
   const spanishButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -1104,7 +1105,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         {viewMode === "widgets" && (
             <button
               type="button"
-              ref={(element) => { widgetItemRefs.current[availableWidgets.length] = element; }}
+              ref={(element) => { widgetItemRefs.current[availableWidgets.length] = element; customButtonOpenerRef.current = element; }}
             onClick={() => setModalOpen(true)}
             style={{
               padding: "14px 16px",
@@ -1781,7 +1782,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
 
       </div>
 
-      <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} />
+      <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} openerRef={customButtonOpenerRef} />
 
       {resetConfirmOpen && (
         <div

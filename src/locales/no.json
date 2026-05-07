@@ -94,6 +94,8 @@
       "position": "Posisjon",
       "moveActiveHint": "Flyttemodus: piltaster, Shift+piler for større steg, Esc for avslutt",
       "moveInactiveHint": "Trykk Enter for å gå inn i widgeten. Hold Ctrl + piltaster for flytting (Shift for større steg)",
+      "keyboardHelpMove": "Ctrl+piler: Flytt",
+      "keyboardHelpResize": "Shift+piler: Størrelse",
       "contentNavigationEnabled": "Innholdsnavigasjon aktivert",
       "noFocusableContent": "Ingen fokusbare elementer i denne widgeten"
     },

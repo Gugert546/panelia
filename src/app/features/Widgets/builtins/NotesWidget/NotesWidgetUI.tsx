@@ -46,10 +46,13 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
                 e.preventDefault();
                 e.stopPropagation();
                 const widgetRoot = e.currentTarget.closest("[data-widget-id]");
+                const lockButton = widgetRoot?.querySelector(
+                  "button.widget-lock-btn:not([disabled])"
+                ) as HTMLButtonElement | null;
                 const styleButton = widgetRoot?.querySelector(
                   "button.widget-style-btn:not([disabled])"
                 ) as HTMLButtonElement | null;
-                styleButton?.focus();
+                (lockButton ?? styleButton)?.focus();
               }
               if (e.key === "ArrowDown") {
                 e.preventDefault();
@@ -79,6 +82,20 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
             ref={textareaRef}
             className="notes-widget-textarea"
             onKeyDown={(e) => {
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                e.stopPropagation();
+                const widgetRoot = e.currentTarget.closest("[data-widget-id]");
+                const lockButton = widgetRoot?.querySelector(
+                  "button.widget-lock-btn:not([disabled])"
+                ) as HTMLButtonElement | null;
+                const styleButton = widgetRoot?.querySelector(
+                  "button.widget-style-btn:not([disabled])"
+                ) as HTMLButtonElement | null;
+                (lockButton ?? styleButton)?.focus();
+                return;
+              }
+
               if (e.key === "ArrowRight") {
                 const el = e.currentTarget;
                 if (el.selectionStart === el.value.length && el.selectionEnd === el.value.length) {

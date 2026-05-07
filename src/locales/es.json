@@ -93,7 +93,9 @@
       "moveBlocked": "Movimiento bloqueado por otro widget",
       "position": "Posición",
       "moveActiveHint": "Modo mover: flechas, Shift+flechas para pasos más grandes, Esc para salir",
-      "moveInactiveHint": "Presiona Enter para el modo mover"
+      "moveInactiveHint": "Presiona Enter para el modo mover",
+      "keyboardHelpMove": "Ctrl+flechas: Mover",
+      "keyboardHelpResize": "Shift+flechas: Tamaño"
     },
     "bookmarkWidget": {
       "title": "Marcadores",

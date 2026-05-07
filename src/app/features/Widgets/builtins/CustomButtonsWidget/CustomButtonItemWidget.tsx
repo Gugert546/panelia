@@ -86,6 +86,13 @@ export default function CustomButtonItemWidget({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onClick={handleClick}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                e.stopPropagation();
+                window.open(url, "_blank", "noopener,noreferrer");
+              }
+            }}
             style={{
               display: "flex",
               alignItems: "center",
