@@ -1026,7 +1026,7 @@ export default function DashboardGrid({
         isDraggable={isMovable}
         isResizable={isMovable}
         isBounded={true}
-        draggableCancel="input,button,select,option,textarea,label,[role='button'],[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control,.widget-news-country-btn,.widget-news-country-menu,.widget-spotify-darkmode-btn"
+        draggableCancel="a,input,button:not(.widget-draggable-button),select,option,textarea,label,[role='button']:not(.widget-draggable-button),[contenteditable='true'],.widget-lock-btn,.widget-clock-mode-btn,.widget-style-btn,.widget-style-control,.widget-news-country-btn,.widget-news-country-menu,.widget-spotify-darkmode-btn"
         compactType={null}
         preventCollision={true}
         allowOverlap={false}
