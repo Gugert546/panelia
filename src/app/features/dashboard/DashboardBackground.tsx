@@ -23,22 +23,28 @@ type DashboardBackgroundProps = {
   backgroundId: DashboardBackgroundId;
   customBackgroundUrl: string;
   customBackgroundType: CustomBackgroundMediaType;
+  date?: Date;
 };
+
+const DAY_START_HOUR = 6;
+const DAY_END_HOUR = 20;
+const DAY_DURATION_HOURS = DAY_END_HOUR - DAY_START_HOUR;
+const NIGHT_DURATION_HOURS = 24 - DAY_DURATION_HOURS;
 
 function toCssUrl(url: string) {
   return `url("${url.replace(/"/g, '\\"')}")`;
 }
 
-function resolveEffectiveBackgroundId(backgroundId: DashboardBackgroundId) {
+function resolveEffectiveBackgroundId(backgroundId: DashboardBackgroundId, date: Date) {
   if (backgroundId === "defaultbg") {
-    return getBackgroundByTime() as DashboardBackgroundId;
+    return getBackgroundByTime(date) as DashboardBackgroundId;
   }
 
   return backgroundId;
 }
 
-function resolveDashboardBackground(backgroundId: DashboardBackgroundId) {
-  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId);
+function resolveDashboardBackground(backgroundId: DashboardBackgroundId, date: Date) {
+  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId, date);
 
   if (effectiveBackgroundId === "sol1") return sol1;
   if (effectiveBackgroundId === "sol2") return sol2;
@@ -51,8 +57,8 @@ function resolveDashboardBackground(backgroundId: DashboardBackgroundId) {
   return sol1;
 }
 
-function resolveDashboardForeground(backgroundId: DashboardBackgroundId) {
-  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId);
+function resolveDashboardForeground(backgroundId: DashboardBackgroundId, date: Date) {
+  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId, date);
 
   if (effectiveBackgroundId === "sol2") return foregroundSol2;
   if (effectiveBackgroundId === "sol3") return foregroundSol3;
@@ -63,8 +69,8 @@ function resolveDashboardForeground(backgroundId: DashboardBackgroundId) {
   return null;
 }
 
-function resolveDashboardWater(backgroundId: DashboardBackgroundId) {
-  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId);
+function resolveDashboardWater(backgroundId: DashboardBackgroundId, date: Date) {
+  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId, date);
 
   if (effectiveBackgroundId === "sol2") return waterSol1;
   if (effectiveBackgroundId === "sol3") return waterSol3;
@@ -75,8 +81,8 @@ function resolveDashboardWater(backgroundId: DashboardBackgroundId) {
   return null;
 }
 
-function getSkyBodyType(backgroundId: DashboardBackgroundId) {
-  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId);
+function getSkyBodyType(backgroundId: DashboardBackgroundId, date: Date) {
+  const effectiveBackgroundId = resolveEffectiveBackgroundId(backgroundId, date);
 
   if (effectiveBackgroundId.startsWith("natt")) return "moon";
   if (effectiveBackgroundId.startsWith("sol")) return "sun";
@@ -99,36 +105,67 @@ function getVideoBackgroundSource(
 function getImageBackgroundSource(
   backgroundId: DashboardBackgroundId,
   customBackgroundUrl: string,
-  customBackgroundType: CustomBackgroundMediaType
+  customBackgroundType: CustomBackgroundMediaType,
+  date: Date
 ) {
   if (backgroundId === "customMedia" && customBackgroundType === "image") {
-    return customBackgroundUrl || resolveDashboardBackground("defaultbg");
+    return customBackgroundUrl || resolveDashboardBackground("defaultbg", date);
   }
 
-  return resolveDashboardBackground(backgroundId);
+  return resolveDashboardBackground(backgroundId, date);
+}
+
+function getDayProgress(date: Date) {
+  const hours = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+  return Math.min(1, Math.max(0, (hours - DAY_START_HOUR) / DAY_DURATION_HOURS));
+}
+
+function getNightProgress(date: Date) {
+  const hours = date.getHours() + date.getMinutes() / 60 + date.getSeconds() / 3600;
+
+  if (hours >= DAY_END_HOUR) {
+    return Math.min(1, Math.max(0, (hours - DAY_END_HOUR) / NIGHT_DURATION_HOURS));
+  }
+
+  return Math.min(1, Math.max(0, (hours + 24 - DAY_END_HOUR) / NIGHT_DURATION_HOURS));
 }
 
 export default function DashboardBackground({
   backgroundId,
   customBackgroundUrl,
   customBackgroundType,
+  date,
 }: DashboardBackgroundProps) {
+  const now = date ?? new Date();
   const backgroundImageUrl = getImageBackgroundSource(
     backgroundId,
     customBackgroundUrl,
-    customBackgroundType
+    customBackgroundType,
+    now
   );
   const foregroundImageUrl =
-    backgroundId === "customMedia" ? null : resolveDashboardForeground(backgroundId);
+    backgroundId === "customMedia" ? null : resolveDashboardForeground(backgroundId, now);
   const waterImageUrl =
-    backgroundId === "customMedia" ? null : resolveDashboardWater(backgroundId);
+    backgroundId === "customMedia" ? null : resolveDashboardWater(backgroundId, now);
   const skyBodyType =
-    backgroundId === "customMedia" ? null : getSkyBodyType(backgroundId);
+    backgroundId === "customMedia" ? null : getSkyBodyType(backgroundId, now);
   const videoBackgroundSource = getVideoBackgroundSource(
     backgroundId,
     customBackgroundUrl,
     customBackgroundType
   );
+
+  const skyOrbitStyle = skyBodyType
+    ? {
+        animationDuration: `${
+          skyBodyType === "sun" ? DAY_DURATION_HOURS * 3600 : NIGHT_DURATION_HOURS * 3600
+        }s`,
+        animationDelay: `-${(
+          (skyBodyType === "sun" ? getDayProgress(now) : getNightProgress(now)) *
+          (skyBodyType === "sun" ? DAY_DURATION_HOURS * 3600 : NIGHT_DURATION_HOURS * 3600)
+        ).toFixed(2)}s`,
+      }
+    : undefined;
 
   return (
     <>
@@ -152,7 +189,11 @@ export default function DashboardBackground({
       )}
 
       {skyBodyType && (
-        <div className="dashboard-sky-orbit" aria-hidden="true">
+        <div
+          className={`dashboard-sky-orbit dashboard-sky-orbit-${skyBodyType}`}
+          style={skyOrbitStyle}
+          aria-hidden="true"
+        >
           <div className={`dashboard-sky-body dashboard-sky-body-${skyBodyType}`} />
         </div>
       )}
