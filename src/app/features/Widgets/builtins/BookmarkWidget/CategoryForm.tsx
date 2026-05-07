@@ -77,6 +77,7 @@ export default function CategoryForm({
       <label style={{fontWeight:600}}>{t("widgets.bookmarkWidget.newCategoryName")}:</label>
       <input
         type="text"
+        autoFocus
         placeholder={t("widgets.bookmarkWidget.newCategoryName")}
         value={categoryName}
         onChange={(e) => setCategoryName(e.target.value)}

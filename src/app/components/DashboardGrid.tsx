@@ -433,6 +433,153 @@ export default function DashboardGrid({
     const controlsContainer = currentButton.parentElement;
     if (!controlsContainer) return;
 
+    const widgetRoot = currentButton.closest("[data-widget-id]");
+    const widgetId = widgetRoot?.getAttribute("data-widget-id") ?? "";
+    const isSearchWidget = widgetId === "google_search" || widgetId.startsWith("google_search:");
+    const focusSearchInput = () => {
+      if (!(widgetRoot instanceof HTMLElement)) return false;
+      const searchInput = widgetRoot.querySelector(
+        'input[type="text"]:not([disabled])'
+      ) as HTMLInputElement | null;
+      if (!searchInput) return false;
+      searchInput.focus();
+      return true;
+    };
+
+    const isStyleButton = currentButton.classList.contains("widget-style-btn");
+    const isLockButton = currentButton.classList.contains("widget-lock-btn");
+
+    const isAiChatWidget = widgetId === "ai_chat" || widgetId.startsWith("ai_chat:");
+    const focusAiChatInput = () => {
+      if (!(widgetRoot instanceof HTMLElement)) return false;
+      const chatInput = widgetRoot.querySelector(
+        'textarea:not([disabled])'
+      ) as HTMLTextAreaElement | null;
+      if (!chatInput) return false;
+      chatInput.focus();
+      return true;
+    };
+
+    if (isSearchWidget) {
+      if (isStyleButton && (event.key === "ArrowDown" || event.key === "ArrowLeft")) {
+        event.preventDefault();
+        event.stopPropagation();
+        focusSearchInput();
+        return;
+      }
+
+      if (isLockButton && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        focusSearchInput();
+        return;
+      }
+    }
+
+    const isWeatherWidget = widgetId === "weather" || widgetId.startsWith("weather:");
+    if (isWeatherWidget) {
+      const getWeatherButtons = () =>
+        widgetRoot instanceof HTMLElement
+          ? Array.from(
+              widgetRoot.querySelectorAll<HTMLButtonElement>(
+                "button[aria-pressed]:not([disabled])"
+              )
+            )
+          : [];
+
+      if (isStyleButton && event.key === "ArrowLeft") {
+        event.preventDefault();
+        event.stopPropagation();
+        const weatherButtons = getWeatherButtons();
+        weatherButtons[weatherButtons.length - 1]?.focus();
+        return;
+      }
+
+      if (isLockButton && event.key === "ArrowRight") {
+        event.preventDefault();
+        event.stopPropagation();
+        const weatherButtons = getWeatherButtons();
+        weatherButtons[0]?.focus();
+        return;
+      }
+    }
+
+    const isBookmarkWidget = widgetId === "bookmark" || widgetId.startsWith("bookmark:");
+    if (isBookmarkWidget) {
+      const focusBookmarkFirstControl = () => {
+        if (!(widgetRoot instanceof HTMLElement)) return false;
+
+        const firstBookmarkControl = widgetRoot.querySelector(
+          'button:not([disabled]):not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn), a[href]'
+        ) as HTMLElement | null;
+
+        if (!firstBookmarkControl) return false;
+        firstBookmarkControl.focus();
+        return true;
+      };
+
+      if ((isStyleButton || isLockButton) && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        focusBookmarkFirstControl();
+        return;
+      }
+    }
+
+    if (isAiChatWidget) {
+      if ((isStyleButton || isLockButton) && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        focusAiChatInput();
+        return;
+      }
+    }
+
+    const isNotesWidget = widgetId === "notes" || widgetId.startsWith("notes:");
+    if (isNotesWidget) {
+      if ((isStyleButton || isLockButton) && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (widgetRoot instanceof HTMLElement) {
+          const notesTextarea = widgetRoot.querySelector(
+            'textarea.notes-widget-textarea:not([disabled])'
+          ) as HTMLElement | null;
+          notesTextarea?.focus();
+        }
+        return;
+      }
+    }
+
+    const isMinesweeperWidget = widgetId === "minesweeper" || widgetId.startsWith("minesweeper:");
+    if (isMinesweeperWidget) {
+      if (isStyleButton && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (widgetRoot instanceof HTMLElement) {
+          const newGameButton = widgetRoot.querySelector(
+            'button[data-minesweeper-new-game-btn="true"]:not([disabled])'
+          ) as HTMLElement | null;
+          newGameButton?.focus();
+        }
+        return;
+      }
+    }
+
+    const isInfoWidget = widgetId === "info" || widgetId.startsWith("info:");
+    if (isInfoWidget) {
+      if ((isStyleButton || isLockButton) && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (widgetRoot instanceof HTMLElement) {
+          const nextBtn = widgetRoot.querySelector(
+            'button[data-info-next-btn="true"]:not([disabled])'
+          ) as HTMLElement | null;
+          nextBtn?.focus();
+        }
+        return;
+      }
+    }
+
     const controls = Array.from(
       controlsContainer.querySelectorAll<HTMLButtonElement>(
         "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-style-btn, button.widget-lock-btn"
@@ -471,7 +618,6 @@ export default function DashboardGrid({
         return;
       }
 
-      const widgetRoot = currentButton.closest("[data-widget-id]");
       if (!(widgetRoot instanceof HTMLElement)) return;
 
       const firstArticleLink = widgetRoot.querySelector(
@@ -596,6 +742,90 @@ export default function DashboardGrid({
       }
     }
 
+    if (widgetId === "google_search" || widgetId.startsWith("google_search:")) {
+      const searchInput = container.querySelector(
+        'input[type="text"]:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (searchInput) {
+        searchInput.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
+    if (widgetId === "weather" || widgetId.startsWith("weather:")) {
+      const windButton = container.querySelector(
+        'button[aria-pressed]:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (windButton) {
+        windButton.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
+    if (widgetId === "ai_chat" || widgetId.startsWith("ai_chat:")) {
+      const chatInput = container.querySelector(
+        'textarea:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (chatInput) {
+        chatInput.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
+    if (widgetId === "bookmark" || widgetId.startsWith("bookmark:")) {
+      const addCategoryButton = container.querySelector(
+        'button[data-bookmark-add-category-btn="true"]:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (addCategoryButton) {
+        addCategoryButton.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
+    if (widgetId === "notes" || widgetId.startsWith("notes:")) {
+      const notesTextarea = container.querySelector(
+        'textarea.notes-widget-textarea:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (notesTextarea) {
+        notesTextarea.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
+    if (widgetId === "minesweeper" || widgetId.startsWith("minesweeper:")) {
+      const firstCell = container.querySelector(
+        'button[data-minesweeper-cell="0-0"]:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (firstCell) {
+        firstCell.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
+    if (widgetId === "info" || widgetId.startsWith("info:")) {
+      const nextBtn = container.querySelector(
+        'button[data-info-next-btn="true"]:not([disabled])'
+      ) as HTMLElement | null;
+
+      if (nextBtn) {
+        nextBtn.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
     const firstFocusable = container.querySelector(
       'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable="true"]'
     ) as HTMLElement | null;
@@ -647,9 +877,9 @@ export default function DashboardGrid({
     }
 
     if (event.target !== event.currentTarget) return;
-    if (widgetLocks[widgetId]) return;
+    const isLocked = Boolean(widgetLocks[widgetId]);
 
-    if (event.key === "Enter") {
+    if (event.key === "Enter" && !isLocked) {
       event.preventDefault();
       event.stopPropagation();
       focusFirstWidgetControl(event.currentTarget, widgetId);
@@ -657,6 +887,7 @@ export default function DashboardGrid({
     }
 
     if (
+      !isLocked &&
       event.ctrlKey &&
       (event.key === "ArrowLeft" ||
         event.key === "ArrowRight" ||

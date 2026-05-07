@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
@@ -19,6 +19,8 @@ export default function InfoWidget() {
   const fontSize = useResolvedWidgetFontSize();
   const [currentSlide, setCurrentSlide] = useState(0);
   const titleSize = fontSize + 2;
+  const prevBtnRef = useRef<HTMLButtonElement>(null);
+  const nextBtnRef = useRef<HTMLButtonElement>(null);
 
   const slides: InfoSlide[] = [
     {
@@ -71,23 +73,7 @@ export default function InfoWidget() {
     );
   };
 
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "ArrowLeft") {
-        goToPreviousSlide();
-      }
 
-      if (event.key === "ArrowRight") {
-        goToNextSlide();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [slides.length]);
 
   return (
     <WidgetContainer>
@@ -195,8 +181,17 @@ export default function InfoWidget() {
             </span>
 
             <button
+              ref={prevBtnRef}
               type="button"
               onClick={goToPreviousSlide}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowRight") { e.preventDefault(); e.stopPropagation(); nextBtnRef.current?.focus(); }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault(); e.stopPropagation();
+                  const widgetRoot = e.currentTarget.closest("[data-widget-id]");
+                  (widgetRoot?.querySelector("button.widget-style-btn:not([disabled])") as HTMLButtonElement | null)?.focus();
+                }
+              }}
               aria-label={t("widgets.infoWidget.previousSlide")}
               style={{
                 border: "1px solid #ddd",
@@ -211,8 +206,18 @@ export default function InfoWidget() {
             </button>
 
             <button
+              ref={nextBtnRef}
               type="button"
+              data-info-next-btn="true"
               onClick={goToNextSlide}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft") { e.preventDefault(); e.stopPropagation(); prevBtnRef.current?.focus(); }
+                if (e.key === "ArrowUp") {
+                  e.preventDefault(); e.stopPropagation();
+                  const widgetRoot = e.currentTarget.closest("[data-widget-id]");
+                  (widgetRoot?.querySelector("button.widget-style-btn:not([disabled])") as HTMLButtonElement | null)?.focus();
+                }
+              }}
               aria-label={t("widgets.infoWidget.nextSlide")}
               style={{
                 border: "1px solid #ddd",

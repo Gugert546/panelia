@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
@@ -31,6 +32,13 @@ export default function MinesweeperWidgetUI() {
   const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
   const confettiPieces = Array.from({ length: 18 }, (_, index) => index);
+  const newGameButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (state.status === "lost") {
+      newGameButtonRef.current?.focus();
+    }
+  }, [state.status]);
 
   return (
     <WidgetContainer>
@@ -68,8 +76,32 @@ export default function MinesweeperWidgetUI() {
             </div>
 
             <button
+              ref={newGameButtonRef}
+              data-minesweeper-new-game-btn="true"
               type="button"
               onClick={actions.resetGame}
+              onKeyDown={(event) => {
+                const widgetRoot = event.currentTarget.closest("[data-widget-id]");
+
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const styleButton = widgetRoot?.querySelector(
+                    "button.widget-style-btn:not([disabled])"
+                  ) as HTMLButtonElement | null;
+                  styleButton?.focus();
+                  return;
+                }
+
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const firstCell = widgetRoot?.querySelector(
+                    'button[data-minesweeper-cell="0-0"]:not([disabled])'
+                  ) as HTMLButtonElement | null;
+                  firstCell?.focus();
+                }
+              }}
               style={{
                 border: "1px solid rgba(0,0,0,0.12)",
                 background: "rgba(255,255,255,0.28)",
@@ -107,6 +139,7 @@ export default function MinesweeperWidgetUI() {
             }}
           >
             <div
+              data-minesweeper-grid
               style={{
                 display: "grid",
                 gridTemplateColumns: `repeat(${state.columns}, minmax(0, 1fr))`,
@@ -123,10 +156,27 @@ export default function MinesweeperWidgetUI() {
                 <button
                   key={cell.id}
                   type="button"
+                  data-minesweeper-cell={`${cell.row}-${cell.column}`}
                   onClick={() => actions.revealCell(cell.row, cell.column)}
                   onContextMenu={(event) => {
                     event.preventDefault();
                     actions.toggleFlag(cell.row, cell.column);
+                  }}
+                  onKeyDown={(event) => {
+                    let targetRow = cell.row;
+                    let targetCol = cell.column;
+                    if (event.key === "ArrowRight") { event.preventDefault(); event.stopPropagation(); targetCol += 1; }
+                    else if (event.key === "ArrowLeft") { event.preventDefault(); event.stopPropagation(); targetCol -= 1; }
+                    else if (event.key === "ArrowDown") { event.preventDefault(); event.stopPropagation(); targetRow += 1; }
+                    else if (event.key === "ArrowUp") {
+                      event.preventDefault(); event.stopPropagation();
+                      if (cell.row === 0) { newGameButtonRef.current?.focus(); return; }
+                      targetRow -= 1;
+                    }
+                    else return;
+                    const grid = event.currentTarget.closest('[data-minesweeper-grid]');
+                    const next = grid?.querySelector<HTMLElement>(`[data-minesweeper-cell="${targetRow}-${targetCol}"]`);
+                    next?.focus();
                   }}
                   aria-label={`${t("widgets.minesweeperWidget.cell")} ${cell.row + 1}-${cell.column + 1}`}
                   style={{
