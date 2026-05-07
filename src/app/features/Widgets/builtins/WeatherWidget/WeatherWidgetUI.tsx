@@ -1,7 +1,8 @@
-import { useState, type CSSProperties, type FocusEvent } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useWeatherWidget } from "./WeatherWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
+import { useWidgetInstance } from "../../components/WidgetInstanceContext";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
@@ -103,6 +104,7 @@ function WeatherAtmosphere({ mode, cloudTone }: { mode: WeatherVisualMode; cloud
 
 export default function WeatherWidgetUI() {
   const { state } = useWeatherWidget();
+  const widgetInstance = useWidgetInstance();
   const fontSize = useResolvedWidgetFontSize();
   const weatherControlIconSize = Math.max(fontSize, 14);
   const weatherControlIconMaxSize = Math.max(fontSize + 4, 18);
@@ -113,14 +115,48 @@ export default function WeatherWidgetUI() {
   const { t } = useLanguage();
   const [humidityIsEnabled, setHumidityIsEnabled] = useState(false);
   const [windIsEnabled, setWindIsEnabled] = useState(false);
-  const [uvIsEnabled,setUvIsEnabled] = useState(false);
-  const [controlsAreVisible, setControlsAreVisible] = useState(false);
+  const [uvIsEnabled, setUvIsEnabled] = useState(false);
+  const [isPointerOverWidget, setIsPointerOverWidget] = useState(false);
+  const [isFocusWithinWidget, setIsFocusWithinWidget] = useState(false);
 
-  function handleWidgetBlur(event: FocusEvent<HTMLDivElement>) {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
-      setControlsAreVisible(false);
+  const controlsAreVisible = isPointerOverWidget || isFocusWithinWidget;
+
+  useEffect(() => {
+    const widgetId = widgetInstance?.widgetId;
+    if (!widgetId) return;
+
+    const selector = `[data-widget-id="${widgetId}"]`;
+    const isInsideWidgetRoot = (target: EventTarget | null) => {
+      if (!(target instanceof Node)) return false;
+      const widgetRoot = document.querySelector(selector);
+      return Boolean(widgetRoot?.contains(target));
+    };
+
+    const handleFocusIn = (event: Event) => {
+      if (isInsideWidgetRoot(event.target)) {
+        setIsFocusWithinWidget(true);
+      }
+    };
+
+    const handleFocusOut = (event: Event) => {
+      if (!isInsideWidgetRoot(event.target)) return;
+      const nextTarget = (event as globalThis.FocusEvent).relatedTarget;
+      if (isInsideWidgetRoot(nextTarget)) return;
+      setIsFocusWithinWidget(false);
+    };
+
+    if (isInsideWidgetRoot(document.activeElement)) {
+      setIsFocusWithinWidget(true);
     }
-  }
+
+    document.addEventListener("focusin", handleFocusIn);
+    document.addEventListener("focusout", handleFocusOut);
+
+    return () => {
+      document.removeEventListener("focusin", handleFocusIn);
+      document.removeEventListener("focusout", handleFocusOut);
+    };
+  }, [widgetInstance?.widgetId]);
 
   //const debug = "clear"; // legg inn "debug ??" før "state.data?.symbolCode" i neste linje
   const resolvedSymbolCode = state.data?.symbolCode;
@@ -163,14 +199,46 @@ export default function WeatherWidgetUI() {
                 alignItems: "end",
                 containerType: "inline-size",
               }}
-              onMouseEnter={() => setControlsAreVisible(true)}
-              onMouseLeave={() => setControlsAreVisible(false)}
-              onFocus={() => setControlsAreVisible(true)}
-              onBlur={handleWidgetBlur}
+              onMouseEnter={() => setIsPointerOverWidget(true)}
+              onMouseLeave={() => setIsPointerOverWidget(false)}
             >
               <WeatherAtmosphere mode={visualMode} cloudTone={cloudTone} />
 
               <div
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+                  const container = event.currentTarget;
+                  const buttons = Array.from(
+                    container.querySelectorAll<HTMLButtonElement>("button:not([disabled])")
+                  );
+                  const index = buttons.indexOf(event.target as HTMLButtonElement);
+                  if (index === -1) return;
+                  event.preventDefault();
+                  event.stopPropagation();
+
+                  const widgetRoot = widgetInstance?.widgetId
+                    ? document.querySelector(`[data-widget-id="${widgetInstance.widgetId}"]`)
+                    : null;
+                  const topControls = widgetRoot
+                    ? Array.from(
+                        widgetRoot.querySelectorAll<HTMLButtonElement>(
+                          "button.widget-style-btn:not([disabled]), button.widget-lock-btn:not([disabled])"
+                        )
+                      )
+                    : [];
+
+                  if (event.key === "ArrowRight" && index === buttons.length - 1) {
+                    topControls[0]?.focus();
+                    return;
+                  }
+                  if (event.key === "ArrowLeft" && index === 0) {
+                    topControls[topControls.length - 1]?.focus();
+                    return;
+                  }
+
+                  const delta = event.key === "ArrowRight" ? 1 : -1;
+                  buttons[index + delta]?.focus();
+                }}
                 style={{
                   position: "absolute",
                   top: 0,

@@ -95,7 +95,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
     if (!(widgetRoot instanceof HTMLElement)) return;
 
     const topControl = widgetRoot.querySelector(
-      "button.widget-style-btn, button.widget-lock-btn"
+      "button.widget-style-btn"
     ) as HTMLElement | null;
 
     topControl?.focus();
@@ -235,12 +235,20 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
               !event.ctrlKey &&
               !event.metaKey
             ) {
+              if (!isPanel) {
+                event.preventDefault();
+                event.stopPropagation();
+                focusWidgetTopControl(event.currentTarget);
+                return;
+              }
+
               const target = event.currentTarget;
               const hasSelection = target.selectionStart !== target.selectionEnd;
               const caretAtTop = target.selectionStart === 0 && target.selectionEnd === 0;
 
               if (!hasSelection && caretAtTop) {
                 event.preventDefault();
+                event.stopPropagation();
                 focusWidgetTopControl(target);
               }
             }
@@ -266,6 +274,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
 
             if (event.key === "ArrowUp") {
               event.preventDefault();
+              event.stopPropagation();
               focusWidgetTopControl(event.currentTarget);
             }
           }}

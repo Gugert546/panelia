@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
@@ -88,6 +88,14 @@ export default function BookmarkUi() {
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   const categorySelectorRef = useRef<HTMLDivElement | null>(null);
+  const addCategoryBtnRef = useRef<HTMLButtonElement | null>(null);
+  const focusAddCategoryBtnAfterClose = useRef(false);
+  const addBookmarkBtnRef = useRef<HTMLButtonElement | null>(null);
+  const deleteCategoryBtnRef = useRef<HTMLButtonElement | null>(null);
+  const deleteCategoryCancelBtnRef = useRef<HTMLButtonElement | null>(null);
+  const deleteCategoryConfirmBtnRef = useRef<HTMLButtonElement | null>(null);
+  const bookmarkContentRef = useRef<HTMLDivElement | null>(null);
+  const focusFirstBookmarkAfterClose = useRef(false);
 
   const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
@@ -132,6 +140,328 @@ export default function BookmarkUi() {
     setSelectedCategoryForBookmark(null);
   };
 
+  const focusEditWidgetButton = (start: HTMLElement) => {
+    const widgetRoot = start.closest("[data-widget-id]");
+    if (!(widgetRoot instanceof HTMLElement)) return;
+
+    const styleButton = widgetRoot.querySelector(
+      "button.widget-style-btn:not([disabled])"
+    ) as HTMLButtonElement | null;
+
+    styleButton?.focus();
+  };
+
+  const closeCategoryFormAndRefocus = () => {
+    focusAddCategoryBtnAfterClose.current = true;
+    setShowCategoryForm(false);
+  };
+
+  useEffect(() => {
+    if (!showCategoryForm && focusAddCategoryBtnAfterClose.current) {
+      focusAddCategoryBtnAfterClose.current = false;
+      addCategoryBtnRef.current?.focus();
+    }
+  }, [showCategoryForm]);
+
+  useEffect(() => {
+    if (!selectedCategoryForBookmark && focusFirstBookmarkAfterClose.current) {
+      focusFirstBookmarkAfterClose.current = false;
+
+      const firstBookmarkLink = bookmarkContentRef.current?.querySelector(
+        "a[data-bookmark-item-link='true']"
+      ) as HTMLAnchorElement | null;
+
+      if (firstBookmarkLink) {
+        firstBookmarkLink.focus();
+        return;
+      }
+
+      addBookmarkBtnRef.current?.focus();
+    }
+  }, [selectedCategoryForBookmark]);
+
+  useEffect(() => {
+    if (isDeleteCategoryModalOpen) {
+      deleteCategoryCancelBtnRef.current?.focus();
+    }
+  }, [isDeleteCategoryModalOpen]);
+
+  const closeBookmarkFormAndRefocus = () => {
+    focusFirstBookmarkAfterClose.current = true;
+    setSelectedCategoryForBookmark(null);
+  };
+
+  const handleDeleteCategoryModalKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    // Escape: close modal and return focus
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setIsDeleteCategoryModalOpen(false);
+      requestAnimationFrame(() => {
+        deleteCategoryBtnRef.current?.focus();
+      });
+      return;
+    }
+
+    // Tab navigation - cycle between Cancel and Confirm buttons
+    if (event.key === "Tab") {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.shiftKey) {
+        // Shift+Tab: go to Cancel button
+        deleteCategoryCancelBtnRef.current?.focus();
+      } else {
+        // Tab: go to Confirm button if on Cancel, or back to Cancel if on Confirm
+        if (event.target === deleteCategoryCancelBtnRef.current) {
+          deleteCategoryConfirmBtnRef.current?.focus();
+        } else {
+          deleteCategoryCancelBtnRef.current?.focus();
+        }
+      }
+      return;
+    }
+
+    // Arrow keys: cycle between buttons
+    if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      event.preventDefault();
+      event.stopPropagation();
+      deleteCategoryCancelBtnRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      event.preventDefault();
+      event.stopPropagation();
+      deleteCategoryConfirmBtnRef.current?.focus();
+      return;
+    }
+
+    // Allow Enter to pass through to activate buttons
+    // Don't block it - let it activate the focused button naturally
+  };
+
+  const handleBookmarkArrowNavigation = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    // Handle Escape: close category form and go back to the add-category button
+    if (event.key === "Escape" && showCategoryForm) {
+      event.preventDefault();
+      event.stopPropagation();
+      closeCategoryFormAndRefocus();
+      return;
+    }
+
+    if (
+      event.key !== "ArrowUp" &&
+      event.key !== "ArrowDown" &&
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight"
+    ) {
+      return;
+    }
+
+    const target = event.target as HTMLElement;
+    const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
+
+    // For inputs, only handle ArrowUp/Down (let ArrowLeft/Right move the cursor)
+    if (isInput && (event.key === "ArrowLeft" || event.key === "ArrowRight")) return;
+
+    const currentControl = isInput
+      ? target
+      : (target.closest("button:not([disabled]),a[href]") as HTMLElement | null);
+    if (!currentControl) return;
+
+    // When the category form is open, restrict navigation to only form elements
+    const formContainer = showCategoryForm
+      ? event.currentTarget.querySelector<HTMLElement>("[data-bookmark-category-form]")
+      : null;
+    const searchRoot = formContainer ?? event.currentTarget;
+
+    const controls = Array.from(
+      searchRoot.querySelectorAll<HTMLElement>(
+        "input:not([disabled]),button:not([disabled]),a[href]"
+      )
+    ).filter((element) => {
+      if (element.closest(".widget-style-control")) return false;
+      if (
+        element.classList.contains("widget-style-btn") ||
+        element.classList.contains("widget-lock-btn") ||
+        element.classList.contains("widget-clock-mode-btn") ||
+        element.classList.contains("widget-clock-background-btn")
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    if (controls.length === 0) return;
+
+    const index = controls.indexOf(currentControl);
+    if (index === -1) return;
+
+    const bookmarkLinks = Array.from(
+      searchRoot.querySelectorAll<HTMLElement>("a[data-bookmark-item-link='true']")
+    );
+    const bookmarkIndex = bookmarkLinks.indexOf(currentControl);
+    const bookmarkIconLinks = Array.from(
+      searchRoot.querySelectorAll<HTMLElement>("a[data-bookmark-item-icon='true']")
+    );
+    const bookmarkIconIndex = bookmarkIconLinks.indexOf(currentControl);
+    const bookmarkDeleteButtons = Array.from(
+      searchRoot.querySelectorAll<HTMLElement>("button[data-bookmark-delete-btn='true']")
+    );
+    const bookmarkDeleteIndex = bookmarkDeleteButtons.indexOf(currentControl);
+    const lastBookmarkIcon = bookmarkIconLinks[bookmarkIconLinks.length - 1] ?? null;
+    const lastBookmarkLink = bookmarkLinks[bookmarkLinks.length - 1] ?? null;
+    const lastBookmarkDeleteButton = bookmarkDeleteButtons[bookmarkDeleteButtons.length - 1] ?? null;
+    const firstBookmarkLink = searchRoot.querySelector<HTMLElement>(
+      "a[data-bookmark-item-link='true']"
+    );
+    const firstBookmarkDeleteButton = searchRoot.querySelector<HTMLElement>(
+      "button[data-bookmark-delete-btn='true']"
+    );
+
+    if (
+      deleteCategoryBtnRef.current &&
+      (currentControl === lastBookmarkIcon || currentControl === lastBookmarkLink || currentControl === lastBookmarkDeleteButton) &&
+      event.key === "ArrowDown"
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      deleteCategoryBtnRef.current.focus();
+      return;
+    }
+
+    if (currentControl === deleteCategoryBtnRef.current && event.key === "ArrowUp") {
+      event.preventDefault();
+      event.stopPropagation();
+
+      // If there are bookmarks, focus the last bookmark title
+      if (lastBookmarkLink) {
+        lastBookmarkLink.focus();
+      } else {
+        // If no bookmarks, focus the category dropdown button
+        const categoryButton = categorySelectorRef.current?.querySelector<HTMLButtonElement>(
+          ":scope > button"
+        );
+        categoryButton?.focus();
+      }
+      return;
+    }
+
+    if (bookmarkDeleteIndex !== -1 && event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const row = currentControl.closest("li") ?? currentControl.parentElement;
+      const rowLink = row?.querySelector<HTMLElement>("a[data-bookmark-item-link='true']");
+      rowLink?.focus();
+      return;
+    }
+
+    if (bookmarkIconIndex !== -1 && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.key === "ArrowUp") {
+        if (bookmarkIconIndex === 0) {
+          addBookmarkBtnRef.current?.focus();
+          return;
+        }
+        bookmarkIconLinks[bookmarkIconIndex - 1]?.focus();
+        return;
+      }
+
+      bookmarkIconLinks[bookmarkIconIndex + 1]?.focus();
+      return;
+    }
+
+    if (bookmarkIndex !== -1 && event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const row = currentControl.closest("li") ?? currentControl.parentElement;
+      const rowIcon = row?.querySelector<HTMLElement>("a[data-bookmark-item-icon='true']");
+      rowIcon?.focus();
+      return;
+    }
+
+    if (
+      addBookmarkBtnRef.current &&
+      (
+        (currentControl === firstBookmarkLink && event.key === "ArrowUp") ||
+        (currentControl === firstBookmarkDeleteButton && event.key === "ArrowUp")
+      )
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      addBookmarkBtnRef.current.focus();
+      return;
+    }
+
+    if (
+      currentControl === addBookmarkBtnRef.current &&
+      (event.key === "ArrowDown" || event.key === "ArrowRight")
+    ) {
+      const firstBookmarkLink = bookmarkLinks[0];
+      if (firstBookmarkLink) {
+        event.preventDefault();
+        event.stopPropagation();
+        firstBookmarkLink.focus();
+        return;
+      }
+    }
+
+    if (bookmarkIndex !== -1 && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.key === "ArrowUp") {
+        bookmarkLinks[bookmarkIndex - 1]?.focus();
+        return;
+      }
+
+      bookmarkLinks[bookmarkIndex + 1]?.focus();
+      return;
+    }
+
+    if (bookmarkDeleteIndex !== -1 && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      if (event.key === "ArrowUp") {
+        bookmarkDeleteButtons[bookmarkDeleteIndex - 1]?.focus();
+        return;
+      }
+
+      bookmarkDeleteButtons[bookmarkDeleteIndex + 1]?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowUp" || event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const previous = controls[index - 1];
+      if (previous) {
+        previous.focus();
+        return;
+      }
+
+      // If form is open, don't escape upward — stay at top
+      if (!showCategoryForm) {
+        focusEditWidgetButton(currentControl);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowDown" || event.key === "ArrowRight") {
+      event.preventDefault();
+      event.stopPropagation();
+      controls[index + 1]?.focus();
+    }
+  };
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target;
@@ -158,9 +488,17 @@ export default function BookmarkUi() {
   useEffect(() => {
     if (!isDeleteCategoryModalOpen) return;
 
+    // Ensure keyboard users land inside the dialog immediately.
+    requestAnimationFrame(() => {
+      deleteCategoryCancelBtnRef.current?.focus();
+    });
+
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !isDeletingCategory) {
         setIsDeleteCategoryModalOpen(false);
+        requestAnimationFrame(() => {
+          deleteCategoryBtnRef.current?.focus();
+        });
       }
     };
 
@@ -175,11 +513,25 @@ export default function BookmarkUi() {
 
     try {
       setIsDeletingCategory(true);
+
+      // Calculate how many categories will be left after deletion
+      const categoriesBeforeDeletion = categories;
+      const willHaveNoCategories =
+        categoriesBeforeDeletion.filter((cat) => cat.id !== activeCategory.id).length === 0;
+
       await handleDeleteCategory(activeCategory.id);
       setSelectedCategoryForBookmark(null);
       setIsCategoryMenuOpen(false);
       setSelectedCategoryId(null);
       setIsDeleteCategoryModalOpen(false);
+
+      requestAnimationFrame(() => {
+        if (willHaveNoCategories) {
+          addCategoryBtnRef.current?.focus();
+        } else {
+          deleteCategoryBtnRef.current?.focus();
+        }
+      });
     } finally {
       setIsDeletingCategory(false);
     }
@@ -199,6 +551,8 @@ export default function BookmarkUi() {
     <WidgetContainer>
       <WidgetPane title={t("widgets.bookmarkWidget.title")}>
         <div
+          ref={bookmarkContentRef}
+          onKeyDown={handleBookmarkArrowNavigation}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -223,6 +577,8 @@ export default function BookmarkUi() {
 
           {!showCategoryForm ? (
             <button
+              ref={addCategoryBtnRef}
+              data-bookmark-add-category-btn="true"
               onClick={() => setShowCategoryForm(true)}
               style={{
                 padding: "7px 10px",
@@ -239,6 +595,7 @@ export default function BookmarkUi() {
             </button>
           ) : (
             <div
+              data-bookmark-category-form
               style={{
                 background: raisedSurface,
                 padding: 10,
@@ -249,7 +606,7 @@ export default function BookmarkUi() {
               <CategoryForm
                 onSubmit={async (name) => {
                   await handleAddCategory(name);
-                  setShowCategoryForm(false);
+                  closeCategoryFormAndRefocus();
                 }}
                 isLoading={false}
                 textColor={resolvedTextColor}
@@ -257,7 +614,7 @@ export default function BookmarkUi() {
                 borderColor={resolvedBorderColor}
               />
               <button
-                onClick={() => setShowCategoryForm(false)}
+                onClick={closeCategoryFormAndRefocus}
                 style={{
                   ...editPanelButtonStyle,
                   marginTop: 8,
@@ -396,6 +753,7 @@ export default function BookmarkUi() {
 
                 <div style={{ display: "flex", justifyContent: "flex-end" }}>
                   <button
+                    ref={addBookmarkBtnRef}
                     onClick={() => {
                       if (!activeCategory) return;
                       setSelectedCategoryForBookmark(
@@ -438,14 +796,14 @@ export default function BookmarkUi() {
                       onSubmit={async (title, url) => {
                         if (!activeCategory) return;
                         await handleAddBookmark(activeCategory.id, title, url);
-                        setSelectedCategoryForBookmark(null);
+                        closeBookmarkFormAndRefocus();
                       }}
                       textColor={resolvedTextColor}
                       surfaceColor={inputSurface}
                       borderColor={resolvedBorderColor}
                     />
                     <button
-                      onClick={() => setSelectedCategoryForBookmark(null)}
+                      onClick={closeBookmarkFormAndRefocus}
                       style={{
                         ...editPanelButtonStyle,
                         marginTop: 8,
@@ -500,6 +858,7 @@ export default function BookmarkUi() {
                             href={bookmark.url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            data-bookmark-item-icon="true"
                             style={{
                               width: 28,
                               height: 28,
@@ -522,6 +881,7 @@ export default function BookmarkUi() {
                             href={bookmark.url}
                             target="_blank"
                             rel="noopener noreferrer"
+                            data-bookmark-item-link="true"
                             style={{
                               textDecoration: "none",
                               color: "inherit",
@@ -538,6 +898,7 @@ export default function BookmarkUi() {
 
                           <button
                             onClick={() => handleDeleteBookmark(bookmark.id)}
+                            data-bookmark-delete-btn="true"
                             style={{
                               border: `1px solid ${resolvedBorderColor}`,
                               background: strongSurface,
@@ -561,6 +922,7 @@ export default function BookmarkUi() {
           </div>
 
           <button
+            ref={deleteCategoryBtnRef}
             onClick={() => setIsDeleteCategoryModalOpen(true)}
             disabled={!activeCategory}
             style={{
@@ -619,6 +981,7 @@ export default function BookmarkUi() {
                       color: "#0b1320",
                     }}
                     onClick={(event) => event.stopPropagation()}
+                    onKeyDown={handleDeleteCategoryModalKeyDown}
                   >
                     <h3 id="delete-category-title" style={{ margin: 0, fontSize: 18 }}>
                       {t("widgets.bookmarkWidget.deleteCategoryTitle")}
@@ -645,7 +1008,13 @@ export default function BookmarkUi() {
                       }}
                     >
                       <button
-                        onClick={() => setIsDeleteCategoryModalOpen(false)}
+                        ref={deleteCategoryCancelBtnRef}
+                        onClick={() => {
+                          setIsDeleteCategoryModalOpen(false);
+                          requestAnimationFrame(() => {
+                            deleteCategoryBtnRef.current?.focus();
+                          });
+                        }}
                         disabled={isDeletingCategory}
                         style={{
                           border: "none",
@@ -663,6 +1032,7 @@ export default function BookmarkUi() {
                       </button>
 
                       <button
+                        ref={deleteCategoryConfirmBtnRef}
                         onClick={confirmDeleteCategory}
                         disabled={isDeletingCategory}
                         style={{

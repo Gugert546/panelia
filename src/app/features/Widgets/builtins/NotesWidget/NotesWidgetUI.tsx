@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useNotesWidget } from "./NotesWidgetLogic";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
@@ -14,6 +15,8 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
   const { state, actions } = useNotesWidget(widgetId);
   const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   return (
     <WidgetContainer>
@@ -30,8 +33,21 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
         >
 
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
+            onKeyDown={(e) => {
+              if (e.key === "ArrowLeft") {
+                e.preventDefault();
+                e.stopPropagation();
+                textareaRef.current?.focus();
+              }
+              if (e.key === "ArrowDown") {
+                e.preventDefault();
+                e.stopPropagation();
+                textareaRef.current?.focus();
+              }
+            }}
             style={{
               position: "absolute",
               top: 15,
@@ -51,7 +67,18 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
           </button>
 
           <textarea
+            ref={textareaRef}
             className="notes-widget-textarea"
+            onKeyDown={(e) => {
+              if (e.key === "ArrowRight") {
+                const el = e.currentTarget;
+                if (el.selectionStart === el.value.length && el.selectionEnd === el.value.length) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeButtonRef.current?.focus();
+                }
+              }
+            }}
             value={state.text}
             onChange={(e) => actions.setText(e.target.value)}
             placeholder={t('widgets.notesWidget.placeholder')}
