@@ -20,6 +20,10 @@ type NewsResponse = {
   articles: NewsArticle[];
 };
 
+type NewsErrorResponse = {
+  error?: string;
+};
+
 const NEWS_CACHE_KEY_PREFIX = "panelia:news:v2:";
 const NEWS_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 const NEWS_DEFAULT_COUNTRY = "no";
@@ -101,6 +105,28 @@ function formatArticleTimestamp(value?: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(date);
+}
+
+async function getNewsErrorMessage(res: Response) {
+  const contentType = res.headers.get("content-type") ?? "";
+
+  if (contentType.includes("application/json")) {
+    try {
+      const data = (await res.json()) as NewsErrorResponse;
+      if (typeof data.error === "string" && data.error.trim()) {
+        return data.error.trim();
+      }
+    } catch {
+      // Fall through to a generic message.
+    }
+  } else {
+    const text = (await res.text()).trim();
+    if (text) {
+      return text.slice(0, 160);
+    }
+  }
+
+  return `News request failed with status ${res.status}`;
 }
 
 function NewsArticleIcon({ url, title }: NewsArticle) {
@@ -232,11 +258,12 @@ export default function NewsWidget() {
 
       try {
         const res = await fetch(
-         "https://panelia-server-1044777021142.europe-west1.run.app/api/news?country=" + country);
+          "https://panelia-server-1044777021142.europe-west1.run.app/api/news?country=" + country
+        );
 
         if (!res.ok) {
-          const txt = await res.text();
-          throw new Error(txt);
+          const message = await getNewsErrorMessage(res);
+          throw new Error(message);
         }
 
         const data = (await res.json()) as NewsResponse;
