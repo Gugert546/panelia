@@ -2,7 +2,7 @@ import express from "express";
 
 export const newsRouter = express.Router();
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutter
+const CACHE_TTL = 60 * 60 * 1000; // 1 time
 const WORLD_NEWS_API_BASE_URL = "https://api.worldnewsapi.com";
 
 type NewsArticle = {
