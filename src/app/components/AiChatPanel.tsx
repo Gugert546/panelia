@@ -32,6 +32,7 @@ const AiChatPanel = forwardRef<AiChatPanelHandle, AiChatPanelProps>(function AiC
   return (
     <aside
       aria-hidden={!open}
+      data-arrow-scope="chat-panel"
       style={{
         ...styles.panel,
         left: open ? sidebarWidth + 26 : `calc(-1 * ${panelWidth})`,

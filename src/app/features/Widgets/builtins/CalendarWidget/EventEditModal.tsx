@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useLanguage } from "../../../../providers/languageProvider";
 
 type EventFormState = {
@@ -63,6 +63,13 @@ export default function EventEditModal({
 }: EventEditModalProps) {
   const [startAtInput, setStartAtInput] = useState("");
   const [endAtInput, setEndAtInput] = useState("");
+  const titleInputRef = useRef<HTMLInputElement | null>(null);
+  const descriptionInputRef = useRef<HTMLTextAreaElement | null>(null);
+  const startInputRef = useRef<HTMLInputElement | null>(null);
+  const endInputRef = useRef<HTMLInputElement | null>(null);
+  const deleteButtonRef = useRef<HTMLButtonElement | null>(null);
+  const cancelButtonRef = useRef<HTMLButtonElement | null>(null);
+  const saveButtonRef = useRef<HTMLButtonElement | null>(null);
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -71,6 +78,17 @@ export default function EventEditModal({
     setStartAtInput(toNorwegianDateTime(value.startAt));
     setEndAtInput(toNorwegianDateTime(value.endAt));
   }, [open, value?.startAt, value?.endAt]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const frame = requestAnimationFrame(() => {
+      titleInputRef.current?.focus();
+      titleInputRef.current?.select();
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [open, value?.id]);
 
   if (!open || !value) return null;
 
@@ -100,6 +118,116 @@ export default function EventEditModal({
     textTransform: "uppercase",
   };
 
+  const handleTitleKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key !== "ArrowDown") return;
+    event.preventDefault();
+    descriptionInputRef.current?.focus();
+  };
+
+  const handleDescriptionKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (event) => {
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      startInputRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      titleInputRef.current?.focus();
+    }
+  };
+
+  const handleStartKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      descriptionInputRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      saveButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      endInputRef.current?.focus();
+    }
+  };
+
+  const handleEndKeyDown: React.KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      descriptionInputRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      startInputRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      saveButtonRef.current?.focus();
+    }
+  };
+
+  const handleSaveButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      startInputRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      cancelButtonRef.current?.focus();
+    }
+  };
+
+  const handleCancelButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      startInputRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      if (value.id === "") return;
+      event.preventDefault();
+      deleteButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      saveButtonRef.current?.focus();
+    }
+  };
+
+  const handleDeleteButtonKeyDown: React.KeyboardEventHandler<HTMLButtonElement> = (event) => {
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      startInputRef.current?.focus();
+      return;
+    }
+
+    if (event.key !== "ArrowRight") return;
+    event.preventDefault();
+    cancelButtonRef.current?.focus();
+  };
+
+  const handleDialogKeyDownCapture: React.KeyboardEventHandler<HTMLDivElement> = (event) => {
+    if (event.key !== "Escape") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    onCancel();
+  };
+
   return (
     <div
       style={{
@@ -124,6 +252,7 @@ export default function EventEditModal({
           flexDirection: "column",
           gap: 16,
         }}
+        onKeyDownCapture={handleDialogKeyDownCapture}
         onClick={(e) => e.stopPropagation()}
       >
         <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: "rgba(0,0,0,0.85)" }}>
@@ -133,8 +262,10 @@ export default function EventEditModal({
         <label style={labelStyle}>
           {t("widgets.calendarWidget.eventEditModal.titleLabel")}
           <input
+            ref={titleInputRef}
             value={value.title}
             onChange={(e) => onChange({ title: e.target.value })}
+            onKeyDown={handleTitleKeyDown}
             placeholder={t("widgets.calendarWidget.eventEditModal.titlePlaceholder")}
             disabled={isBusy}
             style={inputStyle}
@@ -144,8 +275,10 @@ export default function EventEditModal({
         <label style={labelStyle}>
           {t("widgets.calendarWidget.eventEditModal.descriptionLabel")}
           <textarea
+            ref={descriptionInputRef}
             value={value.description}
             onChange={(e) => onChange({ description: e.target.value })}
+            onKeyDown={handleDescriptionKeyDown}
             placeholder={t("widgets.calendarWidget.eventEditModal.descriptionPlaceholder")}
             rows={3}
             disabled={isBusy}
@@ -157,6 +290,7 @@ export default function EventEditModal({
           <label style={labelStyle}>
             {t("widgets.calendarWidget.eventEditModal.startLabel")}
             <input
+              ref={startInputRef}
               type="text"
               value={startAtInput}
               onChange={(e) => {
@@ -165,6 +299,7 @@ export default function EventEditModal({
                 const parsedValue = toLocalDateTime(nextValue);
                 if (parsedValue) onChange({ startAt: parsedValue });
               }}
+              onKeyDown={handleStartKeyDown}
               placeholder="dd.mm.åååå tt:mm"
               disabled={isBusy}
               style={inputStyle}
@@ -174,6 +309,7 @@ export default function EventEditModal({
           <label style={labelStyle}>
             {t("widgets.calendarWidget.eventEditModal.endLabel")}
             <input
+              ref={endInputRef}
               type="text"
               value={endAtInput}
               onChange={(e) => {
@@ -182,6 +318,7 @@ export default function EventEditModal({
                 const parsedValue = toLocalDateTime(nextValue);
                 if (parsedValue) onChange({ endAt: parsedValue });
               }}
+              onKeyDown={handleEndKeyDown}
               placeholder="dd.mm.åååå tt:mm"
               disabled={isBusy}
               style={inputStyle}
@@ -190,29 +327,37 @@ export default function EventEditModal({
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 4 }}>
-          <button
-            onClick={onDelete}
-            disabled={isBusy}
-            style={{
-              padding: "9px 0",
-              borderRadius: 10,
-              border: "1.5px solid rgba(220,38,38,0.35)",
-              background: "rgba(254,226,226,0.7)",
-              color: "rgb(185,28,28)",
-              fontWeight: 600,
-              fontSize: 13,
-              cursor: isBusy ? "not-allowed" : "pointer",
-              fontFamily: "inherit",
-              opacity: isBusy ? 0.6 : 1,
-            }}
-          >
-            {deleting
-              ? t("widgets.calendarWidget.eventEditModal.deleting")
-              : t("widgets.calendarWidget.eventEditModal.delete")}
-          </button>
+          {value.id !== "" ? (
+            <button
+              ref={deleteButtonRef}
+              onClick={onDelete}
+              onKeyDown={handleDeleteButtonKeyDown}
+              disabled={isBusy}
+              style={{
+                padding: "9px 0",
+                borderRadius: 10,
+                border: "1.5px solid rgba(220,38,38,0.35)",
+                background: "rgba(254,226,226,0.7)",
+                color: "rgb(185,28,28)",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: isBusy ? "not-allowed" : "pointer",
+                fontFamily: "inherit",
+                opacity: isBusy ? 0.6 : 1,
+              }}
+            >
+              {deleting
+                ? t("widgets.calendarWidget.eventEditModal.deleting")
+                : t("widgets.calendarWidget.eventEditModal.delete")}
+            </button>
+          ) : (
+            <div />
+          )}
 
           <button
+            ref={cancelButtonRef}
             onClick={onCancel}
+            onKeyDown={handleCancelButtonKeyDown}
             disabled={isBusy}
             style={{
               padding: "9px 0",
@@ -231,7 +376,9 @@ export default function EventEditModal({
           </button>
 
           <button
+            ref={saveButtonRef}
             onClick={onSave}
+            onKeyDown={handleSaveButtonKeyDown}
             disabled={isBusy}
             style={{
               padding: "9px 0",

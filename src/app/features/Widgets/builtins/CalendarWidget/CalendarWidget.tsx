@@ -173,6 +173,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
   const connectButtonRef = useRef<HTMLButtonElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const gridCellRefs = useRef<(HTMLDivElement | null)[][]>([]);
+  const editModalReturnFocusRef = useRef<HTMLElement | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement | null>(null);
   const headerWheelDeltaRef = useRef(0);
   const [topVisibleTime, setTopVisibleTime] = useState<string | null>(null);
@@ -180,18 +181,42 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
   const [pendingWeekFocus, setPendingWeekFocus] = useState<{ row: number; col: number } | null>(null);
   const popupHeaderRef = useRef<HTMLDivElement | null>(null);
   const [popupHeaderHeight, setPopupHeaderHeight] = useState(0);
+  const [providerSelectFocused, setProviderSelectFocused] = useState(false);
 
   useEffect(() => {
     const selectElement = providerSelectRef.current;
     if (!selectElement) return;
 
     const handleNativeKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== "ArrowLeft") return;
+      if (
+        event.key !== "ArrowLeft" &&
+        event.key !== "ArrowRight" &&
+        event.key !== "ArrowDown" &&
+        event.key !== "ArrowUp"
+      ) {
+        return;
+      }
 
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
-      connectButtonRef.current?.focus();
+
+      if (event.key === "ArrowUp") {
+        const widgetRoot = selectElement.closest("[data-widget-id]");
+        const lockButton = widgetRoot?.querySelector(
+          "button.widget-lock-btn:not([disabled])"
+        ) as HTMLButtonElement | null;
+        const styleButton = widgetRoot?.querySelector(
+          "button.widget-style-btn:not([disabled])"
+        ) as HTMLButtonElement | null;
+        (lockButton ?? styleButton)?.focus();
+      } else if (event.key === "ArrowRight") {
+        connectButtonRef.current?.focus();
+      } else if (event.key === "ArrowLeft") {
+        nextWeekButtonRef.current?.focus();
+      } else if (event.key === "ArrowDown") {
+        focusGridCell(0, 0);
+      }
     };
 
     selectElement.addEventListener("keydown", handleNativeKeyDown, true);
@@ -242,11 +267,34 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
   };
 
   const handleProviderSelectKeyDownCapture: React.KeyboardEventHandler<HTMLSelectElement> = (event) => {
-    if (event.key !== "ArrowLeft") return;
+    if (
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight" &&
+      event.key !== "ArrowDown" &&
+      event.key !== "ArrowUp"
+    ) {
+      return;
+    }
 
     event.preventDefault();
     event.stopPropagation();
-    connectButtonRef.current?.focus();
+
+    if (event.key === "ArrowUp") {
+      const widgetRoot = event.currentTarget.closest("[data-widget-id]");
+      const lockButton = widgetRoot?.querySelector(
+        "button.widget-lock-btn:not([disabled])"
+      ) as HTMLButtonElement | null;
+      const styleButton = widgetRoot?.querySelector(
+        "button.widget-style-btn:not([disabled])"
+      ) as HTMLButtonElement | null;
+      (lockButton ?? styleButton)?.focus();
+    } else if (event.key === "ArrowRight") {
+      connectButtonRef.current?.focus();
+    } else if (event.key === "ArrowLeft") {
+      nextWeekButtonRef.current?.focus();
+    } else if (event.key === "ArrowDown") {
+      focusGridCell(0, 0);
+    }
   };
 
   const checking = t("widgets.calendarWidget.checking")
@@ -404,7 +452,6 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
     goToCurrentWeek,
     isViewingCurrentWeek,
     handleCellClick,
-    creatingKey,
     editingEvent,
     savingEdit,
     deletingEdit,
@@ -435,6 +482,53 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
       gridCellRefs.current[nextRow]?.[nextCol]?.focus();
     });
   }, [displayTimeSlots.length, displayWeekDays.length]);
+
+  const rememberFocusBeforeEditModal = useCallback((origin?: HTMLElement | null) => {
+    if (origin) {
+      editModalReturnFocusRef.current = origin;
+      return;
+    }
+
+    const activeElement = document.activeElement;
+    editModalReturnFocusRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+  }, []);
+
+  const restoreFocusAfterEditModal = useCallback(() => {
+    requestAnimationFrame(() => {
+      const target = editModalReturnFocusRef.current;
+      if (target && target.isConnected) {
+        target.focus();
+        return;
+      }
+
+      gridCellRefs.current[focusedGridCell.row]?.[focusedGridCell.col]?.focus();
+    });
+  }, [focusedGridCell.col, focusedGridCell.row]);
+
+  const openExistingEventModal = useCallback((eventData: CalendarEvent, origin?: HTMLElement | null) => {
+    rememberFocusBeforeEditModal(origin);
+    openEditModal(eventData);
+  }, [openEditModal, rememberFocusBeforeEditModal]);
+
+  const openNewEventModal = useCallback((dayIdx: number, time: string, origin?: HTMLElement | null) => {
+    rememberFocusBeforeEditModal(origin);
+    void handleCellClick(dayIdx, time);
+  }, [handleCellClick, rememberFocusBeforeEditModal]);
+
+  const handleEditModalCancel = useCallback(() => {
+    closeEditModal();
+    restoreFocusAfterEditModal();
+  }, [closeEditModal, restoreFocusAfterEditModal]);
+
+  const handleEditModalSave = useCallback(async () => {
+    await saveEditModal();
+    restoreFocusAfterEditModal();
+  }, [restoreFocusAfterEditModal, saveEditModal]);
+
+  const handleEditModalDelete = useCallback(async () => {
+    await deleteEditModal();
+    restoreFocusAfterEditModal();
+  }, [deleteEditModal, restoreFocusAfterEditModal]);
 
   useLayoutEffect(() => {
     if (displayTimeSlots.length === 0 || displayWeekDays.length === 0) {
@@ -695,7 +789,8 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
               onClick={(e) => {
                 if (!label.event) return;
                 e.stopPropagation();
-                openEditModal(label.event);
+                const focusOrigin = e.currentTarget.closest("[data-calendar-focus-target='true']") as HTMLElement | null;
+                openExistingEventModal(label.event, focusOrigin);
               }}
               style={{
                 fontSize: `${fontSize}px`,
@@ -797,7 +892,13 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
 
             if (event.key === "Enter" || event.key === " ") {
               event.preventDefault();
-              void handleCellClick(dayIdx, time);
+
+              if (hasEvents) {
+                openExistingEventModal(items[0].event, event.currentTarget);
+                return;
+              }
+
+              openNewEventModal(dayIdx, time, event.currentTarget);
             }
           };
 
@@ -812,6 +913,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
                 gridCellRefs.current[timeIdx][dayIdx] = element;
               }}
               tabIndex={isFocusedCell ? 0 : -1}
+              data-calendar-focus-target="true"
               onFocus={() => {
                 setFocusedGridCell({ row: timeIdx, col: dayIdx });
               }}
@@ -838,8 +940,6 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
                     ? "not-allowed"
                     : "pointer",
                 transition: "background-color 0.2s",
-                opacity: creatingKey === cellKey ? 0.6 : 1,
-                pointerEvents: creatingKey === cellKey ? "none" : "auto",
                 display: "flex",
                 flexDirection: "column",
                 gap: "2px",
@@ -859,7 +959,8 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
                   : "rgba(59, 130, 246, 0.08)";
               }}
               onClick={() => {
-                void handleCellClick(dayIdx, time);
+                const target = gridCellRefs.current[timeIdx]?.[dayIdx];
+                openNewEventModal(dayIdx, time, target ?? null);
               }}
             >
               {items.map((item) => {
@@ -877,7 +978,8 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
                     key={item.event.id}
                     onClick={(e) => {
                       e.stopPropagation();
-                      openEditModal(item.event);
+                      const focusOrigin = e.currentTarget.closest("[data-calendar-focus-target='true']") as HTMLElement | null;
+                      openExistingEventModal(item.event, focusOrigin);
                     }}
                     style={{
                       fontSize: item.isStart ? fontSize : Math.max(fontSize - 3, 9),
@@ -1026,6 +1128,8 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
             <select
               ref={providerSelectRef}
               onKeyDownCapture={handleProviderSelectKeyDownCapture}
+              onFocus={() => setProviderSelectFocused(true)}
+              onBlur={() => setProviderSelectFocused(false)}
               value={calendarProvider}
               onChange={handleProviderChange}
               disabled={calendarConnectionBusy}
@@ -1038,6 +1142,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
                 fontSize: actionButtonFontSize,
                 fontWeight: 700,
                 outline: "none",
+                boxShadow: providerSelectFocused ? "0 0 0 2px #fff, 0 0 0 4px rgba(59,130,246,0.7)" : undefined,
                 cursor:
                   calendarConnectionBusy
                     ? "not-allowed"
@@ -1317,9 +1422,9 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
         saving={savingEdit}
         deleting={deletingEdit}
         onChange={patchEditingEvent}
-        onCancel={closeEditModal}
-        onSave={saveEditModal}
-        onDelete={deleteEditModal}
+        onCancel={handleEditModalCancel}
+        onSave={handleEditModalSave}
+        onDelete={handleEditModalDelete}
       />
     </>
   );

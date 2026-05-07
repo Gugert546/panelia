@@ -95,7 +95,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
     if (!(widgetRoot instanceof HTMLElement)) return;
 
     const topControl = widgetRoot.querySelector(
-      "button.widget-style-btn"
+      "button.widget-lock-btn:not([disabled]), button.widget-style-btn:not([disabled])"
     ) as HTMLElement | null;
 
     topControl?.focus();

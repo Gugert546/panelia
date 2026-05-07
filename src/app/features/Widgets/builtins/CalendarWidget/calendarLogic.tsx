@@ -222,37 +222,23 @@ export function useCalendarLogic(
   }, []);
 
   const handleCellClick = useCallback(
-    async (dayIdx: number, time: string) => {
-      const key = `${dayIdx}-${time}`;
-      setCreatingKey(key);
+    (dayIdx: number, time: string) => {
+      const [hourStr, minuteStr] = time.split(":");
+      const start = new Date(weekDays[dayIdx]);
+      start.setHours(Number(hourStr), Number(minuteStr), 0, 0);
 
-      try {
-        const [hourStr, minuteStr] = time.split(":");
-        const start = new Date(weekDays[dayIdx]);
-        start.setHours(Number(hourStr), Number(minuteStr), 0, 0);
+      const end = new Date(start);
+      end.setHours(end.getHours() + 1);
 
-        const end = new Date(start);
-        end.setHours(end.getHours() + 1);
-
-        const newEventId = await createCalendarEvent({
-          title: "New event",
-          startAt: start.toISOString(),
-          endAt: end.toISOString(),
-          allDay: false,
-        });
-
-        setEditingEvent({
-          id: newEventId,
-          title: "New event",
-          description: "",
-          startAt: toLocalInput(start.toISOString()),
-          endAt: toLocalInput(end.toISOString()),
-        });
-      } finally {
-        setCreatingKey(null);
-      }
+      setEditingEvent({
+        id: "",
+        title: "",
+        description: "",
+        startAt: toLocalInput(start.toISOString()),
+        endAt: toLocalInput(end.toISOString()),
+      });
     },
-    [createCalendarEvent, weekDays]
+    [weekDays]
   );
 
   const getCellRenderState = useCallback(
@@ -314,18 +300,28 @@ export function useCalendarLogic(
     if (!editingEvent) return;
     setSavingEdit(true);
     try {
-      await updateCalendarEvent(editingEvent.id, {
-        title: editingEvent.title.trim() || "Untitled event",
-        description: editingEvent.description.trim(),
-        startAt: new Date(editingEvent.startAt).toISOString(),
-        endAt: new Date(editingEvent.endAt).toISOString(),
-        syncStatus: "pending",
-      });
+      if (editingEvent.id === "") {
+        await createCalendarEvent({
+          title: editingEvent.title.trim() || "Untitled event",
+          description: editingEvent.description.trim(),
+          startAt: new Date(editingEvent.startAt).toISOString(),
+          endAt: new Date(editingEvent.endAt).toISOString(),
+          allDay: false,
+        });
+      } else {
+        await updateCalendarEvent(editingEvent.id, {
+          title: editingEvent.title.trim() || "Untitled event",
+          description: editingEvent.description.trim(),
+          startAt: new Date(editingEvent.startAt).toISOString(),
+          endAt: new Date(editingEvent.endAt).toISOString(),
+          syncStatus: "pending",
+        });
+      }
       setEditingEvent(null);
     } finally {
       setSavingEdit(false);
     }
-  }, [editingEvent, updateCalendarEvent]);
+  }, [editingEvent, createCalendarEvent, updateCalendarEvent]);
 
   const deleteEditModal = useCallback(async () => {
     if (!editingEvent) return;

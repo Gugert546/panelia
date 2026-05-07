@@ -189,7 +189,7 @@ export default function InfoWidget() {
                 if (e.key === "ArrowUp") {
                   e.preventDefault(); e.stopPropagation();
                   const widgetRoot = e.currentTarget.closest("[data-widget-id]");
-                  (widgetRoot?.querySelector("button.widget-style-btn:not([disabled])") as HTMLButtonElement | null)?.focus();
+                  (widgetRoot?.querySelector("button.widget-lock-btn:not([disabled])") as HTMLButtonElement | null)?.focus();
                 }
               }}
               aria-label={t("widgets.infoWidget.previousSlide")}
@@ -215,7 +215,7 @@ export default function InfoWidget() {
                 if (e.key === "ArrowUp") {
                   e.preventDefault(); e.stopPropagation();
                   const widgetRoot = e.currentTarget.closest("[data-widget-id]");
-                  (widgetRoot?.querySelector("button.widget-style-btn:not([disabled])") as HTMLButtonElement | null)?.focus();
+                  (widgetRoot?.querySelector("button.widget-lock-btn:not([disabled])") as HTMLButtonElement | null)?.focus();
                 }
               }}
               aria-label={t("widgets.infoWidget.nextSlide")}

@@ -42,6 +42,15 @@ export default function NotesWidget({ widgetId, onClose }: NotesWidgetProps) {
                 e.stopPropagation();
                 textareaRef.current?.focus();
               }
+              if (e.key === "ArrowUp") {
+                e.preventDefault();
+                e.stopPropagation();
+                const widgetRoot = e.currentTarget.closest("[data-widget-id]");
+                const styleButton = widgetRoot?.querySelector(
+                  "button.widget-style-btn:not([disabled])"
+                ) as HTMLButtonElement | null;
+                styleButton?.focus();
+              }
               if (e.key === "ArrowDown") {
                 e.preventDefault();
                 e.stopPropagation();

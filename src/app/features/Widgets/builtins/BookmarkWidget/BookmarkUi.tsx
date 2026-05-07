@@ -96,6 +96,7 @@ export default function BookmarkUi() {
   const deleteCategoryConfirmBtnRef = useRef<HTMLButtonElement | null>(null);
   const bookmarkContentRef = useRef<HTMLDivElement | null>(null);
   const focusFirstBookmarkAfterClose = useRef(false);
+  const pendingDeleteFocusIndex = useRef<number | null>(null);
 
   const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
@@ -129,6 +130,22 @@ export default function BookmarkUi() {
     if (!activeCategory) return [];
     return getBookmarksByCategory(activeCategory.id);
   }, [activeCategory, getBookmarksByCategory]);
+
+  useEffect(() => {
+    if (pendingDeleteFocusIndex.current === null) return;
+    const idx = pendingDeleteFocusIndex.current;
+    pendingDeleteFocusIndex.current = null;
+    requestAnimationFrame(() => {
+      const newBtns = Array.from(
+        bookmarkContentRef.current?.querySelectorAll<HTMLButtonElement>("button[data-bookmark-delete-btn='true']") ?? []
+      );
+      if (newBtns.length > 0) {
+        newBtns[Math.min(idx, newBtns.length - 1)]?.focus();
+      } else {
+        addBookmarkBtnRef.current?.focus();
+      }
+    });
+  }, [activeCategoryBookmarks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const changeCategoryByOffset = (offset: number) => {
     if (!activeCategory || categories.length <= 1) return;
@@ -166,16 +183,6 @@ export default function BookmarkUi() {
   useEffect(() => {
     if (!selectedCategoryForBookmark && focusFirstBookmarkAfterClose.current) {
       focusFirstBookmarkAfterClose.current = false;
-
-      const firstBookmarkLink = bookmarkContentRef.current?.querySelector(
-        "a[data-bookmark-item-link='true']"
-      ) as HTMLAnchorElement | null;
-
-      if (firstBookmarkLink) {
-        firstBookmarkLink.focus();
-        return;
-      }
-
       addBookmarkBtnRef.current?.focus();
     }
   }, [selectedCategoryForBookmark]);
@@ -270,6 +277,16 @@ export default function BookmarkUi() {
       : (target.closest("button:not([disabled]),a[href]") as HTMLElement | null);
     if (!currentControl) return;
 
+    if (
+      isCategoryMenuOpen &&
+      (event.key === "ArrowLeft" || event.key === "ArrowRight") &&
+      categorySelectorRef.current?.contains(currentControl)
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     // When the category form is open, restrict navigation to only form elements
     const formContainer = showCategoryForm
       ? event.currentTarget.querySelector<HTMLElement>("[data-bookmark-category-form]")
@@ -332,6 +349,12 @@ export default function BookmarkUi() {
       return;
     }
 
+    if (currentControl === deleteCategoryBtnRef.current && event.key === "ArrowLeft") {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (currentControl === deleteCategoryBtnRef.current && event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
@@ -349,19 +372,21 @@ export default function BookmarkUi() {
       return;
     }
 
-    if (bookmarkDeleteIndex !== -1 && event.key === "ArrowLeft") {
+    if (bookmarkDeleteIndex !== -1 && (event.key === "ArrowLeft" || event.key === "ArrowRight")) {
       event.preventDefault();
       event.stopPropagation();
-
-      const row = currentControl.closest("li") ?? currentControl.parentElement;
-      const rowLink = row?.querySelector<HTMLElement>("a[data-bookmark-item-link='true']");
-      rowLink?.focus();
+      if (event.key === "ArrowLeft") {
+        const row = currentControl.closest("li") ?? currentControl.parentElement;
+        row?.querySelector<HTMLElement>("a[data-bookmark-item-link='true']")?.focus();
+      }
       return;
     }
 
-    if (bookmarkIconIndex !== -1 && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+    if (bookmarkIconIndex !== -1 && (event.key === "ArrowUp" || event.key === "ArrowDown" || event.key === "ArrowLeft")) {
       event.preventDefault();
       event.stopPropagation();
+
+      if (event.key === "ArrowLeft") return;
 
       if (event.key === "ArrowUp") {
         if (bookmarkIconIndex === 0) {
@@ -399,10 +424,45 @@ export default function BookmarkUi() {
       return;
     }
 
+    if (currentControl === addCategoryBtnRef.current && event.key === "ArrowUp") {
+      const widgetRoot = currentControl.closest("[data-widget-id]");
+      const styleButton = widgetRoot?.querySelector(
+        "button.widget-style-btn:not([disabled])"
+      ) as HTMLButtonElement | null;
+
+      // In locked state, style button is hidden: ArrowUp should go to lock button.
+      if (!styleButton) {
+        const lockButton = widgetRoot?.querySelector(
+          "button.widget-lock-btn:not([disabled])"
+        ) as HTMLButtonElement | null;
+        if (lockButton) {
+          event.preventDefault();
+          event.stopPropagation();
+          lockButton.focus();
+          return;
+        }
+      }
+    }
+
+    if (
+      currentControl === addCategoryBtnRef.current &&
+      (event.key === "ArrowLeft" || event.key === "ArrowRight")
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (
       currentControl === addBookmarkBtnRef.current &&
-      (event.key === "ArrowDown" || event.key === "ArrowRight")
+      (event.key === "ArrowLeft" || event.key === "ArrowRight")
     ) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    if (currentControl === addBookmarkBtnRef.current && event.key === "ArrowDown") {
       const firstBookmarkLink = bookmarkLinks[0];
       if (firstBookmarkLink) {
         event.preventDefault();
@@ -435,6 +495,19 @@ export default function BookmarkUi() {
       }
 
       bookmarkDeleteButtons[bookmarkDeleteIndex + 1]?.focus();
+      return;
+    }
+
+    const categoryButton = categorySelectorRef.current?.querySelector<HTMLButtonElement>(
+      ":scope > button"
+    );
+    if (
+      categoryButton &&
+      currentControl === categoryButton &&
+      (event.key === "ArrowLeft" || event.key === "ArrowRight")
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
 
@@ -726,6 +799,12 @@ export default function BookmarkUi() {
                                 setSelectedCategoryId(category.id);
                                 setSelectedCategoryForBookmark(null);
                                 setIsCategoryMenuOpen(false);
+                                requestAnimationFrame(() => {
+                                  const categoryButton = categorySelectorRef.current?.querySelector<HTMLButtonElement>(
+                                    ":scope > button"
+                                  );
+                                  categoryButton?.focus();
+                                });
                               }}
                               style={{
                                 width: "100%",
@@ -759,6 +838,20 @@ export default function BookmarkUi() {
                       setSelectedCategoryForBookmark(
                         selectedCategoryForBookmark === activeCategory.id ? null : activeCategory.id
                       );
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && activeCategory) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (selectedCategoryForBookmark !== activeCategory.id) {
+                          setSelectedCategoryForBookmark(activeCategory.id);
+                          requestAnimationFrame(() => {
+                            bookmarkContentRef.current
+                              ?.querySelector<HTMLInputElement>("input[type='text']:not([disabled])")
+                              ?.focus();
+                          });
+                        }
+                      }
                     }}
                     title={t("widgets.bookmarkWidget.addBookmark")}
                     aria-label={
@@ -804,6 +897,12 @@ export default function BookmarkUi() {
                     />
                     <button
                       onClick={closeBookmarkFormAndRefocus}
+                      onKeyDown={(e) => {
+                        if (e.key === "ArrowDown") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
                       style={{
                         ...editPanelButtonStyle,
                         marginTop: 8,
@@ -898,6 +997,17 @@ export default function BookmarkUi() {
 
                           <button
                             onClick={() => handleDeleteBookmark(bookmark.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const allDeleteBtns = Array.from(
+                                  bookmarkContentRef.current?.querySelectorAll<HTMLButtonElement>("button[data-bookmark-delete-btn='true']") ?? []
+                                );
+                                pendingDeleteFocusIndex.current = allDeleteBtns.indexOf(e.currentTarget);
+                                handleDeleteBookmark(bookmark.id);
+                              }
+                            }}
                             data-bookmark-delete-btn="true"
                             style={{
                               border: `1px solid ${resolvedBorderColor}`,

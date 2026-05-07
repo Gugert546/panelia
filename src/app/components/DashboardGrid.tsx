@@ -513,6 +513,7 @@ export default function DashboardGrid({
 
     const isWeatherWidget = widgetId === "weather" || widgetId.startsWith("weather:");
     if (isWeatherWidget) {
+      const isLocked = Boolean(widgetLocks[widgetId]);
       const getWeatherButtons = () =>
         widgetRoot instanceof HTMLElement
           ? Array.from(
@@ -535,6 +536,14 @@ export default function DashboardGrid({
         event.stopPropagation();
         const weatherButtons = getWeatherButtons();
         weatherButtons[0]?.focus();
+        return;
+      }
+
+      if (isLocked && isLockButton && event.key === "ArrowLeft") {
+        event.preventDefault();
+        event.stopPropagation();
+        const weatherButtons = getWeatherButtons();
+        weatherButtons[weatherButtons.length - 1]?.focus();
         return;
       }
     }
@@ -587,7 +596,7 @@ export default function DashboardGrid({
 
     const isMinesweeperWidget = widgetId === "minesweeper" || widgetId.startsWith("minesweeper:");
     if (isMinesweeperWidget) {
-      if (isStyleButton && event.key === "ArrowDown") {
+      if ((isStyleButton || isLockButton) && event.key === "ArrowDown") {
         event.preventDefault();
         event.stopPropagation();
         if (widgetRoot instanceof HTMLElement) {
@@ -914,7 +923,7 @@ export default function DashboardGrid({
     if (event.target !== event.currentTarget) return;
     const isLocked = Boolean(widgetLocks[widgetId]);
 
-    if (event.key === "Enter" && !isLocked) {
+    if (event.key === "Enter") {
       event.preventDefault();
       event.stopPropagation();
       focusFirstWidgetControl(event.currentTarget, widgetId);
@@ -1293,9 +1302,20 @@ export default function DashboardGrid({
                     className="widget-style-btn"
                     aria-label={t("editPanel.widgetStyleOpen")}
                     title={t("editPanel.widgetStyleOpen")}
-                    onClick={() =>
-                      setStyleEditorWidgetId((prev) => (prev === widgetId ? null : widgetId))
-                    }
+                    onClick={() => {
+                      setStyleEditorWidgetId((prev) => {
+                        const next = prev === widgetId ? null : widgetId;
+
+                        // When opening the style panel, place focus at its first color control.
+                        if (next === widgetId) {
+                          requestAnimationFrame(() => {
+                            focusStyleColorButton(widgetId, "surface");
+                          });
+                        }
+
+                        return next;
+                      });
+                    }}
                     onKeyDown={handleWidgetTopControlKeyDown}
                     style={{
                       width: 24,
