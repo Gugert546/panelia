@@ -199,6 +199,14 @@ html, body, #root {
   text-underline-offset: 3px;
 }
 
+.dashboard-legal-link {
+  color: #fff;
+  font: 600 13px/1.2 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
+}
+
 .dashboard-background-layer,
 .dashboard-bg-video,
 .dashboard-water-layer,

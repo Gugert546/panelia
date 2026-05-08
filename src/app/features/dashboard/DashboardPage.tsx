@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { Link } from "react-router-dom";
 import AuthMenu from "../../components/authmenu";
 import Sidebar from "../../components/sidebar";
 import EditPanel, { type EditPanelHandle } from "../../components/editPanel";
@@ -576,6 +577,29 @@ function DashboardPageContent() {
       >
         <AuthMenu />
       </div>
+
+      <nav
+        aria-label="Legal links"
+        style={{
+          position: "fixed",
+          right: 20,
+          bottom: 18,
+          zIndex: 1000,
+          display: "flex",
+          gap: 14,
+          padding: "8px 10px",
+          borderRadius: 8,
+          background: "rgba(0, 0, 0, 0.42)",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        <Link className="dashboard-legal-link" to="/privacy">
+          Privacy Policy
+        </Link>
+        <Link className="dashboard-legal-link" to="/terms">
+          Terms of Service
+        </Link>
+      </nav>
 
       <EditPanel
         ref={editPanelRef}
