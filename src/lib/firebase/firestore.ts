@@ -325,3 +325,39 @@ export async function deleteUserData(uid: string) {
 
   return deletedCount;
 }
+
+// --- Saved Backgrounds ---
+
+export type SavedBackground = {
+  id: string;
+  url: string;
+  storagePath: string;
+  type: "image" | "video";
+  createdAt: number;
+};
+
+const savedBackgroundsRef = (uid: string) =>
+  collection(db, "users", uid, "savedBackgrounds");
+
+export async function saveBackgroundMetadata(
+  uid: string,
+  bg: SavedBackground
+): Promise<void> {
+  await setDoc(doc(savedBackgroundsRef(uid), bg.id), bg);
+}
+
+export async function listSavedBackgrounds(
+  uid: string
+): Promise<SavedBackground[]> {
+  const snap = await getDocs(savedBackgroundsRef(uid));
+  return snap.docs
+    .map((d) => d.data() as SavedBackground)
+    .sort((a, b) => b.createdAt - a.createdAt);
+}
+
+export async function deleteSavedBackgroundDoc(
+  uid: string,
+  id: string
+): Promise<void> {
+  await deleteDoc(doc(savedBackgroundsRef(uid), id));
+}

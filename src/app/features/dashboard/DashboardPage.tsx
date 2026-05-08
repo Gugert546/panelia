@@ -627,6 +627,7 @@ function DashboardPageContent() {
         setWidgetSizeMode={setWidgetSizeMode}
         dashboardBackgroundId={dashboardBackgroundId}
         setDashboardBackgroundId={setDashboardBackgroundId}
+        customBackgroundUrl={customBackgroundUrl}
         setCustomBackgroundUrl={setCustomBackgroundUrl}
         setCustomBackgroundType={setCustomBackgroundType}
         dashboardPresets={dashboardPresets}
