@@ -239,7 +239,9 @@
       "slides": {
         "welcome": {
           "logoAlt": "Panelia-logo",
-          "body": "Les hvordan du bruker siden her."
+          "body": "Les hvordan du bruker siden her.",
+          "privacy":"Privacy policy: https://panelia.web.app/privacy",
+          "terms":"Terms of service: https://panelia.web.app/terms"
         },
         "panelia": {
           "title": "Hva er Panelia?",

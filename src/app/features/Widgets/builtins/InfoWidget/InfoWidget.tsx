@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
 
-const paneliaLogo = "/vite.svg";
+//const paneliaLogo = "/vite.svg";
 
 type InfoSlide = {
   titleKey?: string;
@@ -12,6 +13,11 @@ type InfoSlide = {
   pointsKeys?: string[];
   image?: string;
   imageAltKey?: string;
+};
+
+const policyLinks: Record<string, string> = {
+  "widgets.infoWidget.slides.welcome.privacy": "/privacy",
+  "widgets.infoWidget.slides.welcome.terms": "/terms",
 };
 
 export default function InfoWidget() {
@@ -24,13 +30,14 @@ export default function InfoWidget() {
 
   const slides: InfoSlide[] = [
     {
-      image: paneliaLogo,
-      imageAltKey: "widgets.infoWidget.slides.welcome.logoAlt",
-      bodyKey: "widgets.infoWidget.slides.welcome.body",
-    },
-    {
+      //image: paneliaLogo,
+      //imageAltKey: "widgets.infoWidget.slides.welcome.logoAlt",
       titleKey: "widgets.infoWidget.slides.panelia.title",
       bodyKey: "widgets.infoWidget.slides.panelia.body",
+      pointsKeys:[
+        "widgets.infoWidget.slides.welcome.privacy",
+        "widgets.infoWidget.slides.welcome.terms"
+      ]
     },
     {
       titleKey: "widgets.infoWidget.slides.gettingStarted.title",
@@ -73,6 +80,31 @@ export default function InfoWidget() {
     );
   };
 
+  const renderPoint = (pointKey: string) => {
+    const linkTarget = policyLinks[pointKey];
+
+    if (!linkTarget) {
+      return t(pointKey);
+    }
+
+    const label = t(pointKey).split(":")[0] || t(pointKey);
+
+    return (
+      <Link
+        to={linkTarget}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+        style={{
+          color: "#1a5fb4",
+          fontWeight: 600,
+          textDecoration: "underline",
+          textUnderlineOffset: 2,
+        }}
+      >
+        {label}
+      </Link>
+    );
+  };
 
 
   return (
@@ -153,7 +185,7 @@ export default function InfoWidget() {
                   {slides[currentSlide].pointsKeys && (
                     <ul style={{ margin: 0, paddingLeft: 18, lineHeight: 1.5, display: "flex", flexDirection: "column", gap: 8 }}>
                       {slides[currentSlide].pointsKeys.map((pointKey) => (
-                        <li key={pointKey}>{t(pointKey)}</li>
+                        <li key={pointKey}>{renderPoint(pointKey)}</li>
                       ))}
                     </ul>
                   )}

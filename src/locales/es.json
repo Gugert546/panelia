@@ -236,7 +236,9 @@
       "slides": {
         "welcome": {
           "logoAlt": "Logo de Panelia",
-          "body": "Lee aquí cómo usar la página."
+          "body": "Lee aquí cómo usar la página.",
+          "privacy":"Privacy policy: https://panelia.web.app/privacy",
+          "terms":"Terms of service: https://panelia.web.app/terms"
         },
         "panelia": {
           "title": "¿Qué es Panelia?",
