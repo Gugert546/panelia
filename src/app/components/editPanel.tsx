@@ -174,8 +174,9 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const [presetName, setPresetName] = useState("");
   const [focusedColorButton, setFocusedColorButton] = useState<"widget" | "border" | "text" | null>(null);
   const [activeColorPicker, setActiveColorPicker] = useState<"widget" | "border" | "text" | null>(null);
-  const [activeSlider, setActiveSlider] = useState<"fontSize" | "opacity" | "borderWidth" | null>(null);
+  const [activeSlider, setActiveSlider] = useState<"fontSize" | "blur" | "opacity" | "borderWidth" | null>(null);
   const widgetItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const customButtonOpenerRef = useRef<HTMLButtonElement | null>(null);
   const norwegianButtonRef = useRef<HTMLButtonElement | null>(null);
   const englishButtonRef = useRef<HTMLButtonElement | null>(null);
   const spanishButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -186,6 +187,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const fontSizeSliderRef = useRef<HTMLInputElement | null>(null);
   const widgetColorResetRef = useRef<HTMLButtonElement | null>(null);
   const widgetColorButtonRef = useRef<HTMLButtonElement | null>(null);
+  const widgetBlurSliderRef = useRef<HTMLInputElement | null>(null);
   const widgetOpacitySliderRef = useRef<HTMLInputElement | null>(null);
   const borderColorResetRef = useRef<HTMLButtonElement | null>(null);
   const borderColorButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -402,21 +404,21 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         },
         english: {
           ArrowUp: "background",
-          ArrowDown: "background",
+          ArrowDown: "widgets",
           ArrowLeft: "norsk",
           ArrowRight: "spanish",
         },
         spanish: {
           ArrowUp: "background",
-          ArrowDown: "background",
+          ArrowDown: "widgets",
           ArrowLeft: "english",
           ArrowRight: "close",
         },
         close: {
           ArrowUp: "background",
-          ArrowDown: "background",
+          ArrowDown: "widgets",
           ArrowLeft: "spanish",
-          ArrowRight: "norsk",
+          ArrowRight: "spanish",
         },
         widgets: {
           ArrowUp: "norsk",
@@ -425,7 +427,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
           ArrowRight: "background",
         },
         background: {
-          ArrowUp: "english",
+          ArrowUp: "norsk",
           ArrowDown: "english",
           ArrowLeft: "widgets",
           ArrowRight: "close",
@@ -452,6 +454,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
       fontSizeSliderRef,
       widgetColorResetRef,
       widgetColorButtonRef,
+      widgetBlurSliderRef,
       widgetOpacitySliderRef,
       borderColorResetRef,
       borderColorButtonRef,
@@ -465,6 +468,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     const primaryVerticalRefs = [
       fontSizeSliderRef,
       widgetColorResetRef,
+      widgetBlurSliderRef,
       widgetOpacitySliderRef,
       borderColorResetRef,
       borderWidthSliderRef,
@@ -473,8 +477,8 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
       uploadBgButtonRef,
     ];
 
-    const sliderRefList = [fontSizeSliderRef, widgetOpacitySliderRef, borderWidthSliderRef] as const;
-    const sliderKeyList = ["fontSize", "opacity", "borderWidth"] as const;
+    const sliderRefList = [fontSizeSliderRef, widgetBlurSliderRef, widgetOpacitySliderRef, borderWidthSliderRef] as const;
+    const sliderKeyList = ["fontSize", "blur", "opacity", "borderWidth"] as const;
 
     const handleBgSettingsArrows = (e: KeyboardEvent) => {
       if (e.defaultPrevented) return;
@@ -974,7 +978,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
             <img src="https://flagcdn.com/w40/es.png" alt="Español" style={{ width: 20, height: 15, borderRadius: 2, objectFit: 'cover', display: 'block' }} />
           </button>
         </div>
-        <button style={topButtonStyle} onClick={onClose}>{t('editPanel.close')}</button>
+        <button ref={closeButtonRef} style={topButtonStyle} onClick={onClose}>{t('editPanel.close')}</button>
       </div>
 
       <h2 style={{ fontSize: bigTitleFontSize, color: widgetTextColor, margin: "0 0 6px 0", letterSpacing: "-0.02em" }}>
@@ -1101,7 +1105,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         {viewMode === "widgets" && (
             <button
               type="button"
-              ref={(element) => { widgetItemRefs.current[availableWidgets.length] = element; }}
+              ref={(element) => { widgetItemRefs.current[availableWidgets.length] = element; customButtonOpenerRef.current = element; }}
             onClick={() => setModalOpen(true)}
             style={{
               padding: "14px 16px",
@@ -1256,16 +1260,20 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
               {t('editPanel.widgetBlur')}: {widgetBlur}px
             </label>
             <input
+              ref={widgetBlurSliderRef}
               type="range"
               min={0}
               max={20}
               step={1}
               value={widgetBlur}
               onChange={(event) => setWidgetBlur(Number(event.target.value))}
+              onBlur={() => setActiveSlider(null)}
               aria-label={t('editPanel.widgetBlur')}
               style={{
                 width: "100%",
                 marginTop: 5,
+                outline: activeSlider === "blur" ? `2px solid ${buttonColorHighlight}` : undefined,
+                borderRadius: 4,
               }}
             />
             <label
@@ -1774,7 +1782,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
 
       </div>
 
-      <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} />
+      <AddCustomButtonModal open={modalOpen} onClose={() => setModalOpen(false)} customButtonConfigs={customButtonConfigs} removeCustomButton={removeCustomButton} openerRef={customButtonOpenerRef} />
 
       {resetConfirmOpen && (
         <div

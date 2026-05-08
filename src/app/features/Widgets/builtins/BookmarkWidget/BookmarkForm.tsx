@@ -92,6 +92,12 @@ export default function BookmarkForm({
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         disabled={isLoading}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowUp") {
+            e.preventDefault();
+            e.stopPropagation();
+          }
+        }}
         style={readableInputStyle}
       />
       <label style={{fontWeight:600}}>{t("widgets.bookmarkWidget.bookmarkURL")}:</label>

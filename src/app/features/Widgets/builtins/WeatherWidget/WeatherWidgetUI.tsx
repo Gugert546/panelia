@@ -216,9 +216,7 @@ export default function WeatherWidgetUI() {
                   event.preventDefault();
                   event.stopPropagation();
 
-                  const widgetRoot = widgetInstance?.widgetId
-                    ? document.querySelector(`[data-widget-id="${widgetInstance.widgetId}"]`)
-                    : null;
+                  const widgetRoot = container.closest("[data-widget-id]");
                   const topControls = widgetRoot
                     ? Array.from(
                         widgetRoot.querySelectorAll<HTMLButtonElement>(

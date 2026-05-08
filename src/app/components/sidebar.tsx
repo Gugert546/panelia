@@ -37,14 +37,21 @@ export default function Sidebar({
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      if (
+        e.key !== "ArrowDown" &&
+        e.key !== "ArrowUp" &&
+        e.key !== "ArrowRight" &&
+        e.key !== "ArrowLeft" &&
+        e.key !== "Enter"
+      ) return;
       if (e.defaultPrevented) return;
 
       const activeElement = document.activeElement as HTMLElement | null;
       if (
         activeElement?.closest('[data-arrow-scope="dashboard-grid"]') ||
         activeElement?.closest('[data-arrow-scope="edit-panel"]') ||
-        activeElement?.closest('[data-arrow-scope="calendar-panel"]')
+        activeElement?.closest('[data-arrow-scope="calendar-panel"]') ||
+        activeElement?.closest('[data-arrow-scope="chat-panel"]')
       ) {
         return;
       }
@@ -53,11 +60,23 @@ export default function Sidebar({
       const focusedIndex = buttonRefs.current.findIndex((b) => b === focused);
 
       if (focusedIndex === -1) {
-        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (
+          e.key === "ArrowDown" ||
+          e.key === "ArrowUp" ||
+          e.key === "ArrowLeft" ||
+          e.key === "ArrowRight" ||
+          e.key === "Enter"
+        ) {
           // Ingenting i sidebar er fokusert – send fokus til første knapp
           e.preventDefault();
           buttonRefs.current[0]?.focus();
         }
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        buttonRefs.current[focusedIndex]?.click();
         return;
       }
 

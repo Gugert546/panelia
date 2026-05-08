@@ -32,7 +32,7 @@ export default function SearchWidgetUI() {
     buttons[nextIndex]?.focus();
   };
 
-  const focusStyleButton = () => {
+  const focusWidgetTopControl = () => {
     if (!widgetInstance?.widgetId) return false;
 
     const widgetRoot = document.querySelector(
@@ -41,13 +41,13 @@ export default function SearchWidgetUI() {
 
     if (!(widgetRoot instanceof HTMLElement)) return false;
 
-    const styleButton = widgetRoot.querySelector(
-      "button.widget-style-btn:not([disabled])"
+    const topControl = widgetRoot.querySelector(
+      "button.widget-lock-btn:not([disabled]), button.widget-style-btn:not([disabled])"
     ) as HTMLButtonElement | null;
 
-    if (!styleButton) return false;
+    if (!topControl) return false;
 
-    styleButton.focus();
+    topControl.focus();
     return true;
   };
 
@@ -62,11 +62,6 @@ export default function SearchWidgetUI() {
       input.selectionEnd !== null &&
       input.selectionStart === input.selectionEnd &&
       input.selectionStart === 0;
-    const caretAtEnd =
-      input.selectionStart !== null &&
-      input.selectionEnd !== null &&
-      input.selectionStart === input.selectionEnd &&
-      input.selectionEnd === input.value.length;
 
     if (event.key === "ArrowLeft" && !hasSelection && caretAtStart) {
       event.preventDefault();
@@ -75,16 +70,13 @@ export default function SearchWidgetUI() {
       return;
     }
 
-    if (
-      event.key === "ArrowUp" ||
-      (event.key === "ArrowRight" && !hasSelection && caretAtEnd)
-    ) {
+    if (event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
 
-      if (!focusStyleButton()) {
+      if (!focusWidgetTopControl()) {
         requestAnimationFrame(() => {
-          focusStyleButton();
+          focusWidgetTopControl();
         });
       }
       return;
@@ -105,9 +97,9 @@ export default function SearchWidgetUI() {
       event.preventDefault();
       event.stopPropagation();
 
-      if (!focusStyleButton()) {
+      if (!focusWidgetTopControl()) {
         requestAnimationFrame(() => {
-          focusStyleButton();
+          focusWidgetTopControl();
         });
       }
     }
@@ -195,7 +187,7 @@ export default function SearchWidgetUI() {
   const handleChooseEngine = (key: keyof typeof state.engines) => {
     actions.chooseEngine(key as any);
     requestAnimationFrame(() => {
-      inputRef.current?.focus();
+      buttonRef.current?.focus();
     });
   };
 
@@ -300,6 +292,12 @@ export default function SearchWidgetUI() {
                       menuButtonRefs.current[index] = element;
                     }}
                     type="button"
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") return;
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.currentTarget.click();
+                    }}
                     onClick={() => handleChooseEngine(key as keyof typeof state.engines)}
                     style={{
                       width: "100%",

@@ -151,9 +151,33 @@ function DashboardPageContent() {
 
   useEffect(() => {
     if (!activePanel) return;
+
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setActivePanel(null);
+      if (e.key !== "Escape") return;
+
+      if (activePanel === "chat") {
+        setActivePanel(null);
+
+        requestAnimationFrame(() => {
+          const chatButton = document.querySelector('button[aria-label="Chat"]') as HTMLButtonElement | null;
+          chatButton?.focus();
+        });
+        return;
+      }
+
+      if (activePanel === "calendar") {
+        setActivePanel(null);
+
+        requestAnimationFrame(() => {
+          const calendarButton = document.querySelector('button[aria-label="Calendar"]') as HTMLButtonElement | null;
+          calendarButton?.focus();
+        });
+        return;
+      }
+
+      setActivePanel(null);
     };
+
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [activePanel]);

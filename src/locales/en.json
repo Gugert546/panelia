@@ -94,6 +94,8 @@
       "position": "Position",
       "moveActiveHint": "Move mode: arrows, Shift+arrows for larger steps, Esc to exit",
       "moveInactiveHint": "Press Enter to navigate inside the widget. Hold Ctrl + arrows to move (Shift for larger steps)",
+      "keyboardHelpMove": "Ctrl+arrows: Move",
+      "keyboardHelpResize": "Shift+arrows: Resize",
       "contentNavigationEnabled": "Content navigation enabled",
       "noFocusableContent": "No focusable content in this widget"
     },

@@ -86,10 +86,10 @@ export default function MinesweeperWidgetUI() {
                 if (event.key === "ArrowUp") {
                   event.preventDefault();
                   event.stopPropagation();
-                  const styleButton = widgetRoot?.querySelector(
-                    "button.widget-style-btn:not([disabled])"
+                  const lockButton = widgetRoot?.querySelector(
+                    "button.widget-lock-btn:not([disabled])"
                   ) as HTMLButtonElement | null;
-                  styleButton?.focus();
+                  lockButton?.focus();
                   return;
                 }
 

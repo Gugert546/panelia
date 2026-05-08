@@ -360,6 +360,65 @@ export default function DashboardGrid({
     );
   };
 
+  const resizeWidgetByKeyboard = (
+    widgetId: string,
+    direction: "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown",
+    growth = 1
+  ) => {
+    const widgetLayout = computedLayout.find((item) => item.i === widgetId);
+    if (!widgetLayout) return;
+
+    let nextX = widgetLayout.x;
+    let nextY = widgetLayout.y;
+    let nextW = widgetLayout.w;
+    let nextH = widgetLayout.h;
+
+    if (direction === "ArrowRight") {
+      const grow = Math.min(growth, Math.max(0, activeGridColumns - (widgetLayout.x + widgetLayout.w)));
+      nextW += grow;
+    } else if (direction === "ArrowLeft") {
+      const shrink = Math.min(growth, widgetLayout.w - widgetLayout.minW);
+      nextW -= shrink;
+    } else if (direction === "ArrowDown") {
+      const grow = Math.min(growth, Math.max(0, BASE_GRID_ROWS - (widgetLayout.y + widgetLayout.h)));
+      nextH += grow;
+    } else {
+      const shrink = Math.min(growth, widgetLayout.h - widgetLayout.minH);
+      nextH -= shrink;
+    }
+
+    if (
+      nextX === widgetLayout.x &&
+      nextY === widgetLayout.y &&
+      nextW === widgetLayout.w &&
+      nextH === widgetLayout.h
+    ) {
+      return;
+    }
+
+    const collides = computedLayout.some((item) => {
+      if (item.i === widgetId) return false;
+      return overlaps(
+        { x: nextX, y: nextY, w: nextW, h: nextH },
+        { x: item.x, y: item.y, w: item.w, h: item.h }
+      );
+    });
+
+    if (collides) {
+      setKeyboardStatusMessage(t("widgets.widgetKeyboard.moveBlocked"));
+      return;
+    }
+
+    const nextLayout = computedLayout.map((item) =>
+      item.i === widgetId
+        ? { ...item, x: nextX, y: nextY, w: nextW, h: nextH }
+        : item
+    );
+
+    persistLayout(nextLayout);
+    setKeyboardStatusMessage(`Size: ${nextW} x ${nextH}`);
+  };
+
   const focusAdjacentWidget = (
     widgetId: string,
     direction: "ArrowLeft" | "ArrowRight" | "ArrowUp" | "ArrowDown"
@@ -513,6 +572,7 @@ export default function DashboardGrid({
 
     const isWeatherWidget = widgetId === "weather" || widgetId.startsWith("weather:");
     if (isWeatherWidget) {
+      const isLocked = Boolean(widgetLocks[widgetId]);
       const getWeatherButtons = () =>
         widgetRoot instanceof HTMLElement
           ? Array.from(
@@ -535,6 +595,14 @@ export default function DashboardGrid({
         event.stopPropagation();
         const weatherButtons = getWeatherButtons();
         weatherButtons[0]?.focus();
+        return;
+      }
+
+      if (isLocked && isLockButton && event.key === "ArrowLeft") {
+        event.preventDefault();
+        event.stopPropagation();
+        const weatherButtons = getWeatherButtons();
+        weatherButtons[weatherButtons.length - 1]?.focus();
         return;
       }
     }
@@ -587,7 +655,7 @@ export default function DashboardGrid({
 
     const isMinesweeperWidget = widgetId === "minesweeper" || widgetId.startsWith("minesweeper:");
     if (isMinesweeperWidget) {
-      if (isStyleButton && event.key === "ArrowDown") {
+      if ((isStyleButton || isLockButton) && event.key === "ArrowDown") {
         event.preventDefault();
         event.stopPropagation();
         if (widgetRoot instanceof HTMLElement) {
@@ -610,6 +678,21 @@ export default function DashboardGrid({
             'button[data-info-next-btn="true"]:not([disabled])'
           ) as HTMLElement | null;
           nextBtn?.focus();
+        }
+        return;
+      }
+    }
+
+    const isCustomButtonWidget = widgetId.startsWith("customButton:");
+    if (isCustomButtonWidget) {
+      if (isStyleButton && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (widgetRoot instanceof HTMLElement) {
+          const draggableBtn = widgetRoot.querySelector(
+            "button.widget-draggable-button"
+          ) as HTMLElement | null;
+          draggableBtn?.focus();
         }
         return;
       }
@@ -861,6 +944,18 @@ export default function DashboardGrid({
       }
     }
 
+    if (widgetId.startsWith("customButton:")) {
+      const draggableBtn = container.querySelector(
+        "button.widget-draggable-button"
+      ) as HTMLElement | null;
+
+      if (draggableBtn) {
+        draggableBtn.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
+
     const firstFocusable = container.querySelector(
       'button:not([disabled]),[href],input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"]),[contenteditable="true"]'
     ) as HTMLElement | null;
@@ -895,6 +990,19 @@ export default function DashboardGrid({
         contentElements[0] === target || contentElements[0]?.contains(target);
 
       if (isFirst) {
+        // For customButton widgets, ArrowUp from the draggable button goes to style-btn specifically
+        if (widgetId.startsWith("customButton:")) {
+          const styleBtn = widgetRoot.querySelector<HTMLButtonElement>(
+            "button.widget-style-btn:not([disabled])"
+          );
+          if (styleBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            styleBtn.focus();
+            return;
+          }
+        }
+
         const topControls = Array.from(
           widgetRoot.querySelectorAll<HTMLElement>(
             "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-news-country-btn, button.widget-spotify-darkmode-btn, button.widget-style-btn, button.widget-lock-btn"
@@ -914,7 +1022,7 @@ export default function DashboardGrid({
     if (event.target !== event.currentTarget) return;
     const isLocked = Boolean(widgetLocks[widgetId]);
 
-    if (event.key === "Enter" && !isLocked) {
+    if (event.key === "Enter") {
       event.preventDefault();
       event.stopPropagation();
       focusFirstWidgetControl(event.currentTarget, widgetId);
@@ -950,6 +1058,23 @@ export default function DashboardGrid({
       }
 
       moveWidgetByKeyboard(widgetId, 0, step);
+      return;
+    }
+
+    if (
+      !isLocked &&
+      event.shiftKey &&
+      !event.ctrlKey &&
+      !event.altKey &&
+      !event.metaKey &&
+      (event.key === "ArrowLeft" ||
+        event.key === "ArrowRight" ||
+        event.key === "ArrowUp" ||
+        event.key === "ArrowDown")
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+      resizeWidgetByKeyboard(widgetId, event.key, 1);
       return;
     }
 
@@ -1108,7 +1233,7 @@ export default function DashboardGrid({
               overflow: "visible",
               outline: isKeyboardFocused ? "2px solid rgba(255,255,255,0.75)" : "none",
               outlineOffset: 2,
-              zIndex: isStyleEditorOpen ? 50 : hoveredWidgetId === widgetId ? 10 : 1,
+              zIndex: isStyleEditorOpen ? 50 : isKeyboardFocused ? 30 : hoveredWidgetId === widgetId ? 10 : 1,
             }}
             onFocus={() => {
               setFocusedWidgetId(widgetId);
@@ -1129,6 +1254,55 @@ export default function DashboardGrid({
             onMouseEnter={() => setHoveredWidgetId(widgetId)}
             onMouseLeave={() => setHoveredWidgetId((prev) => (prev === widgetId ? null : prev))}
           >
+            {isKeyboardFocused && !isLocked && isMovable && (
+              <div
+                aria-hidden="true"
+                style={{
+                  position: "absolute",
+                  bottom: "100%",
+                  left: 0,
+                  marginBottom: 6,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  zIndex: 100,
+                  pointerEvents: "none",
+                }}
+              >
+                <span
+                  style={{
+                    background: "rgba(15,23,42,0.82)",
+                    backdropFilter: "blur(8px)",
+                    color: "rgba(255,255,255,0.9)",
+                    fontSize: 11,
+                    fontFamily: "inherit",
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                    whiteSpace: "nowrap",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {t("widgets.widgetKeyboard.keyboardHelpMove")}
+                </span>
+                <span
+                  style={{
+                    background: "rgba(15,23,42,0.82)",
+                    backdropFilter: "blur(8px)",
+                    color: "rgba(255,255,255,0.9)",
+                    fontSize: 11,
+                    fontFamily: "inherit",
+                    padding: "3px 8px",
+                    borderRadius: 6,
+                    whiteSpace: "nowrap",
+                    border: "1px solid rgba(255,255,255,0.15)",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {t("widgets.widgetKeyboard.keyboardHelpResize")}
+                </span>
+              </div>
+            )}
             {isInteractive && (hoveredWidgetId === widgetId || isFocused) && (
               <div
                 style={{
@@ -1293,9 +1467,20 @@ export default function DashboardGrid({
                     className="widget-style-btn"
                     aria-label={t("editPanel.widgetStyleOpen")}
                     title={t("editPanel.widgetStyleOpen")}
-                    onClick={() =>
-                      setStyleEditorWidgetId((prev) => (prev === widgetId ? null : widgetId))
-                    }
+                    onClick={() => {
+                      setStyleEditorWidgetId((prev) => {
+                        const next = prev === widgetId ? null : widgetId;
+
+                        // When opening the style panel, place focus at its first color control.
+                        if (next === widgetId) {
+                          requestAnimationFrame(() => {
+                            focusStyleColorButton(widgetId, "surface");
+                          });
+                        }
+
+                        return next;
+                      });
+                    }}
                     onKeyDown={handleWidgetTopControlKeyDown}
                     style={{
                       width: 24,
