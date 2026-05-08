@@ -837,7 +837,7 @@ const CalendarWidget = forwardRef<CalendarWidgetHandle, CalendarWidgetProps>(fun
         </div>
 
         {displayWeekDays.map((_, dayIdx) => {
-          const cellKey = `${dayIdx}-${time}`;
+          //const cellKey = `${dayIdx}-${time}`;
           const { items, hiddenCount } = getCellRenderState(
             dayIdx,
             time,

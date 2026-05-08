@@ -131,7 +131,7 @@ export function useCalendarLogic(
 ) {
   const { events, createCalendarEvent, updateCalendarEvent, deleteCalendarEvent } =
     useCalendarEvents(selectedCalendarIds, calendarProvider);
-  const [creatingKey, setCreatingKey] = useState<string | null>(null);
+  const [creatingKey, ] = useState<string | null>(null);
   const [weekOffset, setWeekOffset] = useState(0);
   const [editingEvent, setEditingEvent] = useState<EventFormState | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
