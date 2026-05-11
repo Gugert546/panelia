@@ -14,7 +14,15 @@ import {
   detectBackgroundMediaType,
   uploadBackgroundMedia,
   validateFileSize,
+  deleteBackgroundFile,
+  listAllBackgroundFiles,
 } from "../../lib/firebase/storage";
+import {
+  saveBackgroundMetadata,
+  listSavedBackgrounds,
+  deleteSavedBackgroundDoc,
+  type SavedBackground,
+} from "../../lib/firebase/firestore";
 import { useAuth } from "../features/auth/useAuth";
 import paneliabgmashup from "../../assets/panelia-bg/paneliabgmashup.png";
 
@@ -50,6 +58,7 @@ type EditPanelProps = {
   setWidgetSizeMode: (mode: WidgetSizeMode) => void;
   dashboardBackgroundId: DashboardBackgroundId;
   setDashboardBackgroundId: (backgroundId: DashboardBackgroundId) => void;
+  customBackgroundUrl: string;
   setCustomBackgroundUrl: (url: string) => void;
   setCustomBackgroundType: (type: CustomBackgroundMediaType) => void;
   dashboardPresets: DashboardPreset[];
@@ -159,6 +168,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   setWidgetSizeMode,
   dashboardBackgroundId,
   setDashboardBackgroundId,
+  customBackgroundUrl,
   setCustomBackgroundUrl,
   setCustomBackgroundType,
   dashboardPresets,
@@ -209,6 +219,10 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const [uploadingBackground, setUploadingBackground] = useState(false);
   const [uploadBackgroundError, setUploadBackgroundError] = useState("");
   const [pendingPresetFocusId, setPendingPresetFocusId] = useState<string | null>(null);
+  const [showMediaLibrary, setShowMediaLibrary] = useState(false);
+  const [savedBackgrounds, setSavedBackgrounds] = useState<SavedBackground[]>([]);
+  const [loadingLibrary, setLoadingLibrary] = useState(false);
+  const [deletingBgId, setDeletingBgId] = useState<string | null>(null);
   const { fontSize: widgetFontSize, setFontSize } = useFontSize();
   const { language, setLanguage, t } = useLanguage();
   const { user } = useAuth();
@@ -827,10 +841,16 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     setUploadBackgroundError("");
 
     try {
-      const downloadUrl = await uploadBackgroundMedia(file, mediaType);
+      const { url: downloadUrl, storagePath } = await uploadBackgroundMedia(file, mediaType);
       setCustomBackgroundUrl(downloadUrl);
       setCustomBackgroundType(mediaType);
       setDashboardBackgroundId("customMedia");
+      if (user) {
+        const bgId = `bg:${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+        const newBg: SavedBackground = { id: bgId, url: downloadUrl, storagePath, type: mediaType, createdAt: Date.now() };
+        await saveBackgroundMetadata(user.uid, newBg).catch(() => {});
+        setSavedBackgrounds((prev) => [newBg, ...prev]);
+      }
     } catch (err: unknown) {
       const errorMsg = err instanceof Error ? err.message : "Upload failed";
       setUploadBackgroundError(errorMsg);
@@ -849,6 +869,60 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
     setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
     setFontSize(DEFAULT_FONT_SIZE);
+  };
+
+  const handleOpenMediaLibrary = async () => {
+    if (showMediaLibrary) {
+      setShowMediaLibrary(false);
+      return;
+    }
+    setShowMediaLibrary(true);
+    if (!user) return;
+    setLoadingLibrary(true);
+    try {
+      // Fetch from Storage (source of truth for all uploaded files)
+      const storageItems = await listAllBackgroundFiles(user.uid);
+      // Fetch Firestore metadata to get createdAt if available
+      const firestoreBgs = await listSavedBackgrounds(user.uid);
+      const metaByPath = new Map(firestoreBgs.map((b) => [b.storagePath, b]));
+
+      const merged: SavedBackground[] = storageItems.map((item) => {
+        const meta = metaByPath.get(item.storagePath);
+        return meta ?? {
+          id: item.storagePath,
+          url: item.url,
+          storagePath: item.storagePath,
+          type: item.type,
+          createdAt: 0,
+        };
+      });
+
+      // Sort by createdAt descending (unknown = last)
+      merged.sort((a, b) => b.createdAt - a.createdAt);
+      setSavedBackgrounds(merged);
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingLibrary(false);
+    }
+  };
+
+  const handleDeleteBackground = async (bg: SavedBackground) => {
+    if (!user) return;
+    setDeletingBgId(bg.id);
+    try {
+      await deleteBackgroundFile(bg.storagePath);
+      await deleteSavedBackgroundDoc(user.uid, bg.id);
+      setSavedBackgrounds((prev) => prev.filter((b) => b.id !== bg.id));
+      if (customBackgroundUrl === bg.url) {
+        setDashboardBackgroundId("defaultbg");
+        setCustomBackgroundUrl("");
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setDeletingBgId(null);
+    }
   };
 
   const handleSavePreset = () => {
@@ -1711,6 +1785,146 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
                 );
               }
 
+              if (option.id === "customMedia") {
+                return (
+                  <div key={option.id}>
+                    <button
+                      onClick={handleOpenMediaLibrary}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        width: "100%",
+                        padding: 12,
+                        borderRadius: 16,
+                        border: selected ? buttonBorderHighlight : buttonBorder,
+                        background: selected ? softTint : "rgba(255,255,255,0.42)",
+                        cursor: "pointer",
+                        textAlign: "left",
+                        boxShadow: selected ? subtleShadow : innerShadow,
+                        color: widgetTextColor,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 64,
+                          height: 38,
+                          borderRadius: 6,
+                          border: "1px solid rgba(0,0,0,0.2)",
+                          background: "linear-gradient(135deg, #294b82, #5f8cc7, #b2d9ff)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          fontSize,
+                          fontWeight: 700,
+                          color: "#eaf4ff",
+                          flexShrink: 0,
+                        }}
+                      >
+                        Media
+                      </div>
+                      <span style={{ fontSize, fontWeight: 500, flex: 1 }}>
+                        {t(option.labelKey)}
+                      </span>
+                      <span style={{ fontSize: fontSize - 2, opacity: 0.6 }}>
+                        {showMediaLibrary ? "▲" : "▼"}
+                      </span>
+                    </button>
+
+                    {showMediaLibrary && (
+                      <div
+                        style={{
+                          background: "rgba(255,255,255,0.72)",
+                          borderRadius: 12,
+                          border: buttonBorder,
+                          padding: "8px 10px",
+                          marginTop: 4,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 0,
+                        }}
+                      >
+                        {loadingLibrary ? (
+                          <div style={{ fontSize, color: widgetTextColor, padding: "8px 0" }}>
+                            {t("editPanel.mediaLibraryLoading")}
+                          </div>
+                        ) : savedBackgrounds.length === 0 ? (
+                          <div style={{ fontSize, color: widgetTextColor, padding: "8px 0", opacity: 0.7 }}>
+                            {t("editPanel.mediaLibraryEmpty")}
+                          </div>
+                        ) : (
+                          savedBackgrounds.map((bg) => (
+                            <div
+                              key={bg.id}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 8,
+                                padding: "6px 0",
+                                borderBottom: "1px solid rgba(0,0,0,0.07)",
+                              }}
+                            >
+                              {bg.type === "video" ? (
+                                <video
+                                  src={bg.url}
+                                  style={{ width: 64, height: 36, objectFit: "cover", borderRadius: 4, flexShrink: 0, marginRight: 6 }}
+                                  muted
+                                  preload="metadata"
+                                />
+                              ) : (
+                                <img
+                                  src={bg.url}
+                                  alt=""
+                                  style={{ width: 64, height: 36, objectFit: "cover", borderRadius: 4, flexShrink: 0, marginRight: 6 }}
+                                />
+                              )}
+                              <button
+                                onClick={() => {
+                                  setCustomBackgroundUrl(bg.url);
+                                  setCustomBackgroundType(bg.type);
+                                  setDashboardBackgroundId("customMedia");
+                                }}
+                                style={{
+                                  padding: "4px 10px",
+                                  borderRadius: 8,
+                                  border: buttonBorder,
+                                  background: controlSurfaceColor,
+                                  cursor: "pointer",
+                                  fontSize: fontSize - 1,
+                                  fontWeight: 600,
+                                  color: widgetTextColor,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {t("editPanel.mediaLibraryUse")}
+                              </button>
+                              <button
+                                onClick={() => handleDeleteBackground(bg)}
+                                disabled={deletingBgId === bg.id}
+                                style={{
+                                  padding: "4px 10px",
+                                  borderRadius: 8,
+                                  border: "1px solid #e5b4b4",
+                                  background: "#fff1f1",
+                                  cursor: deletingBgId === bg.id ? "not-allowed" : "pointer",
+                                  fontSize: fontSize - 1,
+                                  fontWeight: 600,
+                                  color: "#b91c1c",
+                                  opacity: deletingBgId === bg.id ? 0.6 : 1,
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {deletingBgId === bg.id ? "..." : t("editPanel.mediaLibraryDelete")}
+                              </button>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <button
                   key={option.id}
@@ -1730,46 +1944,25 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
                     color: widgetTextColor,
                   }}
                 >
-                  {option.id === "customMedia" ? (
-                    <div
-                      style={{
-                        width: 64,
-                        height: 38,
-                        borderRadius: 6,
-                        border: "1px solid rgba(0,0,0,0.2)",
-                        background: "linear-gradient(135deg, #294b82, #5f8cc7, #b2d9ff)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize,
-                        fontWeight: 700,
-                        color: "#eaf4ff",
-                        flexShrink: 0,
-                      }}
-                    >
-                      Media
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        width: 64,
-                        height: 38,
-                        borderRadius: 6,
-                        border: "1px solid rgba(0,0,0,0.2)",
-                        background:
-                          "linear-gradient(120deg, rgba(255,255,255,0.85), rgba(200,220,255,0.95))",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize,
-                        fontWeight: 600,
-                        color: "#1e2d4d",
-                        flexShrink: 0,
-                      }}
-                    >
-                      Auto
-                    </div>
-                  )}
+                  <div
+                    style={{
+                      width: 64,
+                      height: 38,
+                      borderRadius: 6,
+                      border: "1px solid rgba(0,0,0,0.2)",
+                      background:
+                        "linear-gradient(120deg, rgba(255,255,255,0.85), rgba(200,220,255,0.95))",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize,
+                      fontWeight: 600,
+                      color: "#1e2d4d",
+                      flexShrink: 0,
+                    }}
+                  >
+                    Auto
+                  </div>
 
                   <span style={{ fontSize, fontWeight: 500 }}>
                     {t(option.labelKey)}

@@ -3,6 +3,8 @@ import {
   ref,
   uploadBytes,
   getDownloadURL,
+  deleteObject,
+  listAll,
   type UploadMetadata,
 } from "firebase/storage";
 import { auth } from "./client";
@@ -41,7 +43,7 @@ function getFileExtension(fileName: string) {
 export async function uploadBackgroundMedia(
   file: File,
   mediaType: BackgroundMediaType
-): Promise<string> {
+): Promise<{ url: string; storagePath: string }> {
   const validation = validateFileSize(file);
   if (!validation.valid) {
     throw new Error(validation.error);
@@ -66,7 +68,42 @@ export async function uploadBackgroundMedia(
 
   // Get and return the download URL
   const downloadUrl = await getDownloadURL(storageRef);
-  return downloadUrl;
+  return { url: downloadUrl, storagePath };
+}
+
+export async function deleteBackgroundFile(storagePath: string): Promise<void> {
+  const storage = getStorage();
+  const storageRef = ref(storage, storagePath);
+  await deleteObject(storageRef);
+}
+
+export type StorageBackgroundItem = {
+  url: string;
+  storagePath: string;
+  type: BackgroundMediaType;
+};
+
+export async function listAllBackgroundFiles(uid: string): Promise<StorageBackgroundItem[]> {
+  const storage = getStorage();
+  const results: StorageBackgroundItem[] = [];
+
+  for (const mediaType of ["image", "video"] as BackgroundMediaType[]) {
+    const folderRef = ref(storage, `users/${uid}/backgrounds/${mediaType}`);
+    try {
+      const listResult = await listAll(folderRef);
+      const items = await Promise.all(
+        listResult.items.map(async (item) => {
+          const url = await getDownloadURL(item);
+          return { url, storagePath: item.fullPath, type: mediaType };
+        })
+      );
+      results.push(...items);
+    } catch {
+      // folder may not exist yet
+    }
+  }
+
+  return results;
 }
 
 export function isValidBackgroundUrl(url: string): boolean {
