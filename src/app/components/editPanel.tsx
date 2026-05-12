@@ -233,7 +233,6 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const panelReadabilityLayerColor = "rgba(255,255,255,0.78)";
   const softTint = withAlpha(widgetSurfaceColor, 0.14);
   const strongTint = withAlpha(widgetSurfaceColor, 0.24);
-  const activeTint = withAlpha(widgetSurfaceColor, 0.3);
   const activeBorderColor = withAlpha(widgetSurfaceColor, 0.78);
   const mutedSurfaceColor = "rgba(255,255,255,0.46)";
   const controlSurfaceColor = "rgba(255,255,255,0.54)";
@@ -973,6 +972,10 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     border: buttonBorder,
     boxShadow: innerShadow,
   } as const;
+  const selectedWidgetBackground = "rgba(148, 163, 184, 0.36)";
+  const selectedWidgetBorder = "1px solid rgba(100, 116, 139, 0.8)";
+  const selectedWidgetIconBackground = "rgba(148, 163, 184, 0.5)";
+  const selectedWidgetIconBorder = "1px solid rgba(100, 116, 139, 0.9)";
 
   function handleResetTextColor(): void {
     setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
@@ -1128,10 +1131,10 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
                   marginBottom: 12,
                   borderRadius: 16,
                   cursor: "pointer",
-                  background: isActive ? activeTint : backgroundColor,
-                  border: isActive ? buttonBorderHighlight : buttonBorder,
+                  background: isActive ? selectedWidgetBackground : backgroundColor,
+                  border: isActive ? selectedWidgetBorder : buttonBorder,
                   color: widgetTextColor,
-                  boxShadow: isActive ? subtleShadow : innerShadow,
+                  boxShadow: innerShadow,
                   transform: isActive ? "translateY(-1px)" : "none",
                   transition: "background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease",
                 }}
@@ -1151,11 +1154,11 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
                       width: 34,
                       height: 34,
                       borderRadius: 12,
-                      background: isActive ? strongTint : "rgba(255,255,255,0.34)",
+                      background: isActive ? selectedWidgetIconBackground : "rgba(255,255,255,0.34)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      border: `1px solid ${isActive ? withAlpha(widgetSurfaceColor, 0.5) : "rgba(255,255,255,0.4)"}`,
+                      border: isActive ? selectedWidgetIconBorder : "1px solid rgba(255,255,255,0.4)",
                       flexShrink: 0,
                     }}
                   >
