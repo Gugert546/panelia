@@ -14,10 +14,10 @@ import foregroundSol3 from "../../../assets/panelia-bg/IMG_1117.png";
 import foregroundNatt1 from "../../../assets/panelia-bg/IMG_1114.png";
 import foregroundNatt2 from "../../../assets/panelia-bg/IMG_1112.png";
 import foregroundNatt3 from "../../../assets/panelia-bg/IMG_1113.png";
-import waterSol1 from "../../../assets/panelia-bg/Vann S1.png";
-import waterSol3 from "../../../assets/panelia-bg/Vann S3.png";
-import waterNatt2 from "../../../assets/panelia-bg/Vann N2.png";
-import waterNatt3 from "../../../assets/panelia-bg/Vann N3.png";
+import waterSol1 from "../../../assets/panelia-bg/Vann S1.2.png";
+import waterSol3 from "../../../assets/panelia-bg/Vann S3.2.png";
+import waterNatt2 from "../../../assets/panelia-bg/Vann N2.2.png";
+import waterNatt3 from "../../../assets/panelia-bg/Vann N3.2.png";
 
 type DashboardBackgroundProps = {
   backgroundId: DashboardBackgroundId;
