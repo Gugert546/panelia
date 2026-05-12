@@ -710,6 +710,13 @@ const byGoogleEventId = new Map<
   string,
   { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
 >();
+const byLocalFingerprint = new Map<
+  string,
+  { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
+>();
+
+const toFingerprint = (calendarId: string, title: string, startAt: string, endAt: string) =>
+  `${calendarId}|${title.trim().toLowerCase()}|${startAt}|${endAt}`;
 
 const batch = adminDb.batch();
 let created = 0;
@@ -722,8 +729,9 @@ for (const doc of localSnapshot.docs) {
   const data = (doc.data() || {}) as Record<string, unknown>;
   const source = typeof data.source === "string" ? data.source : "";
   const endAt = toEpoch(data.endAt);
+  const hasGoogleEventId = typeof data.googleEventId === "string" && data.googleEventId.length > 0;
 
-  if (source === "google" && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
+  if ((source === "google" || hasGoogleEventId) && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
     batch.delete(doc.ref);
     deleted += 1;
     continue;
@@ -731,7 +739,26 @@ for (const doc of localSnapshot.docs) {
 
   const googleEventId = typeof data.googleEventId === "string" ? data.googleEventId : null;
   const docCalendarId = typeof data.calendarId === "string" ? data.calendarId : "primary";
-  if (!googleEventId) continue;
+
+  if (!googleEventId) {
+    if (source === "local") {
+      const title = typeof data.title === "string" ? data.title : "";
+      const startAt = typeof data.startAt === "string" ? data.startAt : "";
+      const endAt = typeof data.endAt === "string" ? data.endAt : "";
+
+      if (title && startAt && endAt) {
+        const fingerprint = toFingerprint(docCalendarId, title, startAt, endAt);
+        byLocalFingerprint.set(fingerprint, {
+          id: doc.id,
+          updatedAt: toEpoch(data.updatedAt),
+          createdAt: toEpoch(data.createdAt),
+          ref: doc.ref,
+        });
+      }
+    }
+
+    continue;
+  }
 
   const mapKey = `${docCalendarId}/${googleEventId}`;
   byGoogleEventId.set(mapKey, {
@@ -748,7 +775,16 @@ for (const doc of localSnapshot.docs) {
       const mapped = mapGoogleEvent(item, now);
       const calendarId = (item as { __calendarId?: string }).__calendarId || "primary";
       const mapKey = `${calendarId}/${mapped.googleEventId}`;
-      const existing = byGoogleEventId.get(mapKey);
+      const localFingerprint = toFingerprint(calendarId, mapped.title, mapped.startAt, mapped.endAt);
+      const existingByProviderId = byGoogleEventId.get(mapKey);
+      const localDuplicate = byLocalFingerprint.get(localFingerprint);
+
+      if (existingByProviderId && localDuplicate && existingByProviderId.id !== localDuplicate.id) {
+        batch.delete(localDuplicate.ref);
+        deleted += 1;
+      }
+
+      const existing = existingByProviderId ?? localDuplicate;
 
       if (status === "cancelled") {
         if (existing) {

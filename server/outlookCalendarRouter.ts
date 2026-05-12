@@ -638,6 +638,13 @@ router.post("/sync/pull", async (req, res) => {
       string,
       { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
     >();
+    const byLocalFingerprint = new Map<
+      string,
+      { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
+    >();
+
+    const toFingerprint = (calendarId: string, title: string, startAt: string, endAt: string) =>
+      `${calendarId}|${title.trim().toLowerCase()}|${startAt}|${endAt}`;
 
     const batch = adminDb.batch();
     let created = 0;
@@ -649,8 +656,9 @@ router.post("/sync/pull", async (req, res) => {
       const data = (doc.data() || {}) as Record<string, unknown>;
       const source = typeof data.source === "string" ? data.source : "";
       const endAt = toEpoch(data.endAt);
+      const hasOutlookEventId = typeof data.outlookEventId === "string" && data.outlookEventId.length > 0;
 
-      if (source === "outlook" && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
+      if ((source === "outlook" || hasOutlookEventId) && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
         batch.delete(doc.ref);
         deleted += 1;
         continue;
@@ -659,7 +667,26 @@ router.post("/sync/pull", async (req, res) => {
       const outlookEventId = typeof data.outlookEventId === "string" ? data.outlookEventId : null;
       const docCalendarId =
         typeof data.calendarId === "string" ? normalizeCalendarId(data.calendarId) : OUTLOOK_DEFAULT_CALENDAR_ID;
-      if (!outlookEventId) continue;
+
+      if (!outlookEventId) {
+        if (source === "local") {
+          const title = typeof data.title === "string" ? data.title : "";
+          const startAt = typeof data.startAt === "string" ? data.startAt : "";
+          const endAt = typeof data.endAt === "string" ? data.endAt : "";
+
+          if (title && startAt && endAt) {
+            const fingerprint = toFingerprint(docCalendarId, title, startAt, endAt);
+            byLocalFingerprint.set(fingerprint, {
+              id: doc.id,
+              updatedAt: toEpoch(data.updatedAt),
+              createdAt: toEpoch(data.createdAt),
+              ref: doc.ref,
+            });
+          }
+        }
+
+        continue;
+      }
 
       byOutlookEventId.set(`${docCalendarId}/${outlookEventId}`, {
         id: doc.id,
@@ -673,7 +700,16 @@ router.post("/sync/pull", async (req, res) => {
       const calendarId = item.__calendarId || OUTLOOK_DEFAULT_CALENDAR_ID;
       const mapped = mapOutlookEvent(item, syncNow);
       const mapKey = `${calendarId}/${mapped.outlookEventId}`;
-      const existing = byOutlookEventId.get(mapKey);
+      const localFingerprint = toFingerprint(calendarId, mapped.title, mapped.startAt, mapped.endAt);
+      const existingByProviderId = byOutlookEventId.get(mapKey);
+      const localDuplicate = byLocalFingerprint.get(localFingerprint);
+
+      if (existingByProviderId && localDuplicate && existingByProviderId.id !== localDuplicate.id) {
+        batch.delete(localDuplicate.ref);
+        deleted += 1;
+      }
+
+      const existing = existingByProviderId ?? localDuplicate;
 
       if (item.isCancelled) {
         if (existing) {
