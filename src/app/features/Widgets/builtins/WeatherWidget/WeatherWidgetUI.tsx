@@ -5,31 +5,12 @@ import WidgetPane from "../../components/WidgetPane";
 import { useWidgetInstance } from "../../components/WidgetInstanceContext";
 import { useLanguage } from "../../../../providers/languageProvider";
 import { useResolvedWidgetFontSize } from "../../hooks/useResolvedWidgetFontSize";
-
-type WeatherVisualMode = "clear" | "cloudy" | "rain" | "fog" | "snow";
-type WeatherCloudTone = "normal" | "rain" | "storm";
-
-
-function getWeatherVisualMode(symbolCode?: string): WeatherVisualMode {
-  const code = symbolCode?.toLowerCase() ?? "";
-
-  if (code.includes("fog")) return "fog";
-  if (code.includes("snow") || code.includes("sleet")) return "snow";
-  if (code.includes("rain")) return "rain";
-  if (code.includes("cloudy")) return "cloudy";
-  if (code.includes("clear") || code.includes("fair")) return "clear";
-
-  return "cloudy";
-}
-
-function getWeatherCloudTone(symbolCode?: string): WeatherCloudTone {
-  const code = symbolCode?.toLowerCase() ?? "";
-
-  if (code.includes("heavyrain") || code.includes("thunder")) return "storm";
-  if (code.includes("rain")) return "rain";
-
-  return "normal";
-}
+import {
+  getWeatherCloudTone,
+  getWeatherVisualMode,
+  type WeatherCloudTone,
+  type WeatherVisualMode,
+} from "./weatherVisuals";
 
 function WeatherAtmosphere({ mode, cloudTone }: { mode: WeatherVisualMode; cloudTone: WeatherCloudTone }) {
   const atmosphereClassName = `weather-widget-atmosphere weather-widget-atmosphere-${cloudTone}`;

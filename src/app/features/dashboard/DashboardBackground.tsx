@@ -18,6 +18,13 @@ import waterSol1 from "../../../assets/panelia-bg/Vann S1.2.png";
 import waterSol3 from "../../../assets/panelia-bg/Vann S3.2.png";
 import waterNatt2 from "../../../assets/panelia-bg/Vann N2.2.png";
 import waterNatt3 from "../../../assets/panelia-bg/Vann N3.2.png";
+import { useWeatherWidget } from "../Widgets/builtins/WeatherWidget/WeatherWidgetLogic";
+import {
+  getWeatherCloudTone,
+  getWeatherVisualMode,
+  type WeatherCloudTone,
+  type WeatherVisualMode,
+} from "../Widgets/builtins/WeatherWidget/weatherVisuals";
 
 type DashboardBackgroundProps = {
   backgroundId: DashboardBackgroundId;
@@ -130,6 +137,116 @@ function getNightProgress(date: Date) {
   return Math.min(1, Math.max(0, (hours + 24 - DAY_END_HOUR) / NIGHT_DURATION_HOURS));
 }
 
+function DashboardWeatherAtmosphere({
+  mode,
+  cloudTone,
+}: {
+  mode: WeatherVisualMode;
+  cloudTone: WeatherCloudTone;
+}) {
+  const clouds = (
+    <>
+      <div className="dashboard-weather-cloud dashboard-weather-cloud-one" />
+      <div className="dashboard-weather-cloud dashboard-weather-cloud-two" />
+      <div className="dashboard-weather-cloud dashboard-weather-cloud-three" />
+      <div className="dashboard-weather-cloud dashboard-weather-cloud-four" />
+    </>
+  );
+  const pronouncedClouds = (
+    <>
+      {clouds}
+      <div className="dashboard-weather-cloud dashboard-weather-cloud-five" />
+      <div className="dashboard-weather-cloud dashboard-weather-cloud-six" />
+    </>
+  );
+
+  const renderRainDrops = (count: number) =>
+    Array.from({ length: count }, (_, index) => (
+      <div
+        key={index}
+        className={`dashboard-weather-raindrop dashboard-weather-particle-${index + 1}`}
+      />
+    ));
+
+  const renderSnowFlakes = (count: number) =>
+    Array.from({ length: count }, (_, index) => (
+      <div
+        key={index}
+        className={`dashboard-weather-snowflake dashboard-weather-particle-${index + 1}`}
+      />
+    ));
+
+  if (mode === "rain") {
+    return (
+      <div
+        className={`dashboard-weather-atmosphere dashboard-weather-mode-rain dashboard-weather-atmosphere-${cloudTone}`}
+        aria-hidden="true"
+      >
+        <div className="dashboard-weather-vignette" />
+        {pronouncedClouds}
+        <div className="dashboard-weather-rain-field dashboard-weather-rain-back">
+          {renderRainDrops(18)}
+        </div>
+        <div className="dashboard-weather-rain-field dashboard-weather-rain-front">
+          {renderRainDrops(18)}
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "snow") {
+    return (
+      <div
+        className="dashboard-weather-atmosphere dashboard-weather-mode-snow dashboard-weather-atmosphere-normal"
+        aria-hidden="true"
+      >
+        <div className="dashboard-weather-vignette" />
+        {pronouncedClouds}
+        <div className="dashboard-weather-snow-haze" />
+        <div className="dashboard-weather-snow-field dashboard-weather-snow-back">
+          {renderSnowFlakes(24)}
+        </div>
+        <div className="dashboard-weather-snow-field dashboard-weather-snow-front">
+          {renderSnowFlakes(24)}
+        </div>
+      </div>
+    );
+  }
+
+  if (mode === "fog") {
+    return (
+      <div
+        className="dashboard-weather-atmosphere dashboard-weather-mode-fog dashboard-weather-atmosphere-normal"
+        aria-hidden="true"
+      >
+        {clouds}
+      </div>
+    );
+  }
+
+  if (mode === "clear") {
+    return (
+      <div
+        className="dashboard-weather-atmosphere dashboard-weather-mode-clear dashboard-weather-atmosphere-normal"
+        aria-hidden="true"
+      >
+        <div className="dashboard-weather-clear-glow" />
+        <div className="dashboard-weather-sky-shimmer dashboard-weather-sky-shimmer-one" />
+        <div className="dashboard-weather-sky-shimmer dashboard-weather-sky-shimmer-two" />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="dashboard-weather-atmosphere dashboard-weather-mode-cloudy dashboard-weather-atmosphere-normal"
+      aria-hidden="true"
+    >
+      {pronouncedClouds}
+    </div>
+  );
+}
+
 export default function DashboardBackground({
   backgroundId,
   customBackgroundUrl,
@@ -137,6 +254,8 @@ export default function DashboardBackground({
   date,
 }: DashboardBackgroundProps) {
   const now = date ?? new Date();
+  const weatherAnimationsAreEnabled = backgroundId === "defaultbg";
+  const { state: weatherState } = useWeatherWidget({ enabled: weatherAnimationsAreEnabled });
   const backgroundImageUrl = getImageBackgroundSource(
     backgroundId,
     customBackgroundUrl,
@@ -149,6 +268,19 @@ export default function DashboardBackground({
     backgroundId === "customMedia" ? null : resolveDashboardWater(backgroundId, now);
   const skyBodyType =
     backgroundId === "customMedia" ? null : getSkyBodyType(backgroundId, now);
+  // For testing weather animations, set this to "cloudy", "fog", "rain", "snow","heavyrainandthunder","clearsky_day" sett til undefined(uten "") for å bruke current vær
+  const debugWeatherSymbolCode: string | undefined = undefined;
+  const weatherSymbolCode =
+    weatherAnimationsAreEnabled
+      ? debugWeatherSymbolCode ??
+        (weatherState.status === "success" ? weatherState.data.symbolCode : undefined)
+      : undefined;
+  const weatherVisualMode = weatherSymbolCode
+    ? getWeatherVisualMode(weatherSymbolCode)
+    : null;
+  const weatherCloudTone = weatherSymbolCode
+    ? getWeatherCloudTone(weatherSymbolCode)
+    : "normal";
   const videoBackgroundSource = getVideoBackgroundSource(
     backgroundId,
     customBackgroundUrl,
@@ -210,6 +342,13 @@ export default function DashboardBackground({
           src={foregroundImageUrl}
           alt=""
           aria-hidden="true"
+        />
+      )}
+
+      {weatherVisualMode && (
+        <DashboardWeatherAtmosphere
+          mode={weatherVisualMode}
+          cloudTone={weatherCloudTone}
         />
       )}
     </>
