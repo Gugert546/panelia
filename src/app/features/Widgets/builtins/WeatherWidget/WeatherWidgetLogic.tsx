@@ -22,26 +22,75 @@ type WeatherState =
 
 const WEATHER_CACHE_KEY = "panelia:weather:v1";
 const WEATHER_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
+const WEATHER_STALE_CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+const WEATHER_RETRY_DELAY_MS = 700;
 
 function round1(n: number) {
   return Math.round(n * 10) / 10;
 }
 
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (
+    error &&
+    typeof error === "object" &&
+    "message" in error &&
+    typeof error.message === "string"
+  ) {
+    return error.message;
+  }
+
+  return "";
+}
+
+function isRetryableWeatherError(error: unknown) {
+  const message = getErrorMessage(error);
+
+  if (!message.startsWith("WEATHER_FETCH_FAILED:")) {
+    return true;
+  }
+
+  const status = Number(message.split(":")[1]);
+  return status === 408 || status === 429 || status >= 500;
+}
+
 async function fetchWeatherFromProxy(lat: number, lon: number) {
   const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-  const r = await fetch(
-    `${apiBase}/api/weather?lat=${lat}&lon=${lon}`
-  );
-  if (!r.ok) throw new Error(`WEATHER_FETCH_FAILED:${r.status}`);
-  return r.json();
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const r = await fetch(
+        `${apiBase}/api/weather?lat=${lat}&lon=${lon}`
+      );
+      if (!r.ok) throw new Error(`WEATHER_FETCH_FAILED:${r.status}`);
+      return r.json();
+    } catch (error: unknown) {
+      lastError = error;
+
+      if (attempt === 1 || !isRetryableWeatherError(error)) {
+        throw error;
+      }
+
+      await sleep(WEATHER_RETRY_DELAY_MS);
+    }
+  }
+
+  throw lastError;
 }
 
-function isFresh(iso: string) {
+function isFresh(iso: string, maxAgeMs = WEATHER_CACHE_MAX_AGE_MS) {
   const time = new Date(iso).getTime();
-  return Number.isFinite(time) && Date.now() - time < WEATHER_CACHE_MAX_AGE_MS;
+  return Number.isFinite(time) && Date.now() - time < maxAgeMs;
 }
 
-function readCachedWeather(): WeatherView | undefined {
+function readCachedWeather(maxAgeMs = WEATHER_CACHE_MAX_AGE_MS): WeatherView | undefined {
   try {
     const raw = localStorage.getItem(WEATHER_CACHE_KEY);
     if (!raw) return undefined;
@@ -51,7 +100,7 @@ function readCachedWeather(): WeatherView | undefined {
       typeof value.placeLabel !== "string" ||
       typeof value.temperatureC !== "number" ||
       typeof value.updatedAtISO !== "string" ||
-      !isFresh(value.updatedAtISO)
+      !isFresh(value.updatedAtISO, maxAgeMs)
     ) {
       return undefined;
     }
@@ -140,7 +189,12 @@ export function useWeatherWidget(options?: { enabled?: boolean }) {
         if (prev.status === "success") {
           return { ...prev, refreshing: false };
         }
-        const raw = e instanceof Error ? e.message : "";
+        const cached = readCachedWeather(WEATHER_STALE_CACHE_MAX_AGE_MS);
+        if (cached) {
+          return { status: "success", data: cached, refreshing: false };
+        }
+
+        const raw = getErrorMessage(e);
         let error: string;
         if (raw.startsWith("WEATHER_FETCH_FAILED:")) {
           const status = raw.split(":")[1];
