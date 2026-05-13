@@ -438,7 +438,6 @@ function createPresetPatch(preset: DashboardPreset) {
     widgetOpacity: preset.widgetOpacity,
     widgetBorderWidth: preset.widgetBorderWidth,
     widgetFontSize: preset.widgetFontSize,
-    widgetSizeMode: preset.widgetSizeMode,
     dashboardBackgroundId: preset.dashboardBackgroundId,
     customBackgroundUrl: preset.customBackgroundUrl,
     customBackgroundType: preset.customBackgroundType,
