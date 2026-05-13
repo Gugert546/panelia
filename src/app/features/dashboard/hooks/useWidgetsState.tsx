@@ -35,7 +35,6 @@ export type WidgetInstance = {
   config: Record<string, unknown>; // Widget-spesifikk konfigurasjonsdata
 };
 
-// WidgetSizeMode er fjernet – ikke i bruk
 export type WidgetStyleOverrides = {
   widgetSurfaceColor?: string;
   widgetBorderColor?: string;
@@ -146,7 +145,6 @@ const DEFAULT_WIDGET_BORDER_WIDTH = 1;
 const DEFAULT_WIDGET_FONT_SIZE = 14;
 const MIN_WIDGET_FONT_SIZE = 10;
 const MAX_WIDGET_FONT_SIZE = 22;
-// const DEFAULT_WIDGET_SIZE_MODE fjernet
 const DEFAULT_DASHBOARD_BACKGROUND_ID: DashboardBackgroundId = "defaultbg";
 const CUSTOM_BUTTON_PREFIX = "customButton:";
 
@@ -457,7 +455,6 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
         typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
           ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(preset.widgetFontSize)))
           : DEFAULT_WIDGET_FONT_SIZE,
-      // widgetSizeMode fjernet
       dashboardBackgroundId: normalizeDashboardBackgroundId(
         preset.dashboardBackgroundId
       ),
@@ -696,7 +693,6 @@ function applyPublicDashboardDefaults() {
     widgetBlur: DEFAULT_WIDGET_BLUR,
     widgetBorderWidth: DEFAULT_WIDGET_BORDER_WIDTH,
     widgetFontSize: DEFAULT_WIDGET_FONT_SIZE,
-    // widgetSizeMode fjernet
     dashboardBackgroundId: DEFAULT_DASHBOARD_BACKGROUND_ID,
     customBackgroundUrl: "",
     customBackgroundType: "image" as CustomBackgroundMediaType,
@@ -733,7 +729,6 @@ export function useWidgetsState() {
   const [widgetBorderWidth, setWidgetBorderWidth] = useState(
     DEFAULT_WIDGET_BORDER_WIDTH
   );
-  // widgetSizeMode fjernet
   const [dashboardBackgroundId, setDashboardBackgroundId] =
     useState<DashboardBackgroundId>(DEFAULT_DASHBOARD_BACKGROUND_ID);
   const [customBackgroundUrl, setCustomBackgroundUrl] = useState("");
@@ -781,7 +776,6 @@ export function useWidgetsState() {
       setWidgetBlur(publicDefaults.widgetBlur);
       setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
       setFontSize(publicDefaults.widgetFontSize);
-      // setWidgetSizeMode fjernet
       setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
       setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
       setCustomBackgroundType(publicDefaults.customBackgroundType);
@@ -812,7 +806,6 @@ export function useWidgetsState() {
         setWidgetBlur(publicDefaults.widgetBlur);
         setWidgetBorderWidth(publicDefaults.widgetBorderWidth);
         setFontSize(publicDefaults.widgetFontSize);
-        // setWidgetSizeMode fjernet
         setDashboardBackgroundId(publicDefaults.dashboardBackgroundId);
         setCustomBackgroundUrl(publicDefaults.customBackgroundUrl);
         setCustomBackgroundType(publicDefaults.customBackgroundType);
@@ -883,7 +876,6 @@ export function useWidgetsState() {
           ? Math.min(MAX_WIDGET_FONT_SIZE, Math.max(MIN_WIDGET_FONT_SIZE, Math.round(data.widgetFontSize)))
           : DEFAULT_WIDGET_FONT_SIZE
       );
-      // setWidgetSizeMode fjernet
       setDashboardBackgroundId(
         normalizeDashboardBackgroundId(data.dashboardBackgroundId)
       );
@@ -957,7 +949,6 @@ export function useWidgetsState() {
           widgetBlur,
           widgetBorderWidth,
           widgetFontSize: fontSize,
-          // widgetSizeMode fjernet
           dashboardBackgroundId,
           customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
           customBackgroundType,
@@ -986,7 +977,6 @@ export function useWidgetsState() {
     widgetBlur,
     widgetBorderWidth,
     fontSize,
-    // widgetSizeMode fjernet
     dashboardBackgroundId,
     customBackgroundUrl,
     customBackgroundType,
@@ -1071,7 +1061,6 @@ export function useWidgetsState() {
       widgetBlur,
       widgetBorderWidth,
       widgetFontSize: fontSize,
-      // widgetSizeMode fjernet
       dashboardBackgroundId,
       customBackgroundUrl: normalizeCustomBackgroundUrl(customBackgroundUrl),
       customBackgroundType,
@@ -1103,7 +1092,6 @@ export function useWidgetsState() {
     widgetBlur,
     widgetBorderWidth,
     fontSize,
-    // widgetSizeMode fjernet
     widgetSurfaceColor,
   ]);
 
@@ -1131,7 +1119,6 @@ export function useWidgetsState() {
     setWidgetBlur(reconciledPreset.widgetBlur);
     setWidgetBorderWidth(reconciledPreset.widgetBorderWidth);
     setFontSize(reconciledPreset.widgetFontSize);
-    // setWidgetSizeMode fjernet
     setDashboardBackgroundId(reconciledPreset.dashboardBackgroundId);
     setCustomBackgroundUrl(reconciledPreset.customBackgroundUrl);
     setCustomBackgroundType(reconciledPreset.customBackgroundType);
@@ -1470,7 +1457,6 @@ export function useWidgetsState() {
     widgetOpacity,
     widgetBlur,
     widgetBorderWidth,
-    // widgetSizeMode fjernet
     dashboardBackgroundId,
     customBackgroundUrl,
     customBackgroundType,
@@ -1495,7 +1481,6 @@ export function useWidgetsState() {
     setWidgetOpacity: updateWidgetOpacity,
     setWidgetBlur: updateWidgetBlur,
     setWidgetBorderWidth: updateWidgetBorderWidth,
-    // setWidgetSizeMode fjernet
     setDashboardBackgroundId,
     setCustomBackgroundUrl,
     setCustomBackgroundType,

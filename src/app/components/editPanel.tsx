@@ -54,7 +54,6 @@ type EditPanelProps = {
   setWidgetBlur: (blur: number) => void;
   widgetBorderWidth: number;
   setWidgetBorderWidth: (width: number) => void;
-  // widgetSizeMode og setWidgetSizeMode fjernet
   dashboardBackgroundId: DashboardBackgroundId;
   setDashboardBackgroundId: (backgroundId: DashboardBackgroundId) => void;
   customBackgroundUrl: string;
@@ -87,7 +86,6 @@ const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BLUR = 10;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
-// const DEFAULT_WIDGET_SIZE_MODE fjernet
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 10;
 const MAX_FONT_SIZE = 22;
@@ -112,8 +110,6 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   setWidgetBlur,
   widgetBorderWidth,
   setWidgetBorderWidth,
-
-  // setWidgetSizeMode fjernet
   dashboardBackgroundId,
   setDashboardBackgroundId,
   customBackgroundUrl,
@@ -814,7 +810,6 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
     setWidgetBlur(DEFAULT_WIDGET_BLUR);
     setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
-    // setWidgetSizeMode fjernet
     setFontSize(DEFAULT_FONT_SIZE);
   };
 
