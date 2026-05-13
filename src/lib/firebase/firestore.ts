@@ -51,9 +51,14 @@ function toMillis(value: unknown): number {
 
 function makeUpdatePayload(patch: Partial<CalendarEvent>, markPending: boolean) {
   const payload: Record<string, unknown> = {
-    ...patch,
     updatedAt: serverTimestamp(),
   };
+
+  for (const [key, value] of Object.entries(patch)) {
+    if (typeof value !== "undefined") {
+      payload[key] = value;
+    }
+  }
 
   if (patch.syncStatus) {
     payload.syncStatus = patch.syncStatus;

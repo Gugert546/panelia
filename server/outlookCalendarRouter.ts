@@ -53,6 +53,7 @@ type OutlookEvent = {
 };
 
 const router = express.Router();
+// Scope inkluderer både lesing og skriving mot Outlook-kalender.
 const OUTLOOK_CALENDAR_SCOPE = "offline_access User.Read Mail.Read Calendars.ReadWrite";
 const OUTLOOK_CALENDAR_PREFIX = "outlook:";
 const OUTLOOK_DEFAULT_CALENDAR_ID = `${OUTLOOK_CALENDAR_PREFIX}primary`;
@@ -99,6 +100,8 @@ function getOutlookCredentials() {
   const clientId = process.env.MICROSOFT_CLIENT_ID || process.env.OUTLOOK_CLIENT_ID || process.env.AZURE_CLIENT_ID;
   const clientSecret = process.env.MICROSOFT_CLIENT_SECRET || process.env.OUTLOOK_CLIENT_SECRET || process.env.AZURE_CLIENT_SECRET;
 
+  // Støtter flere env-navn for enklere deploy på ulike plattformer.
+
   if (!clientId || !clientSecret) {
     throw new Error("Microsoft OAuth credentials are not configured");
   }
@@ -132,6 +135,7 @@ async function refreshAccessTokenIfNeeded(
   const now = Date.now();
   const expiresAt = integration.expiresAt ?? 0;
   const missingCalendarScope = requireCalendarScope && !hasCalendarScope(integration.scope);
+  // Forny token før utløp eller hvis Calendar-scope mangler.
   const shouldRefresh =
     Boolean(integration.refreshToken) &&
     (!integration.accessToken || now > expiresAt - 60_000 || missingCalendarScope);
@@ -201,6 +205,7 @@ async function graphApiGet(accessToken: string, url: string) {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
+      // Tvinger svar i UTC for konsistent lagring i Firestore.
       Prefer: 'outlook.timezone="UTC"',
     },
   });
@@ -258,6 +263,8 @@ function stripOutlookCalendarPrefix(calendarId: string) {
 }
 
 function normalizeCalendarId(value: unknown) {
+  
+  // Alle interne calendarId-er normaliseres til outlook:<id>.
   const raw = typeof value === "string" && value.trim() ? value.trim() : OUTLOOK_DEFAULT_CALENDAR_ID;
   return raw.startsWith(OUTLOOK_CALENDAR_PREFIX) ? raw : `${OUTLOOK_CALENDAR_PREFIX}${raw}`;
 }
@@ -325,6 +332,7 @@ function toOutlookEventBody(event: SyncEventPayload) {
   const startAt = toIso(event.startAt, Date.now());
   const endAt = toIso(event.endAt, Date.now() + 60 * 60 * 1000);
 
+  // Graph API forventer dateTime uten trailing Z når timeZone sendes separat.
   return {
     subject: event.title,
     body: {
@@ -503,6 +511,7 @@ router.post("/sync/create", async (req, res) => {
 
   try {
     const accessToken = await getUsableAccessToken(uid);
+    // Oppretter event i valgt Outlook-kalender.
     const payload = await graphApiRequest(
       accessToken,
       getCalendarEventsUrl(calendarId),
@@ -592,6 +601,7 @@ router.post("/sync/pull", async (req, res) => {
         ? selectedCalendarIds
         : [OUTLOOK_DEFAULT_CALENDAR_ID];
 
+    // Vi speiler et begrenset tidsvindu for å holde datasettene små og raske.
     const syncNow = Date.now();
     const syncTwoWeeksBackIso = new Date(syncNow - 14 * 24 * 60 * 60 * 1000).toISOString();
     const syncTwoWeeksBackEpoch = toEpoch(syncTwoWeeksBackIso);
@@ -639,6 +649,15 @@ router.post("/sync/pull", async (req, res) => {
       { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
     >();
 
+    // Fallback-indeks for lokale events som ennå ikke har fått outlookEventId.
+    const byLocalFingerprint = new Map<
+      string,
+      { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
+    >();
+
+    const toFingerprint = (calendarId: string, title: string, startAt: string, endAt: string) =>
+      `${calendarId}|${title.trim().toLowerCase()}|${startAt}|${endAt}`;
+
     const batch = adminDb.batch();
     let created = 0;
     let updated = 0;
@@ -649,8 +668,10 @@ router.post("/sync/pull", async (req, res) => {
       const data = (doc.data() || {}) as Record<string, unknown>;
       const source = typeof data.source === "string" ? data.source : "";
       const endAt = toEpoch(data.endAt);
+      const hasOutlookEventId = typeof data.outlookEventId === "string" && data.outlookEventId.length > 0;
 
-      if (source === "outlook" && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
+      // Sletter gamle provider-synkede events. Vi sjekker også outlookEventId fordi source kan være "local".
+      if ((source === "outlook" || hasOutlookEventId) && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
         batch.delete(doc.ref);
         deleted += 1;
         continue;
@@ -659,7 +680,26 @@ router.post("/sync/pull", async (req, res) => {
       const outlookEventId = typeof data.outlookEventId === "string" ? data.outlookEventId : null;
       const docCalendarId =
         typeof data.calendarId === "string" ? normalizeCalendarId(data.calendarId) : OUTLOOK_DEFAULT_CALENDAR_ID;
-      if (!outlookEventId) continue;
+
+      if (!outlookEventId) {
+        if (source === "local") {
+          const title = typeof data.title === "string" ? data.title : "";
+          const startAt = typeof data.startAt === "string" ? data.startAt : "";
+          const endAt = typeof data.endAt === "string" ? data.endAt : "";
+
+          if (title && startAt && endAt) {
+            const fingerprint = toFingerprint(docCalendarId, title, startAt, endAt);
+            byLocalFingerprint.set(fingerprint, {
+              id: doc.id,
+              updatedAt: toEpoch(data.updatedAt),
+              createdAt: toEpoch(data.createdAt),
+              ref: doc.ref,
+            });
+          }
+        }
+
+        continue;
+      }
 
       byOutlookEventId.set(`${docCalendarId}/${outlookEventId}`, {
         id: doc.id,
@@ -673,7 +713,19 @@ router.post("/sync/pull", async (req, res) => {
       const calendarId = item.__calendarId || OUTLOOK_DEFAULT_CALENDAR_ID;
       const mapped = mapOutlookEvent(item, syncNow);
       const mapKey = `${calendarId}/${mapped.outlookEventId}`;
-      const existing = byOutlookEventId.get(mapKey);
+      
+      // Fingerprint-match hindrer duplikater når provider-ID ennå ikke er skrevet tilbake lokalt.
+      const localFingerprint = toFingerprint(calendarId, mapped.title, mapped.startAt, mapped.endAt);
+      const existingByProviderId = byOutlookEventId.get(mapKey);
+      const localDuplicate = byLocalFingerprint.get(localFingerprint);
+
+      // Hvis begge finnes, behold provider-koblet event og fjern lokal duplikat.
+      if (existingByProviderId && localDuplicate && existingByProviderId.id !== localDuplicate.id) {
+        batch.delete(localDuplicate.ref);
+        deleted += 1;
+      }
+
+      const existing = existingByProviderId ?? localDuplicate;
 
       if (item.isCancelled) {
         if (existing) {

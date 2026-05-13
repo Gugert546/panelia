@@ -28,10 +28,12 @@ type SyncEventPayload = {
 
 const router = express.Router();
 
+// Brukes for å bygge redirect-URL tilbake til samme miljø (lokalt/prod).
 function getBaseUrl(req: express.Request) {
   return `${req.protocol}://${req.get("host")}`;
 }
 
+// Leser Firebase ID-token fra Authorization-headeren.
 function getBearerToken(req: express.Request) {
   const authHeader = req.headers.authorization;
   if (!authHeader) return null;
@@ -60,6 +62,7 @@ function stateSecret() {
   return process.env.GOOGLE_OAUTH_STATE_SECRET || process.env.GOOGLE_CLIENT_SECRET || "calendar-oauth-state";
 }
 
+// Signerer OAuth-state for å hindre manipulering av callback-data.
 function signState(payload: string) {
   return createHmac("sha256", stateSecret()).update(payload).digest("base64url");
 }
@@ -99,6 +102,7 @@ function buildGoogleAuthUrl(req: express.Request, state: string) {
 
   const callbackUrl = process.env.GOOGLE_CALENDAR_REDIRECT_URI || `${getBaseUrl(req)}/api/google-calendar/callback`;
 
+  // Full tilgang er nødvendig for create/update/delete av hendelser.
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: callbackUrl,
@@ -134,6 +138,7 @@ async function refreshAccessTokenIfNeeded(uid: string, integration: IntegrationD
 
   const now = Date.now();
   const expiresAt = integration.expiresAt ?? 0;
+  // Fornyer token litt før utløp for å unngå feil midt i sync-kall.
   const shouldRefresh = Boolean(integration.refreshToken) && (!integration.accessToken || now > expiresAt - 60_000);
 
   if (!shouldRefresh) {
@@ -187,6 +192,7 @@ async function getUsableAccessToken(uid: string) {
 function toGoogleEventBody(event: SyncEventPayload) {
   const timezone = event.timezone || "UTC";
 
+  // Google bruker date-felter for heldagseventer, ikke dateTime.
   if (event.allDay) {
     const startDate = new Date(event.startAt).toISOString().slice(0, 10);
     const endDate = new Date(event.endAt).toISOString().slice(0, 10);
@@ -326,6 +332,7 @@ function mapGoogleEvent(item: Record<string, unknown>, fallbackNow: number) {
   const startDate = typeof startObj.date === "string" ? startObj.date : null;
   const endDate = typeof endObj.date === "string" ? endObj.date : null;
 
+  // All-day tolkes fra start.date uten dateTime.
   const allDay = Boolean(startDate && !startDateTime);
   const timezone =
     (typeof startObj.timeZone === "string" && startObj.timeZone) ||
@@ -517,6 +524,7 @@ router.post("/sync/create", async (req, res) => {
       : "primary";
   try {
     const accessToken = await getUsableAccessToken(uid);
+    // Opprett event i valgt kalender hos Google.
     const payload = await googleApiRequest(
       accessToken,
       `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events`,
@@ -667,6 +675,7 @@ router.post("/sync/pull", async (req, res) => {
     console.log("[sync/pull] DEBUG - selectedCalendarIds from firestore:", integration?.selectedCalendarIds);
     console.log("[sync/pull] DEBUG - final calendarIds to fetch:", calendarIds);
 
+  // Vi speiler et begrenset tidsvindu for å holde datasettene små og raske.
   const syncNow = Date.now();
   const syncTwoWeeksBackIso = new Date(syncNow-14*24*60*1000).toISOString();
   const syncTwoWeeksBackEpoch = toEpoch(syncTwoWeeksBackIso);
@@ -684,8 +693,8 @@ router.post("/sync/pull", async (req, res) => {
       );
       listUrl.searchParams.set("singleEvents", "true");
       listUrl.searchParams.set("orderBy", "startTime");
-      listUrl.searchParams.set("timeMin", syncTwoWeeksBackIso); //henter kun events som er mindre en to uker gamle
-      listUrl.searchParams.set("timeMax", syncTwoYearsAheadIso); //henter kun events som er mindre enn to år frem i tid
+      listUrl.searchParams.set("timeMin", syncTwoWeeksBackIso); // Henter kun events nyere enn ca. 2 uker tilbake.
+      listUrl.searchParams.set("timeMax", syncTwoYearsAheadIso); // Henter kun events innenfor ca. 2 år frem.
       listUrl.searchParams.set("maxResults", String(maxResults));
 
       try {
@@ -710,6 +719,14 @@ const byGoogleEventId = new Map<
   string,
   { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
 >();
+// Fallback-indeks for lokale events som ennå ikke har fått googleEventId.
+const byLocalFingerprint = new Map<
+  string,
+  { id: string; updatedAt: number; createdAt: number; ref: FirebaseFirestore.DocumentReference }
+>();
+
+const toFingerprint = (calendarId: string, title: string, startAt: string, endAt: string) =>
+  `${calendarId}|${title.trim().toLowerCase()}|${startAt}|${endAt}`;
 
 const batch = adminDb.batch();
 let created = 0;
@@ -717,13 +734,14 @@ let updated = 0;
 let skipped = 0;
 let deleted = 0;
 
-//sletter gamle events fra firestore
+// Sletter gamle provider-synkede events. Vi sjekker også googleEventId fordi source kan være "local".
 for (const doc of localSnapshot.docs) {
   const data = (doc.data() || {}) as Record<string, unknown>;
   const source = typeof data.source === "string" ? data.source : "";
   const endAt = toEpoch(data.endAt);
+  const hasGoogleEventId = typeof data.googleEventId === "string" && data.googleEventId.length > 0;
 
-  if (source === "google" && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
+  if ((source === "google" || hasGoogleEventId) && endAt > 0 && endAt < syncTwoWeeksBackEpoch) {
     batch.delete(doc.ref);
     deleted += 1;
     continue;
@@ -731,7 +749,26 @@ for (const doc of localSnapshot.docs) {
 
   const googleEventId = typeof data.googleEventId === "string" ? data.googleEventId : null;
   const docCalendarId = typeof data.calendarId === "string" ? data.calendarId : "primary";
-  if (!googleEventId) continue;
+
+  if (!googleEventId) {
+    if (source === "local") {
+      const title = typeof data.title === "string" ? data.title : "";
+      const startAt = typeof data.startAt === "string" ? data.startAt : "";
+      const endAt = typeof data.endAt === "string" ? data.endAt : "";
+
+      if (title && startAt && endAt) {
+        const fingerprint = toFingerprint(docCalendarId, title, startAt, endAt);
+        byLocalFingerprint.set(fingerprint, {
+          id: doc.id,
+          updatedAt: toEpoch(data.updatedAt),
+          createdAt: toEpoch(data.createdAt),
+          ref: doc.ref,
+        });
+      }
+    }
+
+    continue;
+  }
 
   const mapKey = `${docCalendarId}/${googleEventId}`;
   byGoogleEventId.set(mapKey, {
@@ -748,7 +785,18 @@ for (const doc of localSnapshot.docs) {
       const mapped = mapGoogleEvent(item, now);
       const calendarId = (item as { __calendarId?: string }).__calendarId || "primary";
       const mapKey = `${calendarId}/${mapped.googleEventId}`;
-      const existing = byGoogleEventId.get(mapKey);
+      // Fingerprint-match hindrer duplikater når provider-ID ennå ikke er skrevet tilbake lokalt.
+      const localFingerprint = toFingerprint(calendarId, mapped.title, mapped.startAt, mapped.endAt);
+      const existingByProviderId = byGoogleEventId.get(mapKey);
+      const localDuplicate = byLocalFingerprint.get(localFingerprint);
+
+      // Hvis begge finnes, behold provider-koblet event og fjern lokal duplikat.
+      if (existingByProviderId && localDuplicate && existingByProviderId.id !== localDuplicate.id) {
+        batch.delete(localDuplicate.ref);
+        deleted += 1;
+      }
+
+      const existing = existingByProviderId ?? localDuplicate;
 
       if (status === "cancelled") {
         if (existing) {
