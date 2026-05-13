@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import type { ToolDef } from "./types";
 import { adminDb } from "../firebaseAdmin";
+import { normalizeBooleanMap, normalizeLayouts } from "./layoutHelpers";
 
 type LayoutItem = {
   x: number;
@@ -173,44 +174,8 @@ function normalizeThemeQuery(value: string) {
   return tokenize(value).join(" ");
 }
 
-function isLayoutItem(value: unknown): value is LayoutItem {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Record<string, unknown>;
-  return ["x", "y", "w", "h"].every(
-    (key) => typeof item[key] === "number" && Number.isFinite(item[key])
-  );
-}
-
-function normalizeLayouts(value: unknown) {
-  const result: Record<string, LayoutItem> = {};
-  if (!value || typeof value !== "object") return result;
-
-  for (const [id, layout] of Object.entries(value as Record<string, unknown>)) {
-    if (isLayoutItem(layout)) {
-      result[id] = {
-        x: layout.x,
-        y: layout.y,
-        w: layout.w,
-        h: layout.h,
-      };
-    }
-  }
-
-  return result;
-}
-
 function normalizeStringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function normalizeBooleanMap(value: unknown) {
-  if (!value || typeof value !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
-    )
-  );
 }
 
 function normalizeClockModes(value: unknown) {

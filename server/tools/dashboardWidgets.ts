@@ -1,6 +1,13 @@
 import { FieldValue } from "@google-cloud/firestore";
 import type { ToolDef } from "./types";
 import { adminDb } from "../firebaseAdmin";
+import {
+  normalizeActiveWidgetsWithDefaults,
+  normalizeBooleanMap,
+  normalizeLayoutsWithDefaults,
+  normalizeObjectMap,
+  rectsOverlap,
+} from "./layoutHelpers";
 
 type LayoutItem = {
   x: number;
@@ -241,62 +248,6 @@ function resolveSingleActiveWidgetTarget(widgetId: string, activeWidgets: string
   }
 
   return matches[0];
-}
-
-function normalizeActiveWidgets(value: unknown, docExists: boolean) {
-  if (!Array.isArray(value)) return docExists ? [] : [...PUBLIC_WIDGET_IDS];
-  return value.filter((item): item is string => typeof item === "string");
-}
-
-function isLayoutItem(value: unknown): value is LayoutItem {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Record<string, unknown>;
-  return ["x", "y", "w", "h"].every(
-    (key) => typeof item[key] === "number" && Number.isFinite(item[key])
-  );
-}
-
-function normalizeLayouts(value: unknown, docExists: boolean) {
-  const base: Record<string, LayoutItem> = docExists ? {} : { ...PUBLIC_LAYOUTS };
-  if (!value || typeof value !== "object") return base;
-
-  for (const [id, layout] of Object.entries(value as Record<string, unknown>)) {
-    if (isLayoutItem(layout)) {
-      base[id] = {
-        x: layout.x,
-        y: layout.y,
-        w: layout.w,
-        h: layout.h,
-      };
-    }
-  }
-
-  return base;
-}
-
-function normalizeBooleanMap(value: unknown) {
-  if (!value || typeof value !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
-    )
-  );
-}
-
-function normalizeObjectMap(value: unknown) {
-  if (!value || typeof value !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      (entry): entry is [string, Record<string, unknown>] =>
-        Boolean(entry[1]) && typeof entry[1] === "object" && !Array.isArray(entry[1])
-    )
-  );
-}
-
-function rectsOverlap(a: LayoutItem, b: LayoutItem) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 function clampLayout(layout: LayoutItem) {
@@ -835,8 +786,8 @@ export const addDashboardWidgetTool: ToolDef<
     await adminDb.runTransaction(async (transaction) => {
       const snap = await transaction.get(ref);
       const data = (snap.exists ? snap.data() : {}) as WidgetLayoutDocument;
-      const activeWidgets = normalizeActiveWidgets(data.activeWidgets, snap.exists);
-      const layouts = normalizeLayouts(data.layouts, snap.exists);
+      const activeWidgets = normalizeActiveWidgetsWithDefaults(data.activeWidgets, snap.exists, PUBLIC_WIDGET_IDS);
+      const layouts = normalizeLayoutsWithDefaults(data.layouts, snap.exists, PUBLIC_LAYOUTS);
       const widgetLocks = normalizeBooleanMap(data.widgetLocks);
       const widgetStyles = normalizeObjectMap(data.widgetStyles);
 
@@ -968,8 +919,8 @@ export const arrangeDashboardWidgetsTool: ToolDef<
     const movedWidgets = await adminDb.runTransaction(async (transaction) => {
       const snap = await transaction.get(ref);
       const data = (snap.exists ? snap.data() : {}) as WidgetLayoutDocument;
-      const activeWidgets = normalizeActiveWidgets(data.activeWidgets, snap.exists);
-      const layouts = normalizeLayouts(data.layouts, snap.exists);
+      const activeWidgets = normalizeActiveWidgetsWithDefaults(data.activeWidgets, snap.exists, PUBLIC_WIDGET_IDS);
+      const layouts = normalizeLayoutsWithDefaults(data.layouts, snap.exists, PUBLIC_LAYOUTS);
       const widgetLocks = normalizeBooleanMap(data.widgetLocks);
       const requestedTargets = Array.isArray(args.widgetIds) && args.widgetIds.length
         ? resolveActiveWidgetTargets(args.widgetIds, activeWidgets)
@@ -1089,8 +1040,8 @@ export const removeDashboardWidgetTool: ToolDef<
     await adminDb.runTransaction(async (transaction) => {
       const snap = await transaction.get(ref);
       const data = (snap.exists ? snap.data() : {}) as WidgetLayoutDocument;
-      const activeWidgets = normalizeActiveWidgets(data.activeWidgets, snap.exists);
-      const layouts = normalizeLayouts(data.layouts, snap.exists);
+      const activeWidgets = normalizeActiveWidgetsWithDefaults(data.activeWidgets, snap.exists, PUBLIC_WIDGET_IDS);
+      const layouts = normalizeLayoutsWithDefaults(data.layouts, snap.exists, PUBLIC_LAYOUTS);
       const widgetLocks = normalizeBooleanMap(data.widgetLocks);
       const widgetStyles = normalizeObjectMap(data.widgetStyles);
 
@@ -1149,7 +1100,7 @@ export const listDashboardWidgetsTool: ToolDef<
   async handler(args, ctx) {
     const snap = await dashboardLayoutRef(ctx.uid).get();
     const data = (snap.exists ? snap.data() : {}) as WidgetLayoutDocument;
-    const activeWidgets = normalizeActiveWidgets(data.activeWidgets, snap.exists);
+    const activeWidgets = normalizeActiveWidgetsWithDefaults(data.activeWidgets, snap.exists, PUBLIC_WIDGET_IDS);
 
     return {
       ok: true,

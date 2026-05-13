@@ -1,5 +1,6 @@
 import type { ToolDef } from "./types";
 import { adminDb } from "../firebaseAdmin";
+import { normalizeBooleanMap, normalizeObjectMap } from "./layoutHelpers";
 
 type WidgetLayoutDocument = {
   activeWidgets?: unknown;
@@ -174,27 +175,6 @@ function withAlpha(color: string, alpha: number) {
   }
 
   return color;
-}
-
-function normalizeBooleanMap(value: unknown) {
-  if (!value || typeof value !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
-    )
-  );
-}
-
-function normalizeObjectMap(value: unknown) {
-  if (!value || typeof value !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      (entry): entry is [string, Record<string, unknown>] =>
-        Boolean(entry[1]) && typeof entry[1] === "object" && !Array.isArray(entry[1])
-    )
-  );
 }
 
 function normalizeStringArray(value: unknown) {

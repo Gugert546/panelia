@@ -1,5 +1,11 @@
 import type { ToolDef } from "./types";
 import { adminDb } from "../firebaseAdmin";
+import {
+  normalizeActiveWidgetsWithDefaults,
+  normalizeBooleanMap,
+  normalizeLayoutsWithDefaults,
+  rectsOverlap,
+} from "./layoutHelpers";
 
 type ClockMode = "digital" | "analog";
 
@@ -39,47 +45,6 @@ function dashboardLayoutRef(uid: string) {
   return adminDb.collection("users").doc(uid).collection("widgetLayout").doc("current");
 }
 
-function normalizeActiveWidgets(value: unknown, docExists: boolean) {
-  if (!Array.isArray(value)) return docExists ? [] : [...PUBLIC_WIDGET_IDS];
-  return value.filter((item): item is string => typeof item === "string");
-}
-
-function isLayoutItem(value: unknown): value is LayoutItem {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Record<string, unknown>;
-  return ["x", "y", "w", "h"].every(
-    (key) => typeof item[key] === "number" && Number.isFinite(item[key])
-  );
-}
-
-function normalizeLayouts(value: unknown, docExists: boolean) {
-  const base: Record<string, LayoutItem> = docExists ? {} : { ...PUBLIC_LAYOUTS };
-  if (!value || typeof value !== "object") return base;
-
-  for (const [id, layout] of Object.entries(value as Record<string, unknown>)) {
-    if (isLayoutItem(layout)) {
-      base[id] = {
-        x: layout.x,
-        y: layout.y,
-        w: layout.w,
-        h: layout.h,
-      };
-    }
-  }
-
-  return base;
-}
-
-function normalizeBooleanMap(value: unknown) {
-  if (!value || typeof value !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
-    )
-  );
-}
-
 function normalizeClockModes(value: unknown) {
   const result: Record<string, ClockMode> = {};
   if (!value || typeof value !== "object") return result;
@@ -97,10 +62,6 @@ function normalizeClockMode(value: string) {
   const mode = value.trim().toLocaleLowerCase("nb");
   if (mode === "digital" || mode === "analog") return mode;
   throw new Error("mode must be digital or analog");
-}
-
-function rectsOverlap(a: LayoutItem, b: LayoutItem) {
-  return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
 function createCenteredClockLayout(existingLayouts: Record<string, LayoutItem>) {
@@ -139,9 +100,9 @@ async function writeClockMode(uid: string, mode: ClockMode) {
   await adminDb.runTransaction(async (transaction) => {
     const snap = await transaction.get(ref);
     const data = (snap.exists ? snap.data() : {}) as WidgetLayoutDocument;
-    const activeWidgets = normalizeActiveWidgets(data.activeWidgets, snap.exists);
+    const activeWidgets = normalizeActiveWidgetsWithDefaults(data.activeWidgets, snap.exists, PUBLIC_WIDGET_IDS);
     const clockModes = normalizeClockModes(data.clockModes);
-    const layouts = normalizeLayouts(data.layouts, snap.exists);
+    const layouts = normalizeLayoutsWithDefaults(data.layouts, snap.exists, PUBLIC_LAYOUTS);
     const widgetLocks = normalizeBooleanMap(data.widgetLocks);
 
     wasActive = activeWidgets.includes(CLOCK_WIDGET_ID);
