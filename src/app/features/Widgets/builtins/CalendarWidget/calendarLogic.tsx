@@ -160,33 +160,12 @@ export function useCalendarLogic(
 
   const visibleEvents = useMemo(() => {
     if (!selectedCalendarIds.length) {
-      console.log(
-        "[calendarLogic] No selectedCalendarIds, showing all",
-        events.length,
-        "events"
-      );
       return events;
     }
 
     const filtered = events.filter(
       (event) => !event.calendarId || selectedCalendarIds.includes(event.calendarId)
     );
-
-    console.log(
-      "[calendarLogic] selectedCalendarIds:",
-      selectedCalendarIds,
-      "total events:",
-      events.length,
-      "visible:",
-      filtered.length
-    );
-
-    if (filtered.length === 0 && events.length > 0) {
-      console.warn(
-        "[calendarLogic] MISMATCH: events exist but none match selectedCalendarIds. Sample event:",
-        events[0]
-      );
-    }
 
     return filtered;
   }, [events, selectedCalendarIds]);

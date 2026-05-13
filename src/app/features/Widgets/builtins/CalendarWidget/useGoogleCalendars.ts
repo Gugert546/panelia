@@ -116,8 +116,6 @@ export function useGoogleCalendars(enabled: boolean, provider: CalendarProvider 
           calendarIds: persisted,
         }),
       });
-
-      console.log("[useGoogleCalendars] saveSelection complete. persisted:", persisted);
       setError(null);
       return persisted;
     } catch (err) {
@@ -127,11 +125,6 @@ export function useGoogleCalendars(enabled: boolean, provider: CalendarProvider 
       setSaving(false);
     }
   }, [provider, selectedCalendarIds]);
-
-  // Debug state updates
-  useEffect(() => {
-    console.log("[useGoogleCalendars] selectedCalendarIds updated:", selectedCalendarIds);
-  }, [selectedCalendarIds]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
