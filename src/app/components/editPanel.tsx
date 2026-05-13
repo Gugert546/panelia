@@ -972,10 +972,10 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     border: buttonBorder,
     boxShadow: innerShadow,
   } as const;
-  const selectedWidgetBackground = "rgba(148, 163, 184, 0.36)";
-  const selectedWidgetBorder = "1px solid rgba(100, 116, 139, 0.8)";
-  const selectedWidgetIconBackground = "rgba(148, 163, 184, 0.5)";
-  const selectedWidgetIconBorder = "1px solid rgba(100, 116, 139, 0.9)";
+  const selectedWidgetBackground = panelBaseLayerColor;
+  const selectedWidgetBorder = `1px solid ${activeBorderColor}`;
+  const selectedWidgetIconBackground = strongTint;
+  const selectedWidgetIconBorder = `1px solid ${activeBorderColor}`;
 
   function handleResetTextColor(): void {
     setWidgetTextColor(DEFAULT_WIDGET_TEXT_COLOR);
