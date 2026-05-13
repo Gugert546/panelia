@@ -1,3 +1,6 @@
+const DAY_MS = 24 * 60 * 60 * 1000;
+const SYNC_LOOKBACK_MS = 14 * DAY_MS;
+const SYNC_LOOKAHEAD_MS = 2 * 365 * DAY_MS;
 import express from "express";
 import fetch from "node-fetch";
 import type { DocumentReference } from "@google-cloud/firestore";
@@ -603,9 +606,9 @@ router.post("/sync/pull", async (req, res) => {
 
     // Vi speiler et begrenset tidsvindu for å holde datasettene små og raske.
     const syncNow = Date.now();
-    const syncTwoWeeksBackIso = new Date(syncNow - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const syncTwoWeeksBackIso = new Date(syncNow - SYNC_LOOKBACK_MS).toISOString();
     const syncTwoWeeksBackEpoch = toEpoch(syncTwoWeeksBackIso);
-    const syncTwoYearsAheadIso = new Date(syncNow + 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
+      const syncTwoYearsAheadIso = new Date(syncNow + SYNC_LOOKAHEAD_MS).toISOString();
 
     const items: Array<OutlookEvent & { __calendarId: string }> = [];
     const failedCalendarIds: string[] = [];
