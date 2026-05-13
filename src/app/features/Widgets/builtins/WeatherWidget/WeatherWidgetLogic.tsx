@@ -81,7 +81,8 @@ function writeCachedWeather(view: WeatherView) {
   }
 }
 
-export function useWeatherWidget() {
+export function useWeatherWidget(options?: { enabled?: boolean }) {
+  const enabled = options?.enabled ?? true;
   const { t } = useLanguage();
   const [state, setState] = useState<WeatherState>(() => {
     const cached = readCachedWeather();
@@ -89,6 +90,8 @@ export function useWeatherWidget() {
   });
 
   const load = useCallback(async () => {
+    if (!enabled) return;
+
     //Ikke "loading" hvis vi allerede har data, bare marker refreshing
     setState((prev) => {
       if (prev.status === "success") {
@@ -150,9 +153,11 @@ export function useWeatherWidget() {
         return { status: "error", error, refreshing: false };
       });
     }
-  }, []);
+  }, [enabled, t]);
 
   useEffect(() => {
+    if (!enabled) return;
+
     void load();
 
     //Auto-refresh hvert 15 minutt
@@ -161,7 +166,7 @@ export function useWeatherWidget() {
     }, 15 * 60 * 1000);
 
     return () => clearInterval(id);
-  }, [load]);
+  }, [enabled, load]);
 
   return {
     state,
