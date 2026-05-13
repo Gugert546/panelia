@@ -542,6 +542,8 @@ export default function DashboardGrid({
 
     const isStyleButton = currentButton.classList.contains("widget-style-btn");
     const isLockButton = currentButton.classList.contains("widget-lock-btn");
+    const isNewsWidget = widgetId === "news" || widgetId.startsWith("news:");
+    const isEmailWidget = widgetId === "email" || widgetId.startsWith("email:");
 
     const isAiChatWidget = widgetId === "ai_chat" || widgetId.startsWith("ai_chat:");
     const focusAiChatInput = () => {
@@ -566,6 +568,20 @@ export default function DashboardGrid({
         event.preventDefault();
         event.stopPropagation();
         focusSearchInput();
+        return;
+      }
+    }
+
+    if (isEmailWidget) {
+      if ((isStyleButton || isLockButton) && event.key === "ArrowDown") {
+        event.preventDefault();
+        event.stopPropagation();
+        if (widgetRoot instanceof HTMLElement) {
+          const providerSelect = widgetRoot.querySelector(
+            "select:not([disabled])"
+          ) as HTMLElement | null;
+          providerSelect?.focus();
+        }
         return;
       }
     }
@@ -698,6 +714,36 @@ export default function DashboardGrid({
       }
     }
 
+    // Hindre ArrowUp på style-knappen i newswidget
+    if (isStyleButton && isNewsWidget && event.key === "ArrowUp") {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
+    // Når Enter trykkes på flagg-knappen i newswidget, fokuseres første flagg i menyen
+    if (isNewsWidget && currentButton.classList.contains("widget-news-country-btn") && event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      // Åpne menyen hvis den ikke er åpen
+      if (newsCountryMenuWidgetId !== widgetId) {
+        setNewsCountryMenuWidgetId(widgetId);
+      }
+      
+      // Fokuseres første flagg i menyen
+      if (!(widgetRoot instanceof HTMLElement)) return;
+      requestAnimationFrame(() => {
+        const firstFlagButton = widgetRoot.querySelector(
+          '.widget-news-country-menu button:not([disabled])'
+        ) as HTMLButtonElement | null;
+        if (firstFlagButton) {
+          firstFlagButton.focus();
+        }
+      });
+      return;
+    }
+
     const controls = Array.from(
       controlsContainer.querySelectorAll<HTMLButtonElement>(
         "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-news-country-btn, button.widget-spotify-darkmode-btn, button.widget-style-btn, button.widget-lock-btn"
@@ -706,6 +752,24 @@ export default function DashboardGrid({
 
     const index = controls.indexOf(currentButton);
     if (index === -1) return;
+
+    // Hvis flagg-knappen er fokusert, skal ArrowLeft og ArrowUp ikke gjøre noe
+    if (currentButton.classList.contains("widget-news-country-btn")) {
+      if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+    }
+
+    // Hvis låseknappen er fokusert, skal ArrowUp og ArrowRight ikke gjøre noe
+    if (currentButton.classList.contains("widget-lock-btn")) {
+      if (event.key === "ArrowUp" || event.key === "ArrowRight") {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+    }
 
     if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
       event.preventDefault();
@@ -730,6 +794,25 @@ export default function DashboardGrid({
       event.preventDefault();
       event.stopPropagation();
 
+      // Hvis dette er flagg-knappen, gå alltid direkte til første nyhetslenke
+      if (currentButton.classList.contains("widget-news-country-btn")) {
+        if (!(widgetRoot instanceof HTMLElement)) return;
+        const firstArticleLink = widgetRoot.querySelector(
+          '.news-widget-list a[href]'
+        ) as HTMLElement | null;
+        if (firstArticleLink) {
+          firstArticleLink.focus();
+          return;
+        }
+        // Hvis ingen nyhetslenke, prøv første innerkontroll
+        const firstInnerControl = widgetRoot.querySelector(
+          'textarea,input,select,button:not(.widget-lock-btn):not(.widget-style-btn):not(.widget-clock-mode-btn):not(.widget-clock-background-btn):not(.widget-news-country-btn):not(.widget-spotify-darkmode-btn),[href],[tabindex]:not([tabindex="-1"])'
+        ) as HTMLElement | null;
+        firstInnerControl?.focus();
+        return;
+      }
+
+      // Ellers: vanlig logikk
       const nextControl = controls[index + 1];
       if (nextControl) {
         nextControl.focus();
@@ -848,6 +931,28 @@ export default function DashboardGrid({
   };
 
   const focusFirstWidgetControl = (container: HTMLDivElement, widgetId: string) => {
+        // Naviger til første nyhetsartikkel hvis dette er en nyhetswidget
+        if (widgetId === "news" || widgetId.startsWith("news:")) {
+          const firstNewsLink = container.querySelector(
+            ".news-widget-list a[href]"
+          ) as HTMLAnchorElement | null;
+          if (firstNewsLink) {
+            firstNewsLink.focus();
+            setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+            return;
+          }
+        }
+    if (widgetId === "email" || widgetId.startsWith("email:")) {
+      const providerSelect = container.querySelector(
+        "select:not([disabled])"
+      ) as HTMLElement | null;
+
+      if (providerSelect) {
+        providerSelect.focus();
+        setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
+        return;
+      }
+    }
     if (widgetId === "calendar" || widgetId.startsWith("calendar:")) {
       const calendarPrevButton = container.querySelector(
         'button[data-calendar-nav="previous-week"]:not([disabled])'
@@ -1394,6 +1499,7 @@ export default function DashboardGrid({
                     onClick={() =>
                       setNewsCountryMenuWidgetId((prev) => (prev === widgetId ? null : widgetId))
                     }
+                    onKeyDown={handleWidgetTopControlKeyDown}
                     style={{
                       width: 24,
                       height: 24,
@@ -1926,6 +2032,70 @@ export default function DashboardGrid({
                           })
                         );
                         setNewsCountryMenuWidgetId(null);
+                        // Sett fokus tilbake til flagg-knappen etter valg
+                        requestAnimationFrame(() => {
+                          const widgetRoot = document.querySelector(`[data-widget-id="${widgetId}"]`);
+                          if (widgetRoot instanceof HTMLElement) {
+                            const flagButton = widgetRoot.querySelector(
+                              "button.widget-news-country-btn"
+                            ) as HTMLButtonElement | null;
+                            flagButton?.focus();
+                          }
+                        });
+                      }}
+                      onKeyDown={(event) => {
+                        const menuContainer = event.currentTarget.parentElement;
+                        if (!menuContainer) return;
+
+                        const buttons = Array.from(
+                          menuContainer.querySelectorAll<HTMLButtonElement>("button:not([disabled])")
+                        );
+                        const currentIndex = buttons.indexOf(event.currentTarget);
+                        if (currentIndex === -1) return;
+
+                        const colsPerRow = 4;
+                        const currentCol = currentIndex % colsPerRow;
+                        const currentRow = Math.floor(currentIndex / colsPerRow);
+
+                        let nextIndex = currentIndex;
+                        let handled = false;
+
+                        if (event.key === "ArrowRight") {
+                          if (currentCol < colsPerRow - 1 && currentIndex + 1 < buttons.length) {
+                            nextIndex = currentIndex + 1;
+                            handled = true;
+                          }
+                        } else if (event.key === "ArrowLeft") {
+                          if (currentCol > 0) {
+                            nextIndex = currentIndex - 1;
+                            handled = true;
+                          }
+                        } else if (event.key === "ArrowDown") {
+                          if (currentIndex + colsPerRow < buttons.length) {
+                            nextIndex = currentIndex + colsPerRow;
+                            handled = true;
+                          }
+                        } else if (event.key === "ArrowUp") {
+                          if (currentRow > 0) {
+                            nextIndex = currentIndex - colsPerRow;
+                            handled = true;
+                          }
+                        } else if (event.key === "Escape") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          setNewsCountryMenuWidgetId(null);
+                          const flagButton = widgetRoot?.querySelector(
+                            "button.widget-news-country-btn"
+                          ) as HTMLButtonElement | null;
+                          flagButton?.focus();
+                          return;
+                        }
+
+                        if (handled) {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          buttons[nextIndex]?.focus();
+                        }
                       }}
                       style={{
                         width: 34,

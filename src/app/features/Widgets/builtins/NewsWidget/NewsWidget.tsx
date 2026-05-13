@@ -292,29 +292,7 @@ export default function NewsWidget() {
         <div
           ref={listRef}
           className="news-widget-list"
-          tabIndex={0}
           aria-label={t("widgets.newsWidget.title")}
-          onFocus={(event) => {
-            if (event.target === event.currentTarget) {
-              event.currentTarget.style.outline = "2px solid rgba(255,255,255,0.75)";
-              event.currentTarget.style.outlineOffset = "2px";
-            }
-          }}
-          onBlur={(event) => {
-            if (event.target === event.currentTarget) {
-              event.currentTarget.style.outline = "none";
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowLeft") {
-              event.preventDefault();
-              const nextIndex = Math.min(
-                focusedArticleIndex,
-                Math.max(0, articles.slice(0, 6).length - 1)
-              );
-              articleRefs.current[nextIndex]?.focus();
-            }
-          }}
           style={{
             display: "flex",
             flexDirection: "column",
@@ -364,33 +342,29 @@ export default function NewsWidget() {
                   draggable={true}
                   onFocus={() => setFocusedArticleIndex(i)}
                   onKeyDown={(event) => {
+
                     if (event.key === "ArrowDown") {
                       event.preventDefault();
-                      const nextIndex = Math.min(i + 1, articles.slice(0, 6).length - 1);
-                      articleRefs.current[nextIndex]?.focus();
+                      const nextIndex = i + 1;
+                      if (nextIndex < articles.slice(0, 6).length) {
+                        articleRefs.current[nextIndex]?.focus();
+                      }
                       return;
                     }
 
                     if (event.key === "ArrowUp") {
                       event.preventDefault();
-                      if (i === 0) {
-                        event.stopPropagation();
-                        const widgetRoot = listRef.current?.closest("[data-widget-id]");
-                        const controls = widgetRoot?.querySelectorAll<HTMLElement>(
-                          "button.widget-clock-mode-btn, button.widget-clock-background-btn, button.widget-style-btn, button.widget-lock-btn"
-                        );
-                        const lastControl = controls && controls.length > 0 ? controls[controls.length - 1] : null;
-                        lastControl?.focus();
-                        return;
+                      const prevIndex = i - 1;
+                      if (prevIndex >= 0) {
+                        articleRefs.current[prevIndex]?.focus();
                       }
-                      const prevIndex = Math.max(i - 1, 0);
-                      articleRefs.current[prevIndex]?.focus();
                       return;
                     }
 
                     if (event.key === "ArrowRight") {
                       event.preventDefault();
-                      listRef.current?.focus();
+                      event.stopPropagation();
+                      return;
                     }
                   }}
                   style={{
