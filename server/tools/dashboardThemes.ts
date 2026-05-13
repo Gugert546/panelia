@@ -11,7 +11,6 @@ type LayoutItem = {
 };
 
 type ClockMode = "digital" | "analog";
-type WidgetSizeMode = "small" | "medium" | "large";
 type CustomBackgroundMediaType = "image" | "video";
 type DashboardBackgroundId =
   | "defaultbg"
@@ -54,7 +53,6 @@ type DashboardPreset = {
   widgetOpacity: number;
   widgetBorderWidth: number;
   widgetFontSize: number;
-  widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
   customBackgroundUrl: string;
   customBackgroundType: CustomBackgroundMediaType;
@@ -74,7 +72,6 @@ type WidgetLayoutDocument = {
   widgetOpacity?: unknown;
   widgetBorderWidth?: unknown;
   widgetFontSize?: unknown;
-  widgetSizeMode?: unknown;
   dashboardBackgroundId?: unknown;
   customBackgroundUrl?: unknown;
   customBackgroundType?: unknown;
@@ -233,9 +230,6 @@ function normalizeWidgetStyles(value: unknown) {
   return result;
 }
 
-function normalizeWidgetSizeMode(value: unknown): WidgetSizeMode {
-  return value === "small" || value === "large" || value === "medium" ? value : "medium";
-}
 
 function normalizeDashboardBackgroundId(value: unknown): DashboardBackgroundId {
   if (
@@ -294,7 +288,6 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
           typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
             ? Math.min(22, Math.max(10, Math.round(preset.widgetFontSize)))
             : 14,
-        widgetSizeMode: normalizeWidgetSizeMode(preset.widgetSizeMode),
         dashboardBackgroundId: normalizeDashboardBackgroundId(preset.dashboardBackgroundId),
         customBackgroundUrl:
           typeof preset.customBackgroundUrl === "string" ? preset.customBackgroundUrl : "",
@@ -343,7 +336,6 @@ function createDashboardPresetFromCurrentLayout(
       typeof data.widgetFontSize === "number" && Number.isFinite(data.widgetFontSize)
         ? Math.min(22, Math.max(10, Math.round(data.widgetFontSize)))
         : 14,
-    widgetSizeMode: normalizeWidgetSizeMode(data.widgetSizeMode),
     dashboardBackgroundId: normalizeDashboardBackgroundId(data.dashboardBackgroundId),
     customBackgroundUrl: typeof data.customBackgroundUrl === "string" ? data.customBackgroundUrl : "",
     customBackgroundType: normalizeCustomBackgroundType(data.customBackgroundType),
