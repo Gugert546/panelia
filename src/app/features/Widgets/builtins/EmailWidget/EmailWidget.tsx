@@ -311,6 +311,37 @@ export default function EmailWidget() {
             <select
               value={provider}
               onChange={(event) => setProvider(event.target.value as EmailProviderId)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowUp") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const widgetRoot = event.currentTarget.closest("[data-widget-id]");
+                  const editWidgetButton = widgetRoot?.querySelector(
+                    "button.widget-style-btn:not([disabled])"
+                  ) as HTMLButtonElement | null;
+                  editWidgetButton?.focus();
+                  return;
+                }
+
+                if (event.key === "ArrowDown") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const widgetRoot = event.currentTarget.closest("[data-widget-id]");
+                  const connectButton = widgetRoot?.querySelector(
+                    'button[data-email-connect-btn="true"]:not([disabled])'
+                  ) as HTMLButtonElement | null;
+                  connectButton?.focus();
+                  return;
+                }
+
+                if (
+                  event.key === "ArrowLeft" ||
+                  event.key === "ArrowRight"
+                ) {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }
+              }}
               style={{
                 border: "1px solid rgba(255,255,255,0.32)",
                 borderRadius: 999,
@@ -319,7 +350,10 @@ export default function EmailWidget() {
                 padding: "6px 10px",
                 fontWeight: 700,
                 outline: "none",
+                boxShadow: undefined,
               }}
+              onFocus={e => e.currentTarget.style.border = '2px solid #fff'}
+              onBlur={e => e.currentTarget.style.border = '1px solid rgba(255,255,255,0.32)'}
             >
               {EMAIL_PROVIDERS.map((item) => (
                 <option key={item.id} value={item.id} disabled={!item.enabled}>
@@ -383,7 +417,18 @@ export default function EmailWidget() {
               </div>
               {user && selectedProvider?.enabled && (
                 <button
+                  data-email-connect-btn="true"
                   type="button"
+                  onKeyDown={(event) => {
+                    if (event.key !== "ArrowUp") return;
+                    event.preventDefault();
+                    event.stopPropagation();
+                    const widgetRoot = event.currentTarget.closest("[data-widget-id]");
+                    const providerSelect = widgetRoot?.querySelector(
+                      "select:not([disabled])"
+                    ) as HTMLSelectElement | null;
+                    providerSelect?.focus();
+                  }}
                   onClick={handleConnect}
                   disabled={connectionBusy}
                   style={{
