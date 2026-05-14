@@ -2084,9 +2084,13 @@ export default function DashboardGrid({
                           event.preventDefault();
                           event.stopPropagation();
                           setNewsCountryMenuWidgetId(null);
-                          const flagButton = widgetRoot?.querySelector(
-                            "button.widget-news-country-btn"
-                          ) as HTMLButtonElement | null;
+                          const widgetRoot = event.currentTarget.closest("[data-widget-id]");
+                          const flagButton =
+                            widgetRoot instanceof HTMLElement
+                              ? (widgetRoot.querySelector(
+                                  "button.widget-news-country-btn"
+                                ) as HTMLButtonElement | null)
+                              : null;
                           flagButton?.focus();
                           return;
                         }

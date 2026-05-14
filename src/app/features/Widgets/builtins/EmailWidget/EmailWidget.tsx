@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import WidgetContainer from "../../components/WidgetContainer";
 import WidgetPane from "../../components/WidgetPane";
 import { useAuth } from "../../../auth/useAuth";
@@ -72,6 +72,11 @@ export default function EmailWidget() {
   const [error, setError] = useState("");
   const [oauthNotice, setOauthNotice] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
+  const providerSelectRef = useRef<HTMLSelectElement | null>(null);
+  const refreshButtonRef = useRef<HTMLButtonElement | null>(null);
+  const connectButtonRef = useRef<HTMLButtonElement | null>(null);
+  const disconnectButtonRef = useRef<HTMLButtonElement | null>(null);
+  const messageButtonRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const locale = language === "no" ? "nb-NO" : "en-US";
   const selectedProvider = EMAIL_PROVIDERS.find((item) => item.id === provider);
@@ -276,6 +281,161 @@ export default function EmailWidget() {
     window.open(message.providerUrl, "_blank", "noopener,noreferrer");
   };
 
+  const focusWidgetTopControl = (start: HTMLElement) => {
+    const widgetRoot = start.closest("[data-widget-id]");
+    const lockButton = widgetRoot?.querySelector(
+      "button.widget-lock-btn:not([disabled])"
+    ) as HTMLButtonElement | null;
+    const styleButton = widgetRoot?.querySelector(
+      "button.widget-style-btn:not([disabled])"
+    ) as HTMLButtonElement | null;
+
+    (lockButton ?? styleButton)?.focus();
+  };
+
+  const focusFirstMessage = () => {
+    messageButtonRefs.current[0]?.focus();
+  };
+
+  const focusFirstLowerControl = () => {
+    if (showDisconnected) {
+      connectButtonRef.current?.focus();
+      return;
+    }
+
+    if (connectionStatus === "connected") {
+      disconnectButtonRef.current?.focus();
+    }
+  };
+
+  const handleProviderSelectKeyDown = (
+    event: KeyboardEvent<HTMLSelectElement>
+  ) => {
+    if (
+      event.key !== "ArrowUp" &&
+      event.key !== "ArrowDown" &&
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.key === "ArrowUp") {
+      focusWidgetTopControl(event.currentTarget);
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      refreshButtonRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      focusFirstLowerControl();
+    }
+  };
+
+  const handleRefreshButtonKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>
+  ) => {
+    if (
+      event.key !== "ArrowUp" &&
+      event.key !== "ArrowDown" &&
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.key === "ArrowUp") {
+      focusWidgetTopControl(event.currentTarget);
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      providerSelectRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      focusFirstLowerControl();
+    }
+  };
+
+  const handleConnectButtonKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>
+  ) => {
+    if (event.key !== "ArrowUp") return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    providerSelectRef.current?.focus();
+  };
+
+  const handleDisconnectButtonKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>
+  ) => {
+    if (
+      event.key !== "ArrowUp" &&
+      event.key !== "ArrowDown" &&
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.key === "ArrowUp") {
+      providerSelectRef.current?.focus();
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      focusFirstMessage();
+    }
+  };
+
+  const handleMessageButtonKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number
+  ) => {
+    if (
+      event.key !== "ArrowUp" &&
+      event.key !== "ArrowDown" &&
+      event.key !== "ArrowLeft" &&
+      event.key !== "ArrowRight"
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      if (index === 0) {
+        disconnectButtonRef.current?.focus();
+        return;
+      }
+
+      messageButtonRefs.current[index - 1]?.focus();
+      return;
+    }
+
+    messageButtonRefs.current[index + 1]?.focus();
+  };
+
   const connectLabel =
     provider === "outlook"
       ? t("widgets.emailWidget.connectOutlook")
@@ -309,39 +469,10 @@ export default function EmailWidget() {
             }}
           >
             <select
+              ref={providerSelectRef}
               value={provider}
               onChange={(event) => setProvider(event.target.value as EmailProviderId)}
-              onKeyDown={(event) => {
-                if (event.key === "ArrowUp") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const widgetRoot = event.currentTarget.closest("[data-widget-id]");
-                  const editWidgetButton = widgetRoot?.querySelector(
-                    "button.widget-style-btn:not([disabled])"
-                  ) as HTMLButtonElement | null;
-                  editWidgetButton?.focus();
-                  return;
-                }
-
-                if (event.key === "ArrowDown") {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const widgetRoot = event.currentTarget.closest("[data-widget-id]");
-                  const connectButton = widgetRoot?.querySelector(
-                    'button[data-email-connect-btn="true"]:not([disabled])'
-                  ) as HTMLButtonElement | null;
-                  connectButton?.focus();
-                  return;
-                }
-
-                if (
-                  event.key === "ArrowLeft" ||
-                  event.key === "ArrowRight"
-                ) {
-                  event.preventDefault();
-                  event.stopPropagation();
-                }
-              }}
+              onKeyDown={handleProviderSelectKeyDown}
               style={{
                 border: "1px solid rgba(255,255,255,0.32)",
                 borderRadius: 999,
@@ -363,9 +494,11 @@ export default function EmailWidget() {
             </select>
 
             <button
+              ref={refreshButtonRef}
               type="button"
               onClick={() => setRefreshTick((current) => current + 1)}
               disabled={refreshBusy || connectionStatus !== "connected"}
+              onKeyDown={handleRefreshButtonKeyDown}
               aria-label={t("widgets.emailWidget.refresh")}
               title={t("widgets.emailWidget.refresh")}
               style={{
@@ -417,18 +550,10 @@ export default function EmailWidget() {
               </div>
               {user && selectedProvider?.enabled && (
                 <button
+                  ref={connectButtonRef}
                   data-email-connect-btn="true"
                   type="button"
-                  onKeyDown={(event) => {
-                    if (event.key !== "ArrowUp") return;
-                    event.preventDefault();
-                    event.stopPropagation();
-                    const widgetRoot = event.currentTarget.closest("[data-widget-id]");
-                    const providerSelect = widgetRoot?.querySelector(
-                      "select:not([disabled])"
-                    ) as HTMLSelectElement | null;
-                    providerSelect?.focus();
-                  }}
+                  onKeyDown={handleConnectButtonKeyDown}
                   onClick={handleConnect}
                   disabled={connectionBusy}
                   style={{
@@ -463,9 +588,11 @@ export default function EmailWidget() {
               >
                 <span>{t("widgets.emailWidget.unreadFirst")}</span>
                 <button
+                  ref={disconnectButtonRef}
                   type="button"
                   onClick={handleDisconnect}
                   disabled={connectionBusy}
+                  onKeyDown={handleDisconnectButtonKeyDown}
                   style={{
                     marginLeft: "auto",
                     border: "none",
@@ -497,11 +624,15 @@ export default function EmailWidget() {
                   </div>
                 )}
 
-                {messages.map((message) => (
+                {messages.map((message, index) => (
                   <button
                     key={message.id}
+                    ref={(element) => {
+                      messageButtonRefs.current[index] = element;
+                    }}
                     type="button"
                     onClick={() => handleOpenMessage(message)}
+                    onKeyDown={(event) => handleMessageButtonKeyDown(event, index)}
                     style={{
                       width: "100%",
                       border: "1px solid rgba(255,255,255,0.18)",

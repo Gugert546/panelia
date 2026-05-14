@@ -214,7 +214,6 @@ export default function NewsWidget() {
   const lastFetchedCountryRef = useRef<string | undefined>(undefined);
   const listRef = useRef<HTMLDivElement | null>(null);
   const articleRefs = useRef<Array<HTMLAnchorElement | null>>([]);
-  const [focusedArticleIndex, setFocusedArticleIndex] = useState(0);
 
   const fontSize = useResolvedWidgetFontSize();
   const { t } = useLanguage();
@@ -340,7 +339,6 @@ export default function NewsWidget() {
                   target="_blank"
                   rel="noreferrer"
                   draggable={true}
-                  onFocus={() => setFocusedArticleIndex(i)}
                   onKeyDown={(event) => {
 
                     if (event.key === "ArrowDown") {
