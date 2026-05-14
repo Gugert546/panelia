@@ -24,6 +24,8 @@ const WEATHER_CACHE_KEY = "panelia:weather:v1";
 const WEATHER_CACHE_MAX_AGE_MS = 15 * 60 * 1000;
 const WEATHER_STALE_CACHE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 const WEATHER_RETRY_DELAY_MS = 700;
+const GEOLOCATION_ERROR_PERMISSION_DENIED = 1;
+const GEOLOCATION_ERROR_TIMEOUT = 3;
 
 function round1(n: number) {
   return Math.round(n * 10) / 10;
@@ -47,6 +49,19 @@ function getErrorMessage(error: unknown) {
   }
 
   return "";
+}
+
+function getErrorCode(error: unknown) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof error.code === "number"
+  ) {
+    return error.code;
+  }
+
+  return undefined;
 }
 
 function isRetryableWeatherError(error: unknown) {
@@ -201,6 +216,13 @@ export function useWeatherWidget(options?: { enabled?: boolean }) {
           error = `${t("widgets.weatherWidget.errorFailed")} (${status})`;
         } else if (raw === "WEATHER_NO_TEMP") {
           error = t("widgets.weatherWidget.errorNoTemp");
+        } else if (getErrorCode(e) === GEOLOCATION_ERROR_PERMISSION_DENIED) {
+          error = t("widgets.weatherWidget.errorLocationDenied");
+        } else if (
+          getErrorCode(e) === GEOLOCATION_ERROR_TIMEOUT ||
+          raw.toLowerCase().includes("timed out")
+        ) {
+          error = t("widgets.weatherWidget.errorLocationTimeout");
         } else {
           error = raw || t("widgets.weatherWidget.errorUnknown");
         }

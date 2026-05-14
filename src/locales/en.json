@@ -144,8 +144,11 @@
       "uvIndex": "UV index",
       "showUvIndex": "Show UV index",
       "hideUvIndex": "Hide UV index",
+      "retry": "Retry",
       "errorFailed": "Weather request failed",
       "errorNoTemp": "Could not find temperature in response",
+      "errorLocationDenied": "Location permission is blocked",
+      "errorLocationTimeout": "Could not get your position. Try again.",
       "errorUnknown": "Unknown error"
     },
     "customButtons": {

@@ -145,8 +145,11 @@
       "uvIndex": "UV-indeks",
       "showUvIndex": "Vis UV-indeks",
       "hideUvIndex": "Skjul UV-indeks",
+      "retry": "Prøv igjen",
       "errorFailed": "Værkall feilet",
       "errorNoTemp": "Fant ikke temperatur i respons",
+      "errorLocationDenied": "Posisjonstilgang er blokkert",
+      "errorLocationTimeout": "Kunne ikke hente posisjonen din. Prøv igjen.",
       "errorUnknown": "Ukjent feil"
     },
     "customButtons": {

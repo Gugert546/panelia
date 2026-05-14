@@ -19,6 +19,9 @@ const LOCATION_CACHE_KEY = "panelia:user-location:v1";
 const LOCATION_CACHE_MAX_AGE_MS = 30 * 60 * 1000;
 const GEOLOCATION_MAX_AGE_MS = 10 * 60 * 1000;
 const GEOLOCATION_TIMEOUT_MS = 8_000;
+const GEOLOCATION_RETRY_TIMEOUT_MS = 18_000;
+const GEOLOCATION_RETRY_DELAY_MS = 600;
+const GEOLOCATION_ERROR_TIMEOUT = 3;
 
 let memoryLocation: UserLocation | undefined;
 let memoryCoordinates: UserCoordinates | undefined;
@@ -66,7 +69,23 @@ function writeCachedLocation(location: UserLocation) {
   }
 }
 
-function getPosition(): Promise<GeolocationPosition> {
+function sleep(ms: number) {
+  return new Promise<void>((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
+function isGeolocationTimeout(error: unknown) {
+  if (!error || typeof error !== "object") return false;
+
+  const code = "code" in error ? error.code : undefined;
+  if (code === GEOLOCATION_ERROR_TIMEOUT) return true;
+
+  const message = "message" in error ? error.message : undefined;
+  return typeof message === "string" && message.toLowerCase().includes("timed out");
+}
+
+function requestPosition(timeout: number): Promise<GeolocationPosition> {
   return new Promise((resolve, reject) => {
     if (!navigator.geolocation) {
       reject(new Error("Geolocation støttes ikke"));
@@ -76,9 +95,20 @@ function getPosition(): Promise<GeolocationPosition> {
     navigator.geolocation.getCurrentPosition(resolve, reject, {
       enableHighAccuracy: false,
       maximumAge: GEOLOCATION_MAX_AGE_MS,
-      timeout: GEOLOCATION_TIMEOUT_MS,
+      timeout,
     });
   });
+}
+
+async function getPosition(): Promise<GeolocationPosition> {
+  try {
+    return await requestPosition(GEOLOCATION_TIMEOUT_MS);
+  } catch (error: unknown) {
+    if (!isGeolocationTimeout(error)) throw error;
+
+    await sleep(GEOLOCATION_RETRY_DELAY_MS);
+    return requestPosition(GEOLOCATION_RETRY_TIMEOUT_MS);
+  }
 }
 
 async function reverseGeocode(

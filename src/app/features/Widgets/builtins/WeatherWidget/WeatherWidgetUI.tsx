@@ -84,7 +84,7 @@ function WeatherAtmosphere({ mode, cloudTone }: { mode: WeatherVisualMode; cloud
 }
 
 export default function WeatherWidgetUI() {
-  const { state } = useWeatherWidget();
+  const { state, actions } = useWeatherWidget();
   const widgetInstance = useWidgetInstance();
   const fontSize = useResolvedWidgetFontSize();
   const weatherControlIconSize = Math.max(fontSize, 14);
@@ -165,8 +165,34 @@ export default function WeatherWidgetUI() {
           {state.status === "loading" && <div>{t('widgets.weatherWidget.loading')}</div>}
 
           {state.status === "error" && (
-            <div style={{ color: "#b91c1c" }}>
-              {state.error}
+            <div
+              style={{
+                color: "#b91c1c",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                gap: 10,
+              }}
+            >
+              <div>{state.error}</div>
+              <button
+                type="button"
+                onClick={() => {
+                  void actions.refresh();
+                }}
+                style={{
+                  border: "1px solid rgba(185, 28, 28, 0.24)",
+                  borderRadius: 8,
+                  background: "rgba(254, 242, 242, 0.9)",
+                  color: "#991b1b",
+                  cursor: "pointer",
+                  font: "inherit",
+                  fontWeight: 700,
+                  padding: "6px 10px",
+                }}
+              >
+                {t("widgets.weatherWidget.retry")}
+              </button>
             </div>
           )}
 
