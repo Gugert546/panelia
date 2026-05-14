@@ -142,8 +142,11 @@
       "uvIndex": "Índice UV",
       "showUvIndex": "Mostrar índice UV",
       "hideUvIndex": "Ocultar índice UV",
+      "retry": "Reintentar",
       "errorFailed": "La solicitud del clima falló",
       "errorNoTemp": "No se encontró la temperatura en la respuesta",
+      "errorLocationDenied": "El permiso de ubicación está bloqueado",
+      "errorLocationTimeout": "No se pudo obtener tu ubicación. Inténtalo de nuevo.",
       "errorUnknown": "Error desconocido"
     },
     "customButtons": {
