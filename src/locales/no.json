@@ -261,7 +261,8 @@
             "addWidgets": "Åpne redigeringspanelet til venstre, og legg til widgets du ønsker.",
             "aiHjelp": "Bruk AI-assistenten til å endre sidens utseende mer effektivt.",
             "moveResize": "Dra og endre størrelse på widgets for å bygge et godt arbeidsflyt-oppsett. Du drar widgetens nedre-høyre hjørne for å endre størrelse, og hvor som helst uten innhold, f.eks. langs kanten, for å flytte den.",
-            "customize": "Bytt tema, farger og skriftstørrelse i innstillingene. Gjør din side flott og unik!"
+            "customize": "Bytt tema, farger og skriftstørrelse i innstillingene. Gjør din side flott og unik!",
+            "newPoint": "Naviger til widgets og innstillinger ved bruk av tab eller piltaster."
           }
         },
         "widgets": {

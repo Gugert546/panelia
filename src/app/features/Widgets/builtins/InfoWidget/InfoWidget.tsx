@@ -47,6 +47,7 @@ export default function InfoWidget() {
         "widgets.infoWidget.slides.gettingStarted.points.aiHjelp",
         "widgets.infoWidget.slides.gettingStarted.points.moveResize",
         "widgets.infoWidget.slides.gettingStarted.points.customize",
+        "widgets.infoWidget.slides.gettingStarted.points.newPoint",
       ],
     },
     {
