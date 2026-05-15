@@ -461,23 +461,23 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
       const inEditPanel = activeElement?.closest('[data-arrow-scope="edit-panel"]');
       if (!inEditPanel) return;
 
-      // Slider activation logic
+      // Logikk for aktivering av slider.
       const focusedSliderIdx = sliderRefList.findIndex((r) => r.current === activeElement);
       if (focusedSliderIdx !== -1) {
         const sliderKey = sliderKeyList[focusedSliderIdx];
 
         if (activeSlider === sliderKey) {
-          // Activated: ArrowUp/Down blocked
+          // Aktiv: blokker ArrowUp/ArrowDown.
           if (e.key === "ArrowUp" || e.key === "ArrowDown") {
             e.preventDefault();
             return;
           }
-          // Activated: Enter or Esc deactivates; ArrowLeft/Right adjusts (passed through)
+          // Aktiv: Enter/Escape deaktiverer, ArrowLeft/ArrowRight justerer.
           if (e.key === "Enter" || e.key === "Escape") {
             e.preventDefault();
             setActiveSlider(null);
             if (e.key === "Escape") {
-              // Navigate away: move to previous element or background tab
+              // Flytt fokus bort: forrige element eller bakgrunn-fane.
               const elements = bgSettingRefs
                 .map((r) => r.current as HTMLElement | null)
                 .filter((el): el is HTMLElement => Boolean(el));
@@ -492,7 +492,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
           return;
         }
 
-        // Not activated: Enter activates; ArrowLeft/Right blocked; Esc navigates away
+        // Ikke aktiv: Enter aktiverer, ArrowLeft/ArrowRight blokkeres, Escape flytter fokus bort.
         if (e.key === "Enter") {
           e.preventDefault();
           setActiveSlider(sliderKey);
@@ -519,7 +519,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
           e.preventDefault();
           return;
         }
-        // ArrowUp/Down fall through to navigation below
+        // ArrowUp/ArrowDown går videre til vanlig navigasjon under.
       }
 
 
@@ -556,8 +556,8 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         .filter((el): el is HTMLElement => Boolean(el));
       const focusedIndex = elements.findIndex((el) => el === document.activeElement);
 
-      // ArrowRight: reset → color button. ArrowLeft: color button → reset.
-      // Must be checked before focusedIndex guard since color buttons are not in bgSettingRefs.
+      // ArrowRight: reset -> fargeknapp. ArrowLeft: fargeknapp -> reset.
+      // Må sjekkes før focusedIndex, siden fargeknappene ikke ligger i bgSettingRefs.
       if (e.key === "ArrowRight") {
         if (document.activeElement === widgetColorResetRef.current) {
           e.preventDefault();
@@ -616,14 +616,14 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         }
       }
 
-      // ArrowUp from savePresetButtonRef: go to uploadBgButtonRef (item above in the list)
+      // ArrowUp fra savePresetButtonRef: gå til uploadBgButtonRef (elementet over i listen).
       if (e.key === "ArrowUp" && document.activeElement === savePresetButtonRef.current) {
         e.preventDefault();
         uploadBgButtonRef.current?.focus();
         return;
       }
 
-      // ArrowUp from color buttons: skip reset button, go to element above the row
+      // ArrowUp fra fargeknapper: hopp over reset-knappen, gå til elementet over raden.
       if (e.key === "ArrowUp") {
         if (document.activeElement === widgetColorButtonRef.current) {
           e.preventDefault();
@@ -642,7 +642,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         }
       }
 
-      // Background option button navigation
+      // Navigasjon for bakgrunnsvalg-knapper.
       const bgOptionIdx = backgroundOptionRefs.current.findIndex((r) => r === document.activeElement);
       if (bgOptionIdx !== -1) {
         if (e.key === "ArrowDown") {
@@ -734,7 +734,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         if (focusedIndex < elements.length - 1) {
           elements[focusedIndex + 1]?.focus();
         } else {
-          // Last bgSettingRef item (presetNameInputRef): go to first background option
+          // Siste bgSettingRef-element (presetNameInputRef): gå til første bakgrunnsvalg.
           backgroundOptionRefs.current[0]?.focus();
         }
       } else if (e.key === "ArrowUp") {
@@ -747,7 +747,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
       }
     };
 
-    // ArrowDown from savePresetButtonRef → first background option
+    // ArrowDown fra savePresetButtonRef -> første bakgrunnsvalg.
     const handleSavePresetArrowDown = (e: KeyboardEvent) => {
       if (e.key !== "ArrowDown") return;
       if (document.activeElement !== savePresetButtonRef.current) return;
@@ -857,11 +857,11 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         };
       });
 
-      // Sort by createdAt descending (unknown = last)
+      // Sorter på createdAt synkende (ukjent verdi legges sist).
       merged.sort((a, b) => b.createdAt - a.createdAt);
       setSavedBackgrounds(merged);
     } catch {
-      // silently fail
+      // Silently fail
     } finally {
       setLoadingLibrary(false);
     }
@@ -879,7 +879,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
         setCustomBackgroundUrl("");
       }
     } catch {
-      // silently fail
+      // Ignorer feil stille.
     } finally {
       setDeletingBgId(null);
     }

@@ -209,7 +209,7 @@ export default function SearchWidgetUI() {
           }}
         >
 
-          {/* Engine selector */}
+          {/* Valg av søkemotor */}
           <div style={{ position: "relative" }}>
             <button
               ref={buttonRef}
@@ -238,7 +238,7 @@ export default function SearchWidgetUI() {
               />
             </button>
           </div>
-          {/* Search input */}
+          {/* Søkefelt */}
           <input
             ref={inputRef}
             type="text"
@@ -258,7 +258,7 @@ export default function SearchWidgetUI() {
             }}
           />
         </div>
-        {/* PORTAL DROPDOWN */}
+        {/* Portal-meny */}
         {state.menuOpen && rect &&
           createPortal(
 

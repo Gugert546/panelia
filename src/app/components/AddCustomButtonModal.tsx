@@ -33,7 +33,7 @@ export default function AddCustomButtonModal({ open, onClose, customButtonConfig
   const { t } = useLanguage();
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Trap Tab focus inside modal
+    // Hold Tab-fokus inne i modalen.
     if (e.key === "Tab") {
       e.preventDefault();
       const focusables = [labelInputRef, urlInputRef, addButtonRef, cancelButtonRef].map(r => r.current).filter(Boolean) as HTMLElement[];

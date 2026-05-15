@@ -37,7 +37,7 @@ interface LanguageProviderProps {
 
 export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) => {
   const { user } = useAuth();
-  const [language, setLanguageState] = useState<Language>('en'); // default to English
+  const [language, setLanguageState] = useState<Language>('en'); // Standardverdi settes til engelsk før innlasting.
   const [isLoading, setIsLoading] = useState(true);
 
   const translations = {
@@ -67,7 +67,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
-        setLanguageState('no'); // default for new users
+        setLanguageState('no'); // Nye brukere får norsk som standard.
         return;
       }
 

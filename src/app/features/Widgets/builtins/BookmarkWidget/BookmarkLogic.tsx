@@ -31,7 +31,7 @@ export function useBookmark() {
     setLoading(true);
     setError(null);
 
-    // Subscribe to both categories and bookmarks
+    // Lytter på både kategorier og bokmerker.
     const unsubscribeCategories = subscribeToCategories(user.uid, (data) => {
       setCategories(data);
       setLoading(false);

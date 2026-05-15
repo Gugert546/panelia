@@ -165,7 +165,7 @@ export default function DashboardGrid({
         }
       }
     } catch {
-      // ignore
+      // Ignorer feil.
     }
     return initial;
   });
@@ -1047,7 +1047,7 @@ export default function DashboardGrid({
         contentElements[0] === target || contentElements[0]?.contains(target);
 
       if (isFirst) {
-        // For customButton widgets, ArrowUp from the draggable button goes to style-btn specifically
+        // For customButton-widgets skal ArrowUp fra dra-knappen gå direkte til stil-knappen.
         if (widgetId.startsWith("customButton:")) {
           const styleBtn = widgetRoot.querySelector<HTMLButtonElement>(
             "button.widget-style-btn:not([disabled])"
@@ -1977,7 +1977,7 @@ export default function DashboardGrid({
                         try {
                           localStorage.setItem(getNewsCountryStorageKey(widgetId), option.code);
                         } catch {
-                          // ignore
+                          // Ignorer feil.
                         }
                         setNewsCountries((prev) => ({ ...prev, [widgetId]: option.code }));
                         window.dispatchEvent(

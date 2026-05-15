@@ -117,7 +117,7 @@ async function getNewsErrorMessage(res: Response) {
         return data.error.trim();
       }
     } catch {
-      // Fall through to a generic message.
+      // Hvis parsing feiler, bruk en generell feilmelding.
     }
   } else {
     const text = (await res.text()).trim();

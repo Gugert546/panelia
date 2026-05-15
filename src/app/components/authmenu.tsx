@@ -123,7 +123,7 @@ export default function AuthMenu() {
 
   return (
     <div style={{ position: "relative" }}>
-      {/* Profile Circle */}
+      {/* Profilsirkel */}
       <div
         onClick={() => setOpen(!open)}
         style={{
@@ -163,7 +163,7 @@ export default function AuthMenu() {
         )}
       </div>
 
-      {/* Dropdown */}
+      {/* Nedtrekksmeny */}
       {open && (
         <div style={panelStyle}>
           {!user ? (

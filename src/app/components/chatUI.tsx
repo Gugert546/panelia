@@ -192,6 +192,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
               return;
             }
 
+            // I sidepanel: pil venstre fra start av feltet flytter fokus tilbake til sidebaren.
             if (
               isPanel &&
               event.key === "ArrowLeft" &&
@@ -211,6 +212,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
               }
             }
 
+            // Pil høyre ved slutten av teksten flytter fokus til send-knappen.
             if (
               event.key === "ArrowRight" &&
               !event.shiftKey &&
@@ -228,6 +230,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
               }
             }
 
+            // Pil opp flytter fokus til widget-kontroller når markøren står øverst.
             if (
               event.key === "ArrowUp" &&
               !event.shiftKey &&

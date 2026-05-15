@@ -210,16 +210,16 @@ export default function BookmarkUi() {
       return;
     }
 
-    // Tab navigation - cycle between Cancel and Confirm buttons
+    // Tab-navigasjon: bytt mellom Avbryt- og Bekreft-knapp.
     if (event.key === "Tab") {
       event.preventDefault();
       event.stopPropagation();
 
       if (event.shiftKey) {
-        // Shift+Tab: go to Cancel button
+        // Shift+Tab: gå til Avbryt-knappen.
         deleteCategoryCancelBtnRef.current?.focus();
       } else {
-        // Tab: go to Confirm button if on Cancel, or back to Cancel if on Confirm
+        // Tab: gå til Bekreft fra Avbryt, ellers tilbake til Avbryt.
         if (event.target === deleteCategoryCancelBtnRef.current) {
           deleteCategoryConfirmBtnRef.current?.focus();
         } else {
@@ -229,7 +229,7 @@ export default function BookmarkUi() {
       return;
     }
 
-    // Arrow keys: cycle between buttons
+    // Piltaster: bytt mellom knappene.
     if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
       event.preventDefault();
       event.stopPropagation();
@@ -586,7 +586,7 @@ export default function BookmarkUi() {
     try {
       setIsDeletingCategory(true);
 
-      // Calculate how many categories will be left after deletion
+      // Beregn hvor mange kategorier som blir igjen etter sletting.
       const categoriesBeforeDeletion = categories;
       const willHaveNoCategories =
         categoriesBeforeDeletion.filter((cat) => cat.id !== activeCategory.id).length === 0;

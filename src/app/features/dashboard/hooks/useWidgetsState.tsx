@@ -757,7 +757,7 @@ export function useWidgetsState() {
     } satisfies WidgetStyleOverrides;
   }, [fontSize, widgetBlur, widgetBorderColor, widgetBorderWidth, widgetOpacity, widgetSurfaceColor, widgetTextColor]);
 
-  // Load widget layout from Firestore
+  // Leser widget-layout fra Firestore.
   const loadLayout = useCallback(async () => {
     if (loading) return;
 
@@ -818,7 +818,7 @@ export function useWidgetsState() {
 
       const data = docSnap.data() as WidgetLayoutDocument;
 
-      // Apply legacy migrations
+      // Kjør migrering for eldre dataformat.
       const migratedActiveWidgets = Array.isArray(data.activeWidgets)
         ? data.activeWidgets.map(migrateLegacyCustomButtonId)
         : [];
