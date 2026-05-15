@@ -37,6 +37,11 @@ const DAY_START_HOUR = 6;
 const DAY_END_HOUR = 20;
 const DAY_DURATION_HOURS = DAY_END_HOUR - DAY_START_HOUR;
 const NIGHT_DURATION_HOURS = 24 - DAY_DURATION_HOURS;
+const KNOWN_NEW_MOON_EPOCH_MS = Date.UTC(2000, 0, 6, 18, 14);
+const SYNODIC_MONTH_MS = 29.530588853 * 24 * 60 * 60 * 1000;
+const MOON_CENTER = 50;
+const MOON_RADIUS = 48;
+const MOON_DIAMETER = MOON_RADIUS * 2;
 
 function toCssUrl(url: string) {
   return `url("${url.replace(/"/g, '\\"')}")`;
@@ -135,6 +140,80 @@ function getNightProgress(date: Date) {
   }
 
   return Math.min(1, Math.max(0, (hours + 24 - DAY_END_HOUR) / NIGHT_DURATION_HOURS));
+}
+
+function getMoonPhaseFraction(date: Date) {
+  const elapsedSinceKnownNewMoon = date.getTime() - KNOWN_NEW_MOON_EPOCH_MS;
+  const cyclePosition =
+    ((elapsedSinceKnownNewMoon % SYNODIC_MONTH_MS) + SYNODIC_MONTH_MS) %
+    SYNODIC_MONTH_MS;
+
+  return cyclePosition / SYNODIC_MONTH_MS;
+}
+
+function getMoonIlluminatedFraction(phaseFraction: number) {
+  return (1 - Math.cos(phaseFraction * Math.PI * 2)) / 2;
+}
+
+function getMoonLightPath(phaseFraction: number) {
+  const illuminatedFraction = getMoonIlluminatedFraction(phaseFraction);
+
+  if (illuminatedFraction <= 0.01 || illuminatedFraction >= 0.99) {
+    return null;
+  }
+
+  const waxing = phaseFraction < 0.5;
+  const outerSweepFlag = waxing ? 1 : 0;
+  const terminatorX = waxing
+    ? MOON_CENTER + MOON_RADIUS - MOON_DIAMETER * illuminatedFraction
+    : MOON_CENTER - MOON_RADIUS + MOON_DIAMETER * illuminatedFraction;
+  const roundedTerminatorX = Number(terminatorX.toFixed(2));
+
+  return [
+    `M ${MOON_CENTER} ${MOON_CENTER - MOON_RADIUS}`,
+    `A ${MOON_RADIUS} ${MOON_RADIUS} 0 0 ${outerSweepFlag} ${MOON_CENTER} ${MOON_CENTER + MOON_RADIUS}`,
+    `C ${roundedTerminatorX} ${MOON_CENTER + MOON_RADIUS} ${roundedTerminatorX} ${MOON_CENTER - MOON_RADIUS} ${MOON_CENTER} ${MOON_CENTER - MOON_RADIUS}`,
+    "Z",
+  ].join(" ");
+}
+
+function MoonPhase({ date }: { date: Date }) {
+  const phaseFraction = getMoonPhaseFraction(date);
+  const illuminatedFraction = getMoonIlluminatedFraction(phaseFraction);
+  const lightPath = getMoonLightPath(phaseFraction);
+
+  return (
+    <svg
+      className="dashboard-moon-phase"
+      viewBox="0 0 100 100"
+      focusable="false"
+      aria-hidden="true"
+    >
+      <circle
+        className="dashboard-moon-dark"
+        cx={MOON_CENTER}
+        cy={MOON_CENTER}
+        r={MOON_RADIUS}
+      />
+      {illuminatedFraction >= 0.99 ? (
+        <circle
+          className="dashboard-moon-light"
+          cx={MOON_CENTER}
+          cy={MOON_CENTER}
+          r={MOON_RADIUS}
+        />
+      ) : (
+        lightPath && <path className="dashboard-moon-light" d={lightPath} />
+      )}
+      <g className="dashboard-moon-craters">
+        <circle cx="64" cy="31" r="7" />
+        <circle cx="39" cy="45" r="5" />
+        <circle cx="69" cy="60" r="4.5" />
+        <circle cx="52" cy="70" r="6" />
+        <circle cx="78" cy="43" r="3.5" />
+      </g>
+    </svg>
+  );
 }
 
 function DashboardWeatherAtmosphere({
@@ -326,7 +405,9 @@ export default function DashboardBackground({
           style={skyOrbitStyle}
           aria-hidden="true"
         >
-          <div className={`dashboard-sky-body dashboard-sky-body-${skyBodyType}`} />
+          <div className={`dashboard-sky-body dashboard-sky-body-${skyBodyType}`}>
+            {skyBodyType === "moon" && <MoonPhase date={now} />}
+          </div>
         </div>
       )}
 
