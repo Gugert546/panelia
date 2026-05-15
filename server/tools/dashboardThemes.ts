@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 import type { ToolDef } from "./types";
 import { adminDb } from "../firebaseAdmin";
+import { normalizeBooleanMap, normalizeLayouts } from "./layoutHelpers";
 
 type LayoutItem = {
   x: number;
@@ -10,7 +11,6 @@ type LayoutItem = {
 };
 
 type ClockMode = "digital" | "analog";
-type WidgetSizeMode = "small" | "medium" | "large";
 type CustomBackgroundMediaType = "image" | "video";
 type DashboardBackgroundId =
   | "defaultbg"
@@ -53,7 +53,6 @@ type DashboardPreset = {
   widgetOpacity: number;
   widgetBorderWidth: number;
   widgetFontSize: number;
-  widgetSizeMode: WidgetSizeMode;
   dashboardBackgroundId: DashboardBackgroundId;
   customBackgroundUrl: string;
   customBackgroundType: CustomBackgroundMediaType;
@@ -73,7 +72,6 @@ type WidgetLayoutDocument = {
   widgetOpacity?: unknown;
   widgetBorderWidth?: unknown;
   widgetFontSize?: unknown;
-  widgetSizeMode?: unknown;
   dashboardBackgroundId?: unknown;
   customBackgroundUrl?: unknown;
   customBackgroundType?: unknown;
@@ -173,44 +171,8 @@ function normalizeThemeQuery(value: string) {
   return tokenize(value).join(" ");
 }
 
-function isLayoutItem(value: unknown): value is LayoutItem {
-  if (!value || typeof value !== "object") return false;
-  const item = value as Record<string, unknown>;
-  return ["x", "y", "w", "h"].every(
-    (key) => typeof item[key] === "number" && Number.isFinite(item[key])
-  );
-}
-
-function normalizeLayouts(value: unknown) {
-  const result: Record<string, LayoutItem> = {};
-  if (!value || typeof value !== "object") return result;
-
-  for (const [id, layout] of Object.entries(value as Record<string, unknown>)) {
-    if (isLayoutItem(layout)) {
-      result[id] = {
-        x: layout.x,
-        y: layout.y,
-        w: layout.w,
-        h: layout.h,
-      };
-    }
-  }
-
-  return result;
-}
-
 function normalizeStringArray(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function normalizeBooleanMap(value: unknown) {
-  if (!value || typeof value !== "object") return {};
-
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>).filter(
-      (entry): entry is [string, boolean] => typeof entry[1] === "boolean"
-    )
-  );
 }
 
 function normalizeClockModes(value: unknown) {
@@ -268,9 +230,6 @@ function normalizeWidgetStyles(value: unknown) {
   return result;
 }
 
-function normalizeWidgetSizeMode(value: unknown): WidgetSizeMode {
-  return value === "small" || value === "large" || value === "medium" ? value : "medium";
-}
 
 function normalizeDashboardBackgroundId(value: unknown): DashboardBackgroundId {
   if (
@@ -329,7 +288,6 @@ function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
           typeof preset.widgetFontSize === "number" && Number.isFinite(preset.widgetFontSize)
             ? Math.min(22, Math.max(10, Math.round(preset.widgetFontSize)))
             : 14,
-        widgetSizeMode: normalizeWidgetSizeMode(preset.widgetSizeMode),
         dashboardBackgroundId: normalizeDashboardBackgroundId(preset.dashboardBackgroundId),
         customBackgroundUrl:
           typeof preset.customBackgroundUrl === "string" ? preset.customBackgroundUrl : "",
@@ -378,7 +336,6 @@ function createDashboardPresetFromCurrentLayout(
       typeof data.widgetFontSize === "number" && Number.isFinite(data.widgetFontSize)
         ? Math.min(22, Math.max(10, Math.round(data.widgetFontSize)))
         : 14,
-    widgetSizeMode: normalizeWidgetSizeMode(data.widgetSizeMode),
     dashboardBackgroundId: normalizeDashboardBackgroundId(data.dashboardBackgroundId),
     customBackgroundUrl: typeof data.customBackgroundUrl === "string" ? data.customBackgroundUrl : "",
     customBackgroundType: normalizeCustomBackgroundType(data.customBackgroundType),
@@ -481,7 +438,6 @@ function createPresetPatch(preset: DashboardPreset) {
     widgetOpacity: preset.widgetOpacity,
     widgetBorderWidth: preset.widgetBorderWidth,
     widgetFontSize: preset.widgetFontSize,
-    widgetSizeMode: preset.widgetSizeMode,
     dashboardBackgroundId: preset.dashboardBackgroundId,
     customBackgroundUrl: preset.customBackgroundUrl,
     customBackgroundType: preset.customBackgroundType,

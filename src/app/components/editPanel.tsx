@@ -6,7 +6,6 @@ import type {
   CustomButtonConfig,
   DashboardPreset,
   DashboardBackgroundId,
-  WidgetSizeMode,
 } from "../features/dashboard/hooks/useWidgetsState";
 import { useFontSize } from '../providers/themeProviders';
 import { useLanguage } from '../providers/languageProvider';
@@ -25,6 +24,7 @@ import {
 } from "../../lib/firebase/firestore";
 import { useAuth } from "../features/auth/useAuth";
 import paneliabgmashup from "../../assets/panelia-bg/paneliabgmashup.png";
+import { getColorAlpha, toColorInputValue, withAlpha } from "../../lib/utils/colors";
 
 
 type Widget = {
@@ -54,8 +54,6 @@ type EditPanelProps = {
   setWidgetBlur: (blur: number) => void;
   widgetBorderWidth: number;
   setWidgetBorderWidth: (width: number) => void;
-  widgetSizeMode: WidgetSizeMode;
-  setWidgetSizeMode: (mode: WidgetSizeMode) => void;
   dashboardBackgroundId: DashboardBackgroundId;
   setDashboardBackgroundId: (backgroundId: DashboardBackgroundId) => void;
   customBackgroundUrl: string;
@@ -88,61 +86,9 @@ const DEFAULT_WIDGET_TEXT_COLOR = "#000000";
 const DEFAULT_WIDGET_OPACITY = 1;
 const DEFAULT_WIDGET_BLUR = 10;
 const DEFAULT_WIDGET_BORDER_WIDTH = 1;
-const DEFAULT_WIDGET_SIZE_MODE: WidgetSizeMode = "medium";
 const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 10;
 const MAX_FONT_SIZE = 22;
-
-function toColorInputValue(value: string) {
-  const trimmed = value.trim();
-
-  if (/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(trimmed)) {
-    if (trimmed.length === 4) {
-      const r = trimmed[1];
-      const g = trimmed[2];
-      const b = trimmed[3];
-      return `#${r}${r}${g}${g}${b}${b}`;
-    }
-
-    return trimmed;
-  }
-
-  const rgbaMatch = trimmed.match(
-    /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i
-  );
-
-  if (rgbaMatch) {
-    const [, red, green, blue] = rgbaMatch;
-    return `#${[red, green, blue]
-      .map((channel) => Number(channel).toString(16).padStart(2, "0"))
-      .join("")}`;
-  }
-
-  return "#ffffff";
-}
-
-function getColorAlpha(value: string) {
-  const trimmed = value.trim();
-  const rgbaMatch = trimmed.match(
-    /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/i
-  );
-
-  if (rgbaMatch) {
-    return Number(rgbaMatch[1]);
-  }
-
-  return 1;
-}
-
-function withAlpha(color: string, alpha: number) {
-  const normalizedColor = toColorInputValue(color);
-  const hex = normalizedColor.slice(1);
-  const red = Number.parseInt(hex.slice(0, 2), 16);
-  const green = Number.parseInt(hex.slice(2, 4), 16);
-  const blue = Number.parseInt(hex.slice(4, 6), 16);
-
-  return `rgba(${red},${green},${blue},${alpha})`;
-}
 
 export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   open,
@@ -164,8 +110,6 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   setWidgetBlur,
   widgetBorderWidth,
   setWidgetBorderWidth,
-
-  setWidgetSizeMode,
   dashboardBackgroundId,
   setDashboardBackgroundId,
   customBackgroundUrl,
@@ -866,7 +810,6 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     setWidgetOpacity(DEFAULT_WIDGET_OPACITY);
     setWidgetBlur(DEFAULT_WIDGET_BLUR);
     setWidgetBorderWidth(DEFAULT_WIDGET_BORDER_WIDTH);
-    setWidgetSizeMode(DEFAULT_WIDGET_SIZE_MODE);
     setFontSize(DEFAULT_FONT_SIZE);
   };
 

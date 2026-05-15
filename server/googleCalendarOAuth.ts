@@ -27,6 +27,9 @@ type SyncEventPayload = {
 };
 
 const router = express.Router();
+const DAY_MS = 24 * 60 * 60 * 1000;
+const SYNC_LOOKBACK_MS = 14 * DAY_MS;
+const SYNC_LOOKAHEAD_MS = 2 * 365 * DAY_MS;
 
 // Brukes for å bygge redirect-URL tilbake til samme miljø (lokalt/prod).
 function getBaseUrl(req: express.Request) {
@@ -671,15 +674,11 @@ router.post("/sync/pull", async (req, res) => {
         ? selectedCalendarIds
         : ["primary"];
 
-    console.log("[sync/pull] DEBUG - requestedCalendarIds from body:", req.body?.calendarIds);
-    console.log("[sync/pull] DEBUG - selectedCalendarIds from firestore:", integration?.selectedCalendarIds);
-    console.log("[sync/pull] DEBUG - final calendarIds to fetch:", calendarIds);
-
-  // Vi speiler et begrenset tidsvindu for å holde datasettene små og raske.
-  const syncNow = Date.now();
-  const syncTwoWeeksBackIso = new Date(syncNow-14*24*60*1000).toISOString();
-  const syncTwoWeeksBackEpoch = toEpoch(syncTwoWeeksBackIso);
-  const syncTwoYearsAheadIso = new Date(syncNow + 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
+    // Vi speiler et begrenset tidsvindu for å holde datasettene små og raske.
+    const syncNow = Date.now();
+    const syncTwoWeeksBackIso = new Date(syncNow - SYNC_LOOKBACK_MS).toISOString();
+    const syncTwoWeeksBackEpoch = toEpoch(syncTwoWeeksBackIso);
+    const syncTwoYearsAheadIso = new Date(syncNow + SYNC_LOOKAHEAD_MS).toISOString();
 
   const items: Array<Record<string, unknown> & { __calendarId: string }> = [];
   const failedCalendarIds: string[] = [];

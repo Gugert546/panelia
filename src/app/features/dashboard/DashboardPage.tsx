@@ -68,14 +68,13 @@ function DashboardPageContent() {
     clockModes,
     clockBackgrounds,
     widgetStyles,
+    dashboardBackgroundId,
     widgetSurfaceColor,
     widgetBorderColor,
     widgetTextColor,
     widgetOpacity,
     widgetBlur,
     widgetBorderWidth,
-    widgetSizeMode,
-    dashboardBackgroundId,
     customBackgroundUrl,
     customBackgroundType,
     dashboardPresets,
@@ -85,7 +84,6 @@ function DashboardPageContent() {
     toggleWidgetLock,
     toggleClockMode,
     toggleClockBackground,
-    setWidgetStyle,
     resetWidgetStyle,
     setWidgetSurfaceColor,
     setWidgetBorderColor,
@@ -93,7 +91,6 @@ function DashboardPageContent() {
     setWidgetOpacity,
     setWidgetBlur,
     setWidgetBorderWidth,
-    setWidgetSizeMode,
     setDashboardBackgroundId,
     setCustomBackgroundUrl,
     setCustomBackgroundType,
@@ -102,6 +99,7 @@ function DashboardPageContent() {
     deleteDashboardPreset,
     clearUnlockedWidgetStyles,
     clearAllWidgetStyles,
+    setWidgetStyle,
   } = useWidgets();
 
   const translatedAvailableWidgets = AVAILABLE_WIDGETS.map(widget => ({
@@ -146,9 +144,8 @@ function DashboardPageContent() {
   useEffect(() => {
     if (loading) return;
     if (isAuthenticated) return;
-
     setActivePanel(null);
-  }, [isAuthenticated, loading]);
+  }, [loading, isAuthenticated]);
 
   useEffect(() => {
     if (!activePanel) return;
@@ -158,7 +155,6 @@ function DashboardPageContent() {
 
       if (activePanel === "chat") {
         setActivePanel(null);
-
         requestAnimationFrame(() => {
           const chatButton = document.querySelector('button[aria-label="Chat"]') as HTMLButtonElement | null;
           chatButton?.focus();
@@ -168,7 +164,6 @@ function DashboardPageContent() {
 
       if (activePanel === "calendar") {
         setActivePanel(null);
-
         requestAnimationFrame(() => {
           const calendarButton = document.querySelector('button[aria-label="Calendar"]') as HTMLButtonElement | null;
           calendarButton?.focus();
@@ -623,8 +618,7 @@ function DashboardPageContent() {
         setWidgetBlur={setWidgetBlur}
         widgetBorderWidth={widgetBorderWidth}
         setWidgetBorderWidth={setWidgetBorderWidth}
-        widgetSizeMode={widgetSizeMode}
-        setWidgetSizeMode={setWidgetSizeMode}
+
         dashboardBackgroundId={dashboardBackgroundId}
         setDashboardBackgroundId={setDashboardBackgroundId}
         customBackgroundUrl={customBackgroundUrl}
@@ -710,6 +704,7 @@ function DashboardPageContent() {
     </div>
   );
 }
+
 
 export default function DashboardPage() {
   return (
