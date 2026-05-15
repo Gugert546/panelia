@@ -8,19 +8,19 @@ export default function AppRoutes() {
   return (
     <Routes>
 
-      {/* Spotify OAuth callback */}
+      {/* Tilbakekobling etter Spotify OAuth */}
       <Route path="/callback" element={<SpotifyCallback />} />
 
-      {/* Privacy policy */}
+      {/* Personvernerklaering */}
       <Route path="/privacy" element={<PrivacyPolicyPage />} />
 
-      {/* Terms of service */}
+      {/* Bruksvilkar */}
       <Route path="/terms" element={<TermsOfServicePage />} />
 
-      {/* Dashboard */}
+      {/* Dashboard-side */}
       <Route path="/dashboard" element={<DashboardPage />} />
 
-      {/* Homepage */}
+      {/* Forside peker til samme dashboard-side. */}
       <Route path="/" element={<DashboardPage />} />
 
     </Routes>

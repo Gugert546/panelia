@@ -199,7 +199,7 @@ export default function BookmarkUi() {
   };
 
   const handleDeleteCategoryModalKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    // Escape lukker modal.
+    // Escape-tasten lukker modalen.
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -210,16 +210,16 @@ export default function BookmarkUi() {
       return;
     }
 
-    // Tab-navigasjon: bytt mellom Avbryt- og Bekreft-knapp.
+    // Tab-tasten bytter mellom Avbryt og Bekreft.
     if (event.key === "Tab") {
       event.preventDefault();
       event.stopPropagation();
 
       if (event.shiftKey) {
-        // Shift+Tab: gå til Avbryt-knappen.
+        // Shift + Tab flytter fokus til Avbryt.
         deleteCategoryCancelBtnRef.current?.focus();
       } else {
-        // Tab: gå til Bekreft fra Avbryt, ellers tilbake til Avbryt.
+        // Tab flytter fokus til neste av de to knappene.
         if (event.target === deleteCategoryCancelBtnRef.current) {
           deleteCategoryConfirmBtnRef.current?.focus();
         } else {

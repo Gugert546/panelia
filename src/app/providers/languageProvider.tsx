@@ -8,7 +8,7 @@ import nbTranslations from '../../locales/no.json';
 import enTranslations from '../../locales/en.json';
 import esTranslations from '../../locales/es.json';
 
-type Language = 'no' | 'en' | 'es';
+type Language = 'no' | 'en' | 'es'; // Norsk, engelsk og spansk
 
 type LanguageDocument = {
   language: Language;
@@ -104,7 +104,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
     void loadLanguage();
   }, [loadLanguage]);
 
-  // Don't render children until language is loaded to prevent flash of wrong language
+  // Vent med rendering til språk er lastet, så vi unngår feil språk et øyeblikk.
   if (isLoading) {
     return null;
   }

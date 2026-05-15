@@ -162,7 +162,7 @@ function isDashboardBackgroundId(value: unknown): value is DashboardBackgroundId
   );
 }
 
-// Normaliserer bakgrunns-ID fra Firestore (håndterer legacy verdier)
+// Normaliserer bakgrunns-ID fra Firestore (håndterer eldre verdier)
 function normalizeDashboardBackgroundId(value: unknown): DashboardBackgroundId {
   if (value === "videoCustom") return "customMedia";
   return isDashboardBackgroundId(value) ? value : DEFAULT_DASHBOARD_BACKGROUND_ID;
@@ -274,6 +274,7 @@ function normalizeClockModes(value: unknown): Record<string, ClockMode> {
   return next;
 }
 
+// Fargehjelpere brukt når vi normaliserer gamle/varierende fargeformater.
 function withAlpha(color: string, alpha: number) {
   const trimmed = color.trim();
   const rgbaMatch = trimmed.match(
@@ -392,6 +393,7 @@ function normalizeWidgetStyles(value: unknown): Record<string, WidgetStyleOverri
   return next;
 }
 
+// Presets kan komme fra ulike versjoner; her ryddes og normaliseres alt før bruk.
 function normalizeDashboardPresets(value: unknown): DashboardPreset[] {
   if (!Array.isArray(value)) return [];
 
@@ -526,6 +528,7 @@ function sanitizePresetForPersistence(preset: DashboardPreset): DashboardPreset 
   };
 }
 
+// Holder custom-knapper konsistente på tvers av activeWidgets, config, layout og stil.
 function reconcileCustomButtonState<T extends {
   activeWidgets: string[];
   customButtonConfigs: Record<string, CustomButtonConfig>;
@@ -590,6 +593,7 @@ function reconcileCustomButtonState<T extends {
   };
 }
 
+// Standardstørrelser brukes når widget legges til uten eksisterende layout.
 // Standard layout-størrelser når nye widgets legges til dashboardet
 // Justert i henhold til WidgetRegistry defaultGrid-størrelser
 const DEFAULT_LAYOUTS: Record<string, LayoutItem> = {
@@ -700,6 +704,8 @@ function applyPublicDashboardDefaults() {
   };
 }
 
+// Hovedhook: eier all dashboard-tilstand, synk mot Firestore og alle widget-handlinger.
+
 export function useWidgetsState() {
   const { user, loading } = useAuth();
   const { fontSize, setFontSize } = useFontSize();
@@ -741,6 +747,7 @@ export function useWidgetsState() {
   const hasLoadedRef = useRef(false);
   const previousFontSizeRef = useRef(fontSize);
 
+  // Lager en fast stilkopi når widget låses, slik at global stil ikke overstyrer den.
   const createLockSnapshotStyle = useCallback((styles: Record<string, WidgetStyleOverrides>, widgetId: string) => {
     // Låste widgets beholder egen stil.
     const existingStyle = styles[widgetId];
@@ -762,6 +769,7 @@ export function useWidgetsState() {
     if (loading) return;
 
     if (!user) {
+      // Gjestemodus: bruk offentlige defaults og ikke persister noe.
       const publicDefaults = applyPublicDashboardDefaults();
 
       setActiveWidgets(publicDefaults.activeWidgets);
@@ -792,6 +800,7 @@ export function useWidgetsState() {
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
+        // Førstegangsbruker: start med samme grunnoppsett som offentlig visning.
         const publicDefaults = applyPublicDashboardDefaults();
 
         setActiveWidgets(publicDefaults.activeWidgets);
@@ -921,6 +930,7 @@ export function useWidgetsState() {
     }
 
     const timeout = setTimeout(async () => {
+      // Debounce hindrer mange små writes ved rask drag/resize/redigering.
       if (isUserDataDeletionInProgress(user.uid)) return;
 
       try {
@@ -988,6 +998,7 @@ export function useWidgetsState() {
   useEffect(() => {
     if (isLoading) return;
 
+    // Sikrer at låste widgets alltid har lockSnapshot-stil.
     setWidgetStyles((prevStyles) => {
       let hasChanges = false;
       const nextStyles = { ...prevStyles };
@@ -1136,6 +1147,7 @@ export function useWidgetsState() {
     void persistPresetsImmediately(nextPresets);
   }, [dashboardPresets, persistPresetsImmediately]);
 
+  // Brukes av ekstern synk (f.eks. AI-hendelser) for å holde dashboard-state i takt.
   const syncDashboardWidgetState = useCallback((id: string, isActive: boolean) => {
     if (id === "notes") {
       return;
@@ -1185,6 +1197,7 @@ export function useWidgetsState() {
     });
   }, []);
 
+  // Lokale UI-handlinger for dashboardet.
   // Slår widget av/på, eller legger til ny notater-instans hvis det er notater
   // Notater er spesiell: hver gang man trykker på "legg til notater" får man ny instans
   const toggleWidget = useCallback((id: string) => {
@@ -1278,6 +1291,7 @@ export function useWidgetsState() {
     });
   }, []);
 
+  // Per-widget stilstyring (egen stil overstyrer global stil for den widgeten).
   const setWidgetStyle = useCallback((widgetId: string, patch: WidgetStyleOverrides) => {
     setWidgetStyles((prev) => {
       const previousStyle = prev[widgetId] ?? {};
@@ -1413,6 +1427,7 @@ export function useWidgetsState() {
   }, [clearUnlockedWidgetStyles]);
 
   useEffect(() => {
+    // Når global font endres, fjern lokal font override på ulåste widgets.
     if (previousFontSizeRef.current === fontSize) {
       return;
     }
@@ -1446,6 +1461,7 @@ export function useWidgetsState() {
     });
   }, [fontSize, isLoading, widgetLocks]);
 
+  // Offentlig API som resten av dashboardet bruker.
   return {
     activeWidgets,
     customButtonConfigs,
