@@ -89,7 +89,7 @@ function writeCachedNews(country: string, articles: NewsArticle[]) {
       JSON.stringify({ country, updatedAt: new Date().toISOString(), articles })
     );
   } catch {
-    // Storage is best-effort; news remains visible from component state.
+    // Ignorer lagringsfeil.
   }
 }
 

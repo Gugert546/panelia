@@ -57,7 +57,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
 
   const loadLanguage = useCallback(async () => {
     if (!user) {
-      setLanguageState('no'); // default when not logged in
+      setLanguageState('no'); // standardspråk - norsk
       setIsLoading(false);
       return;
     }
@@ -75,7 +75,7 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       setLanguageState(data.language || 'no');
     } catch (error) {
       console.error("Failed to load language preference:", error);
-      setLanguageState('no'); // fallback to default
+      setLanguageState('no'); // reserveverdi - også norsk
     } finally {
       setIsLoading(false);
     }

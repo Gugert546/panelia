@@ -50,6 +50,7 @@ function placeMines(
   safeRow: number,
   safeColumn: number
 ) {
+  // Første klikk skal alltid være trygt.
   const safeCells = new Set(
     [{ row: safeRow, column: safeColumn }, ...getNeighbors(safeRow, safeColumn)].map(
       ({ row, column }) => `${row}-${column}`
@@ -89,6 +90,7 @@ function placeMines(
 
 function revealConnectedCells(board: MinesweeperCell[][], startRow: number, startColumn: number) {
   const nextBoard = board.map((row) => row.map((cell) => ({ ...cell })));
+  // Åpne sammenhengende tomme celler.
   const queue: Array<{ row: number; column: number }> = [{ row: startRow, column: startColumn }];
   const visited = new Set<string>();
 
@@ -157,6 +159,7 @@ export function useMinesweeperWidget() {
         currentRow.map((cell) => ({ ...cell }))
       );
 
+      // Legg ut miner etter første klikk.
       if (!hasStarted) {
         nextBoard = placeMines(nextBoard, row, column);
         setHasStarted(true);

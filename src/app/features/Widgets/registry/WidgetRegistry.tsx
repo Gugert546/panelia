@@ -48,6 +48,7 @@ type WidgetDefinition = {
   };
 };
 
+// Adaptere gjør ulike widgets like å bruke i registry.
 const ClockWidgetAdapter: FC<WidgetComponentProps> = ({ config }) => (
   <ClockWidget
     mode={config.mode === "analog" ? "analog" : "digital"}
@@ -95,6 +96,7 @@ const INFO_WIDGET_FALLBACK: WidgetDefinition = {
   defaultGrid: { w: 6, h: 3 },
 };
 
+// Statiske widgets som alltid er tilgjengelige.
 const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
   clock: {
     title: "Klokke",
@@ -166,6 +168,8 @@ const STATIC_WIDGETS: Record<string, WidgetDefinition> = {
 export function buildWidgets(
   customButtonConfigs: Record<string, CustomButtonConfig>
 ): Record<string, WidgetDefinition> {
+
+  // Legger til dynamiske custom-knapper som widgets.
   const dynamicButtons = Object.fromEntries(
     Object.entries(customButtonConfigs).map(([id, config]) => [
       id,
@@ -191,5 +195,6 @@ export function buildWidgets(
 
 export const WIDGETS: Record<string, WidgetDefinition> = {
   ...STATIC_WIDGETS,
+  // Sørg for at Info-widget alltid finnes.
   info: STATIC_WIDGETS.info ?? INFO_WIDGET_FALLBACK,
 };

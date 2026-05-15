@@ -79,6 +79,7 @@ async function fetchWeatherFromProxy(lat: number, lon: number) {
   const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
   let lastError: unknown;
 
+  // Prøver igjen ved korte API-/nettverksfeil.
   for (let attempt = 0; attempt < 2; attempt += 1) {
     try {
       const r = await fetch(
@@ -141,7 +142,7 @@ function writeCachedWeather(view: WeatherView) {
   try {
     localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(view));
   } catch {
-    // Storage is best-effort; the visible state has already been updated.
+    // Ignorerer lagringsfeil.
   }
 }
 
@@ -149,6 +150,7 @@ export function useWeatherWidget(options?: { enabled?: boolean }) {
   const enabled = options?.enabled ?? true;
   const { t } = useLanguage();
   const [state, setState] = useState<WeatherState>(() => {
+    // Starter med cache hvis tilgjengelig.
     const cached = readCachedWeather();
     return cached ? { status: "success", data: cached } : { status: "idle" };
   });
@@ -156,7 +158,7 @@ export function useWeatherWidget(options?: { enabled?: boolean }) {
   const load = useCallback(async () => {
     if (!enabled) return;
 
-    //Ikke "loading" hvis vi allerede har data, bare marker refreshing
+    // Beholder gamle data mens oppdatering kjører.
     setState((prev) => {
       if (prev.status === "success") {
         return { ...prev, refreshing: true };
@@ -199,7 +201,7 @@ export function useWeatherWidget(options?: { enabled?: boolean }) {
       writeCachedWeather(view);
       setState({ status: "success", data: view, refreshing: false });
     } catch (e: unknown) {
-      // Hvis vi allerede har data, behold den og bare stopp refreshing
+      // Bruker nåværende data, ellers cache, ellers feilmelding.
       setState((prev) => {
         if (prev.status === "success") {
           return { ...prev, refreshing: false };
@@ -236,7 +238,7 @@ export function useWeatherWidget(options?: { enabled?: boolean }) {
 
     void load();
 
-    //Auto-refresh hvert 15 minutt
+    // Oppdaterer periodisk.
     const id = setInterval(() => {
       void load();
     }, 15 * 60 * 1000);

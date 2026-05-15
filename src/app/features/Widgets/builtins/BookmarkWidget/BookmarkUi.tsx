@@ -199,7 +199,7 @@ export default function BookmarkUi() {
   };
 
   const handleDeleteCategoryModalKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    // Escape: close modal and return focus
+    // Escape lukker modal.
     if (event.key === "Escape") {
       event.preventDefault();
       event.stopPropagation();
@@ -244,12 +244,11 @@ export default function BookmarkUi() {
       return;
     }
 
-    // Allow Enter to pass through to activate buttons
-    // Don't block it - let it activate the focused button naturally
+    // Lar Enter aktivere knapper normalt.
   };
 
   const handleBookmarkArrowNavigation = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    // Handle Escape: close category form and go back to the add-category button
+    // Escape lukker kategoriskjemaet.
     if (event.key === "Escape" && showCategoryForm) {
       event.preventDefault();
       event.stopPropagation();
@@ -269,7 +268,7 @@ export default function BookmarkUi() {
     const target = event.target as HTMLElement;
     const isInput = target.tagName === "INPUT" || target.tagName === "TEXTAREA";
 
-    // For inputs, only handle ArrowUp/Down (let ArrowLeft/Right move the cursor)
+    // I inputfelt: la venstre/høyre flytte markøren.
     if (isInput && (event.key === "ArrowLeft" || event.key === "ArrowRight")) return;
 
     const currentControl = isInput
@@ -287,7 +286,7 @@ export default function BookmarkUi() {
       return;
     }
 
-    // When the category form is open, restrict navigation to only form elements
+    // Når skjemaet er åpent, navigerer kun i skjemaet.
     const formContainer = showCategoryForm
       ? event.currentTarget.querySelector<HTMLElement>("[data-bookmark-category-form]")
       : null;
@@ -359,11 +358,11 @@ export default function BookmarkUi() {
       event.preventDefault();
       event.stopPropagation();
 
-      // If there are bookmarks, focus the last bookmark title
+      // Hvis det finnes bokmerker, fokuser siste bokmerke.
       if (lastBookmarkLink) {
         lastBookmarkLink.focus();
       } else {
-        // If no bookmarks, focus the category dropdown button
+        // Hvis ingen bokmerker finnes, fokuser kategoriknappen.
         const categoryButton = categorySelectorRef.current?.querySelector<HTMLButtonElement>(
           ":scope > button"
         );
@@ -430,7 +429,7 @@ export default function BookmarkUi() {
         "button.widget-style-btn:not([disabled])"
       ) as HTMLButtonElement | null;
 
-      // In locked state, style button is hidden: ArrowUp should go to lock button.
+      // Når stilknappen er skjult, gå til låseknappen.
       if (!styleButton) {
         const lockButton = widgetRoot?.querySelector(
           "button.widget-lock-btn:not([disabled])"
@@ -521,7 +520,7 @@ export default function BookmarkUi() {
         return;
       }
 
-      // If form is open, don't escape upward — stay at top
+      // Hvis skjema er åpent, hold fokus i toppen.
       if (!showCategoryForm) {
         focusEditWidgetButton(currentControl);
       }
@@ -561,7 +560,7 @@ export default function BookmarkUi() {
   useEffect(() => {
     if (!isDeleteCategoryModalOpen) return;
 
-    // Ensure keyboard users land inside the dialog immediately.
+    // Sett fokus inne i dialogen.
     requestAnimationFrame(() => {
       deleteCategoryCancelBtnRef.current?.focus();
     });

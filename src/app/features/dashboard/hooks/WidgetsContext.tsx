@@ -14,6 +14,7 @@ type Props = {
 };
 
 export function WidgetsProvider({ children }: Props) {
+  // Deler samme dashboard-tilstand i hele widget-treet.
   const value = useWidgetsState();
 
   return (

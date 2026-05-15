@@ -109,6 +109,7 @@ function DashboardPageContent() {
 
   const [time, setTime] = useState(new Date());
 
+  // Sjekker kalender kun når kalenderen brukes.
   const isCalendarWidgetActive = activeWidgets.includes("calendar");
   const shouldManageCalendarConnection =
     isAuthenticated && (activePanel === "calendar" || isCalendarWidgetActive);
@@ -121,6 +122,7 @@ function DashboardPageContent() {
     };
 
   useEffect(() => {
+    // Oppdaterer tid brukt av bakgrunn og visning.
     const interval = setInterval(() => {
       setTime(new Date());
     }, 900000);
@@ -129,6 +131,7 @@ function DashboardPageContent() {
   }, []);
 
   useEffect(() => {
+    // Holder gridbredden oppdatert ved resize.
     const updateGridWidth = () => {
       setGridContainerWidth(Math.max(320, window.innerWidth - SIDEBAR_WIDTH));
     };
@@ -184,6 +187,7 @@ function DashboardPageContent() {
     let cancelled = false;
 
     const fetchCalendarStatus = async () => {
+      // Henter status fra begge kalendertjenester.
       const user = auth.currentUser;
 
       if (!user) {
@@ -241,6 +245,7 @@ function DashboardPageContent() {
   }, [shouldManageCalendarConnection]);
 
   useEffect(() => {
+    // Fjerner OAuth-parametre etter innlogging.
     const url = new URL(window.location.href);
     const oauthResult = url.searchParams.get("calendar_oauth");
     const emailOauthResult = url.searchParams.get("email_oauth");

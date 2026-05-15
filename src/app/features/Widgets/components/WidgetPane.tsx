@@ -22,6 +22,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
   const widgetStyle = widgetInstance ? widgetStyles[widgetInstance.widgetId] : undefined;
   const resolvedFontSize = useResolvedWidgetFontSize();
 
+  // Lokal widget-stil overstyrer global stil.
   const resolvedSurfaceColor = widgetStyle?.widgetSurfaceColor ?? widgetSurfaceColor;
   const resolvedBorderColor = widgetStyle?.widgetBorderColor ?? widgetBorderColor;
   const resolvedTextColor = widgetStyle?.widgetTextColor ?? widgetTextColor;
@@ -61,7 +62,7 @@ export default function WidgetPane({ title, children }: WidgetPaneProps) {
           {title}
         </h3>
       )}
-        {/* endret for å fikse scroll problem i kalender widget */}
+      {/* Trengs for at innhold med scroll skal oppføre seg riktig. */}
       <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
         {children}
       </div>

@@ -23,6 +23,7 @@ const GEOLOCATION_RETRY_TIMEOUT_MS = 18_000;
 const GEOLOCATION_RETRY_DELAY_MS = 600;
 const GEOLOCATION_ERROR_TIMEOUT = 3;
 
+// Deler cache mellom widgets.
 let memoryLocation: UserLocation | undefined;
 let memoryCoordinates: UserCoordinates | undefined;
 let locationPromise: Promise<UserLocation> | undefined;
@@ -65,7 +66,7 @@ function writeCachedLocation(location: UserLocation) {
   try {
     localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(location));
   } catch {
-    // Storage is best-effort; widgets can still use the in-memory value.
+    // Ignorer lagringsfeil.
   }
 }
 
@@ -104,6 +105,7 @@ async function getPosition(): Promise<GeolocationPosition> {
   try {
     return await requestPosition(GEOLOCATION_TIMEOUT_MS);
   } catch (error: unknown) {
+    // Prøv igjen med lengre timeout.
     if (!isGeolocationTimeout(error)) throw error;
 
     await sleep(GEOLOCATION_RETRY_DELAY_MS);
@@ -156,6 +158,7 @@ export async function getUserCoordinates(forceRefresh = false) {
   }
 
   if (!forceRefresh && memoryCoordinates) return memoryCoordinates;
+  // Deler samme forespørsel mellom samtidige kall.
   if (!forceRefresh && coordinatesPromise) return coordinatesPromise;
 
   coordinatesPromise = (async () => {
@@ -184,6 +187,7 @@ export async function getUserLocation(forceRefresh = false) {
     return cached;
   }
 
+  // Unngår dupliserte oppslag.
   if (!forceRefresh && locationPromise) return locationPromise;
 
   locationPromise = (async () => {

@@ -15,6 +15,7 @@ export function WidgetInstanceProvider({
   widgetId,
   children,
 }: WidgetInstanceProviderProps) {
+  // Gjør widget-ID tilgjengelig for underkomponenter.
   return (
     <WidgetInstanceContext.Provider value={{ widgetId }}>
       {children}

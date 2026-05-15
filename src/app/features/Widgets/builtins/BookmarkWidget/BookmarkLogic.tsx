@@ -19,7 +19,7 @@ export function useBookmark() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Subscribe to real-time updates when user changes
+  // Lytter til bokmerker og kategorier i sanntid.
   useEffect(() => {
     if (!user?.uid) {
       setCategories([]);
@@ -47,7 +47,7 @@ export function useBookmark() {
     };
   }, [user?.uid]);
 
-  // Add a new category
+  // Oppretter kategori.
   const handleAddCategory = async (categoryName: string) => {
     if (!user?.uid) {
       setError("User not authenticated");
@@ -71,7 +71,7 @@ export function useBookmark() {
     }
   };
 
-  // Add a new bookmark to a category
+  // Rydder URL og finner favicon.
   const handleAddBookmark = async (
     categoryId: string,
     title: string,
@@ -94,7 +94,7 @@ export function useBookmark() {
       favicon = getPreferredFavicon(normalizedUrl, data.favicon);
     }
   } catch {
-    // Keep the generated favicon fallback if the preview request fails.
+    // Bruker fallback-favicon ved feil.
   }
 
   const newBookmark: Bookmark = {
@@ -111,7 +111,7 @@ export function useBookmark() {
   await createBookmark(user.uid, newBookmark);
 };
 
-  // Delete a bookmark
+  // Sletter bokmerke.
   const handleDeleteBookmark = async (bookmarkId: string) => {
     if (!user?.uid) {
       setError("User not authenticated");
@@ -127,7 +127,7 @@ export function useBookmark() {
     }
   };
 
-  // Delete a category
+  // Sletter bokmerker i kategorien før selve kategorien.
   const handleDeleteCategory = async (categoryId: string) => {
     if (!user?.uid) {
       const message = "User not authenticated";
@@ -136,13 +136,13 @@ export function useBookmark() {
     }
 
     try {
-      // Delete all bookmarks in this category
+      // Sletter alle bokmerker i kategorien
       const categoryBookmarks = bookmarks.filter(b => b.categoryId === categoryId);
       await Promise.all(
         categoryBookmarks.map(b => deleteBookmark(user.uid, b.id))
       );
       
-      // Then delete the category
+      // Sletter kategori
       await deleteCategory(user.uid, categoryId);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to delete category";
@@ -152,7 +152,7 @@ export function useBookmark() {
     }
   };
 
-  // Get bookmarks for a specific category
+  // Henter bokmerker for en kategori.
   const getBookmarksByCategory = (categoryId: string): Bookmark[] => {
     return bookmarks.filter(b => b.categoryId === categoryId);
   };

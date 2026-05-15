@@ -144,6 +144,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const [focusedColorButton, setFocusedColorButton] = useState<"widget" | "border" | "text" | null>(null);
   const [activeColorPicker, setActiveColorPicker] = useState<"widget" | "border" | "text" | null>(null);
   const [activeSlider, setActiveSlider] = useState<"fontSize" | "blur" | "opacity" | "borderWidth" | null>(null);
+  // Referanser brukt for fokus og tastaturnavigasjon.
   const widgetItemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const customButtonOpenerRef = useRef<HTMLButtonElement | null>(null);
   const norwegianButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -197,7 +198,8 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   const controlSurfaceColor = "rgba(255,255,255,0.54)";
   const subtleShadow = "0 8px 24px rgba(15, 23, 42, 0.08)";
   const innerShadow = "inset 0 1px 0 rgba(255,255,255,0.42)";
-  
+
+  // Fast tekstfarge i panel for god lesbarhet.
   const widgetTextColor = panelTextColor;
   const fontSize = Math.min(Math.max(widgetFontSize, MIN_FONT_SIZE), MAX_FONT_SIZE);
   const notesWidgetCount = activeWidgets.filter(
@@ -215,6 +217,7 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     const activeElement = document.activeElement as HTMLElement | null;
     if (!activeElement || !panelRef.current?.contains(activeElement)) return;
 
+    // Returner fokus til sidefeltet når panelet lukkes.
     requestAnimationFrame(() => {
       onFocusSidebar?.();
     });
@@ -837,9 +840,9 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     if (!user) return;
     setLoadingLibrary(true);
     try {
-      // Fetch from Storage (source of truth for all uploaded files)
+      // Henter filer fra Storage.
       const storageItems = await listAllBackgroundFiles(user.uid);
-      // Fetch Firestore metadata to get createdAt if available
+      // Henter metadata fra Firestore.
       const firestoreBgs = await listSavedBackgrounds(user.uid);
       const metaByPath = new Map(firestoreBgs.map((b) => [b.storagePath, b]));
 

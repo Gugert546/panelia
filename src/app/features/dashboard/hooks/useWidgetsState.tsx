@@ -134,7 +134,7 @@ export const AVAILABLE_WIDGETS = [
   { id: "minesweeper", label: "Minesweeper", icon: "bomb" },
 ] as const;
 
-// Debounce delay for saving to Firestore (5 seconds)
+// Venter litt før lagring til Firestore.
 const SAVE_DEBOUNCE_MS = 5000;
 const DEFAULT_WIDGET_SURFACE_COLOR = "rgba(255,255,255,0.15)";
 const DEFAULT_WIDGET_BORDER_COLOR = "rgba(255,255,255,0.35)";
@@ -168,7 +168,7 @@ function normalizeDashboardBackgroundId(value: unknown): DashboardBackgroundId {
   return isDashboardBackgroundId(value) ? value : DEFAULT_DASHBOARD_BACKGROUND_ID;
 }
 
-// Genererer unikt preset-ID ved hjelp av crypto.randomUUID eller fallback
+// Lager unik preset-ID.
 function createDashboardPresetId() {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
     return `preset:${crypto.randomUUID()}`;
@@ -676,7 +676,7 @@ function migrateLegacyMap<T>(input: Record<string, T>) {
   );
 }
 
-// Returnerer standard dashboard-state for offentlige (ikke-autentiserte) brukere
+// Standard dashboard-tilstand for ikke-innloggede brukere.
 function applyPublicDashboardDefaults() {
   return {
     activeWidgets: [...PUBLIC_WIDGET_IDS],
@@ -704,6 +704,7 @@ export function useWidgetsState() {
   const { user, loading } = useAuth();
   const { fontSize, setFontSize } = useFontSize();
 
+  // Felles state for dashboardet.
   const [activeWidgets, setActiveWidgets] = useState<string[]>([]);
   const [customButtonConfigs, setCustomButtonConfigs] = useState<Record<string, CustomButtonConfig>>({});
   const [layouts, setLayouts] = useState<Record<string, LayoutItem>>({});
@@ -741,6 +742,7 @@ export function useWidgetsState() {
   const previousFontSizeRef = useRef(fontSize);
 
   const createLockSnapshotStyle = useCallback((styles: Record<string, WidgetStyleOverrides>, widgetId: string) => {
+    // Låste widgets beholder egen stil.
     const existingStyle = styles[widgetId];
 
     return {
@@ -907,8 +909,7 @@ export function useWidgetsState() {
     void loadLayout();
   }, [loadLayout]);
 
-  // Autosave-effekt: lagrer endringer til Firestore med debounce-forsinkelse
-  // Dette minimerer antall Firestore-writes under rask oppfølging av endringer (f.eks. drag/resize)
+  // Automatisk lagring med debounce.
   useEffect(() => {
     if (
       !user ||
@@ -1023,6 +1024,7 @@ export function useWidgetsState() {
       }
 
       try {
+        // Lagrer preset-endringer med en gang.
         const docRef = doc(db, "users", user.uid, "widgetLayout", "current");
         await setDoc(
           docRef,
@@ -1042,6 +1044,7 @@ export function useWidgetsState() {
   const saveCurrentAsPreset = useCallback((name?: string) => {
     const trimmedName = name?.trim() ?? "";
 
+    // Lage et øyeblikksbilde av gjeldende dashboard.
     const newPreset = reconcileCustomButtonState({
       id: createDashboardPresetId(),
       name: trimmedName || `Preset ${dashboardPresets.length + 1}`,
@@ -1099,6 +1102,7 @@ export function useWidgetsState() {
     const preset = dashboardPresets.find((item) => item.id === presetId);
     if (!preset) return false;
 
+    // Bruker preset og oppdaterer alle relevante felt.
     const reconciledPreset = reconcileCustomButtonState(preset);
 
     setActiveWidgets([...reconciledPreset.activeWidgets]);
@@ -1328,8 +1332,7 @@ export function useWidgetsState() {
           };
         }
 
-        // Keep the current local style on unlock. It will be cleared automatically
-        // next time the global theme settings are changed.
+        // Beholder lokal stil ved opplåsing.
         return prevStyles;
       });
 

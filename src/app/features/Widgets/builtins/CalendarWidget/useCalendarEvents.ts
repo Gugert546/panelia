@@ -141,6 +141,7 @@ export function useCalendarEvents(
     queueMicrotask(() => {
       if (!cancelled) setLoading(true);
     });
+    // Lytter til hendelser fra Firestore.
     const unsubscribe = subscribeToEvents(uid, (nextEvents) => {
       if (cancelled) return;
       setEvents(nextEvents);
@@ -185,6 +186,7 @@ export function useCalendarEvents(
         calendarId: targetCalendarId,
       };
 
+      // Oppretter lokal hendelse først.
       await createEvent(uid, event);
 
       try {
@@ -221,6 +223,7 @@ export function useCalendarEvents(
       }
 
       try {
+        // Oppdaterer lokalt før synk mot provider.
         await updateEvent(uid, eventId, patch, {
           expectedUpdatedAt: existingEvent.updatedAt,
           markPending: true,
@@ -288,6 +291,7 @@ export function useCalendarEvents(
         selectedCalendarIds[0] ||
         "primary";
       const providerEventId = existingEvent ? getProviderEventId(existingEvent, syncProvider) : undefined;
+      // Prøver provider først, slett lokalt uansett.
       if (providerEventId) {
         try {
           await callCalendarSyncWithRetry(calendarEndpoint(syncProvider, "/sync/delete"), {

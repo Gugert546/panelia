@@ -23,6 +23,7 @@ export function useNotesWidget(widgetId: string) {
 
     setIsReady(false);
 
+    // Lytter til endringer for dette notatet.
     const unsubscribe = subscribeToStickyNote(user.uid, widgetId, (note) => {
       const nextText = note?.text ?? "";
       lastRemoteTextRef.current = nextText;
@@ -41,6 +42,7 @@ export function useNotesWidget(widgetId: string) {
       clearTimeout(saveTimeoutRef.current);
     }
 
+    // Debounce lagring mens bruker skriver.
     saveTimeoutRef.current = setTimeout(() => {
       void updateStickyNote(user.uid, widgetId, text)
         .then(() => {

@@ -42,6 +42,7 @@ const GRID_MIN_ROW_HEIGHT = 12;
 const GRID_MIN_WIDTH = 320;
 const GRID_MIN_HEIGHT = 360;
 
+// Bruker et fast kolonnesystem for stabil skalering.
 function resolveGridColumns(width: number) {
   void width;
   return BASE_GRID_COLUMNS;
@@ -80,6 +81,7 @@ function scaleXToBase(x: number, w: number, currentCols: number) {
   return clampGridValue(scaledX, 0, Math.max(0, BASE_GRID_COLUMNS - scaledW));
 }
 
+// Henter widget-type fra instans-ID, for eksempel "notes:uuid" -> "notes".
 function getWidgetType(widgetId: string) {
   const separatorIndex = widgetId.indexOf(":");
   if (separatorIndex === -1) return widgetId;
@@ -227,6 +229,7 @@ export default function DashboardGrid({
 
   const activeGridColumns = resolveGridColumns(gridWidth);
 
+  // Kombinerer lagret layout med standardverdier.
   const computedLayout = activeWidgets
     .map((widgetId, index) => {
       const widgetType = getWidgetType(widgetId);
@@ -380,7 +383,7 @@ export default function DashboardGrid({
     const cy = current.y + current.h / 2;
     const isHorizontal = direction === "ArrowLeft" || direction === "ArrowRight";
 
-    // Step 1: Filter to only widgets in the target direction (by center)
+    // Trinn 1: Finn widgets i valgt retning.
     const inDirection = computedLayout.filter((item) => {
       if (item.i === widgetId) return false;
       const nx = item.x + item.w / 2;
@@ -393,8 +396,7 @@ export default function DashboardGrid({
 
     if (inDirection.length === 0) return false;
 
-    // Step 2: Prefer widgets that share overlap on the perpendicular axis (same row/col).
-    //         If any exist, use only those. Otherwise fall back to all in-direction widgets.
+    // Trinn 2: Prioriter widgets på samme rad/kolonne.
     const overlapping = inDirection.filter((item) =>
       isHorizontal
         ? current.y < item.y + item.h && current.y + current.h > item.y
@@ -403,7 +405,7 @@ export default function DashboardGrid({
 
     const pool = overlapping.length > 0 ? overlapping : inDirection;
 
-    // Step 3: Among the pool, pick the one closest in the primary direction
+    // Trinn 3: Velg nærmeste widget.
     const best = pool.reduce((a, b) => {
       const distA = isHorizontal
         ? Math.abs((a.x + a.w / 2) - cx)
@@ -1158,6 +1160,7 @@ export default function DashboardGrid({
   const persistLayout = (newLayout: Layout) => {
     const newLayouts: Record<string, { x: number; y: number; w: number; h: number }> = {};
 
+    // Lagre i basis-koordinater for stabil layout.
     newLayout.forEach(item => {
       const widgetType = getWidgetType(item.i);
       const widget = WIDGETS[widgetType as keyof typeof WIDGETS];
@@ -1169,7 +1172,7 @@ export default function DashboardGrid({
         x: scaleXToBase(item.x, item.w, activeGridColumns),
         y: item.y,
         
-        // Clamp to widget minimums so users can’t resize smaller than starting size
+        // Ikke tillat mindre størrelse enn widgetens standard.
         w: baseGrid ? Math.max(baseW, baseGrid.w) : baseW,
         h: baseGrid ? Math.max(item.h, baseGrid.h) : item.h,
       };
@@ -1195,6 +1198,7 @@ export default function DashboardGrid({
           whiteSpace: "nowrap",
         }}
       >
+        {/* Status for skjermleser ved tastaturnavigasjon. */}
         {keyboardStatusMessage}
       </div>
       <GridLayout
@@ -1244,7 +1248,7 @@ export default function DashboardGrid({
         const currentLayout: SafeLayout = storedLayout
           ? {
               ...storedLayout,
-              // Ensure persisted layouts never shrink below the widget's default size
+              // Ikke tillat mindre størrelse enn standard.
               w: Math.max(storedLayout.w, baseGrid.w),
               h: Math.max(storedLayout.h, baseGrid.h),
             }
@@ -1296,12 +1300,12 @@ export default function DashboardGrid({
             }}
             onBlur={(event) => {
               const nextTarget = event.relatedTarget;
-              // If focus is moving to another widget child, don't clear (e.g., button inside widget)
+              // Hvis fokus flyttes til et annet barn i widgeten, ikke nullstill (f.eks. knapp i widget).
               if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) {
                 return;
               }
 
-              // Always clear the focused widget ID for this widget when it loses focus
+              // Nullstill fokus når widgeten mister fokus.
               setFocusedWidgetId((prev) => (prev === widgetId ? null : prev));
               setFocusVisibleWidgetId((prev) => (prev === widgetId ? null : prev));
             }}
@@ -1527,7 +1531,7 @@ export default function DashboardGrid({
                       setStyleEditorWidgetId((prev) => {
                         const next = prev === widgetId ? null : widgetId;
 
-                        // When opening the style panel, place focus at its first color control.
+                        // Sett fokus på første fargevalg når panelet åpnes.
                         if (next === widgetId) {
                           requestAnimationFrame(() => {
                             focusStyleColorButton(widgetId, "surface");

@@ -12,6 +12,7 @@ export function useResolvedWidgetFontSize() {
   const widgetId = widgetInstance.widgetId;
   const widgetStyle = widgetStyles[widgetId];
 
+  // Bruker lokal skriftstørrelse hvis den finnes.
   if (widgetStyle?.widgetFontSize !== undefined) {
     return widgetStyle.widgetFontSize;
   }

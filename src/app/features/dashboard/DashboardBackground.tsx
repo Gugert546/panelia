@@ -47,6 +47,7 @@ function toCssUrl(url: string) {
   return `url("${url.replace(/"/g, '\\"')}")`;
 }
 
+// "defaultbg" velges etter tid på døgnet.
 function resolveEffectiveBackgroundId(backgroundId: DashboardBackgroundId, date: Date) {
   if (backgroundId === "defaultbg") {
     return getBackgroundByTime(date) as DashboardBackgroundId;
@@ -333,6 +334,7 @@ export default function DashboardBackground({
   date,
 }: DashboardBackgroundProps) {
   const now = date ?? new Date();
+  // Væranimasjon brukes kun på standardbakgrunn.
   const weatherAnimationsAreEnabled = backgroundId === "defaultbg";
   const { state: weatherState } = useWeatherWidget({ enabled: weatherAnimationsAreEnabled });
   const backgroundImageUrl = getImageBackgroundSource(
@@ -347,7 +349,7 @@ export default function DashboardBackground({
     backgroundId === "customMedia" ? null : resolveDashboardWater(backgroundId, now);
   const skyBodyType =
     backgroundId === "customMedia" ? null : getSkyBodyType(backgroundId, now);
-  // For testing weather animations, set this to "cloudy", "fog", "rain", "snow","heavyrainandthunder","clearsky_day" sett til undefined(uten "") for å bruke current vær
+  // Kun for testing: setter verdi for å tvinge en bestemt værtype.
   const debugWeatherSymbolCode: string | undefined = undefined;
   const weatherSymbolCode =
     weatherAnimationsAreEnabled
@@ -368,6 +370,7 @@ export default function DashboardBackground({
 
   const skyOrbitStyle = skyBodyType
     ? {
+        // Negativ forsinkelse gir riktig startposisjon.
         animationDuration: `${
           skyBodyType === "sun" ? DAY_DURATION_HOURS * 3600 : NIGHT_DURATION_HOURS * 3600
         }s`,
