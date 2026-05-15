@@ -8,6 +8,7 @@ import { useFontSize } from "../../../../providers/themeProviders";
 type EmailProviderId = "gmail" | "outlook";
 type EmailConnectionStatus = "loading" | "connected" | "disconnected";
 
+// Format for e-postmeldinger fra API.
 type EmailMessage = {
   id: string;
   threadId: string;
@@ -24,25 +25,30 @@ type EmailMessagesResponse = {
   messages?: EmailMessage[];
 };
 
+// Tilgjengelige e-post-leverandører (Gmail, Outlook, mm).
 const EMAIL_PROVIDERS = [
   { id: "gmail", label: "Gmail", enabled: true },
   { id: "outlook", label: "Outlook", enabled: true },
   { id: "imap", label: "IMAP", enabled: false },
 ] as const;
 
+// Pakker ut avsendernavnet fra "Name <email@domain>" format.
 function extractSenderName(sender: string) {
   const trimmed = sender.trim();
   const angleIndex = trimmed.indexOf("<");
+  // Hvis det finnes navn før E-post-adressen, bruk det.
   if (angleIndex > 0) return trimmed.slice(0, angleIndex).replace(/^"|"$/g, "").trim();
   return trimmed;
 }
 
+// Formaterer meldings-tid som "HH:mm" (samme dag) eller "DD Mmm" (annen dag).
 function formatMessageTime(value: string | null, locale: string) {
   if (!value) return "";
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
 
+  // Sjekker om meldingen er fra i dag eller tidligere.
   const now = new Date();
   const sameDay =
     date.getDate() === now.getDate() &&
@@ -59,19 +65,24 @@ function parseEmailProvider(value: string | null): EmailProviderId | null {
   return value === "gmail" || value === "outlook" ? value : null;
 }
 
+// Refs for fokus-håndtering under tastaturnavigasjon.
 export default function EmailWidget() {
   const { user, loading } = useAuth();
   const { t, language } = useLanguage();
   const { fontSize } = useFontSize();
+  // E-post-provider valg og forbindelsestatus.
   const [provider, setProvider] = useState<EmailProviderId>("gmail");
   const [connectionStatus, setConnectionStatus] =
     useState<EmailConnectionStatus>("loading");
+  // Flags for å blokkere samtidig forbindelse/oppdatering.
   const [connectionBusy, setConnectionBusy] = useState(false);
   const [refreshBusy, setRefreshBusy] = useState(false);
+  // Meldinger og feil/notiser.
   const [messages, setMessages] = useState<EmailMessage[]>([]);
   const [error, setError] = useState("");
   const [oauthNotice, setOauthNotice] = useState("");
   const [refreshTick, setRefreshTick] = useState(0);
+  // Refs for sidefelt-navigasjon.
   const providerSelectRef = useRef<HTMLSelectElement | null>(null);
   const refreshButtonRef = useRef<HTMLButtonElement | null>(null);
   const connectButtonRef = useRef<HTMLButtonElement | null>(null);

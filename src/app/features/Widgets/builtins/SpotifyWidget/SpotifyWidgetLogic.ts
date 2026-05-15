@@ -22,6 +22,7 @@ export type SpotifyPlayerState = {
   device?: { volume_percent?: number };
 };
 
+// Leser boolean-verdi fra localStorage som tekst ("true" eller "false").
 function getStoredBool(key: string, defaultValue: boolean) {
   if (typeof window === "undefined") return defaultValue;
 
@@ -39,6 +40,7 @@ type SpotifyWidgetLogicOptions = {
 const SPOTIFY_DARK_MODE_STORAGE_KEY = "spotify_widget_dark_mode";
 const SPOTIFY_DARK_MODE_EVENT = "panelia:spotify:dark-mode-change";
 
+// Spotify player-state, device-liste, og rate-limit-håndtering.
 export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
   const [token, setToken] = useState<string | null>(null);
   const [player, setPlayer] = useState<SpotifyPlayerState | null>(null);
@@ -48,6 +50,7 @@ export function useSpotifyWidgetLogic(options: SpotifyWidgetLogicOptions = {}) {
     getStoredBool(SPOTIFY_DARK_MODE_STORAGE_KEY, true)
   );
   const [isMinimized, setIsMinimized] = useState(() => getStoredBool("spotify_widget_minimized", false));
+  // Refs for retry-håndtering når Spotify returnerer rate-limit (429).
   const playerRetryAtRef = useRef(0);
   const devicesRetryAtRef = useRef(0);
   const isFetchingPlayerRef = useRef(false);

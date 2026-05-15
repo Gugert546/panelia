@@ -7,11 +7,13 @@ import {
 
 const SAVE_DEBOUNCE_MS = 500;
 
+// Hook for notater: laster fra Firestore og lagrer med debounce.
 export function useNotesWidget(widgetId: string) {
   const { user } = useAuth();
   const [text, setText] = useState("");
   const [isReady, setIsReady] = useState(false);
 
+  // Brukes til å debounce lagring og spore remote-endringer.
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastRemoteTextRef = useRef("");
 

@@ -11,9 +11,10 @@ import {
 } from "../../../../../lib/firebase/firestore";
 import type { Bookmark, BookmarkCategory } from "../../../../../types/firestore";
 
+// Bokmerke-hook: laster bokmerker og kategorier fra Firestore i sanntid.
 export function useBookmark() {
   const { user } = useAuth();
-  
+  // State for bokmerker, kategorier, og loading/error-status.
   const [categories, setCategories] = useState<BookmarkCategory[]>([]);
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [loading, setLoading] = useState(true);

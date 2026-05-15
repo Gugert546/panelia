@@ -143,6 +143,7 @@ export default function DashboardGrid({
   isMovable = isInteractive,
   calendarWidgetConfig
 }: Props) {
+  // Lokal UI-tilstand for hover, fokus og stil-editor per widget.
   const [hoveredWidgetId, setHoveredWidgetId] = useState<string | null>(null);
   const [styleEditorWidgetId, setStyleEditorWidgetId] = useState<string | null>(null);
   const [activeStyleSliderId, setActiveStyleSliderId] = useState<string | null>(null);
@@ -229,7 +230,7 @@ export default function DashboardGrid({
 
   const activeGridColumns = resolveGridColumns(gridWidth);
 
-  // Kombinerer lagret layout med standardverdier.
+  // Konverterer lagret base-layout til aktiv grid-bredde, og håndhever minimumsstorrelser.
   const computedLayout = activeWidgets
     .map((widgetId, index) => {
       const widgetType = getWidgetType(widgetId);
@@ -266,6 +267,7 @@ export default function DashboardGrid({
     })
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
+  // Hjelpere for kollisjonssjekk og tastaturstyrt flytting/resizing.
   const overlaps = (
     first: { x: number; y: number; w: number; h: number },
     second: { x: number; y: number; w: number; h: number }
@@ -290,6 +292,7 @@ export default function DashboardGrid({
 
     if (nextX === widgetLayout.x && nextY === widgetLayout.y) return;
 
+    // Avvis flytting hvis ny posisjon kolliderer med en annen widget.
     const collides = computedLayout.some((item) => {
       if (item.i === widgetId) return false;
       return overlaps(
@@ -349,6 +352,7 @@ export default function DashboardGrid({
       return;
     }
 
+    // Avvis resizing hvis ny storrelse kolliderer med andre widgets.
     const collides = computedLayout.some((item) => {
       if (item.i === widgetId) return false;
       return overlaps(
@@ -426,6 +430,7 @@ export default function DashboardGrid({
     return true;
   };
 
+  // Fallback hvis venstrepil ikke finner neste widget: send fokus til sidefelt.
   const focusSidebarFallback = () => {
     const editButton = document.querySelector(
       'aside button[aria-label="Rediger"]:not([disabled])'
@@ -472,6 +477,7 @@ export default function DashboardGrid({
     });
   };
 
+  // Tastaturlogikk for toppraden (stil/las/flagg osv.) og hopp inn i widgetinnhold.
   const handleWidgetTopControlKeyDown = (
     event: React.KeyboardEvent<HTMLButtonElement>
   ) => {
@@ -481,6 +487,7 @@ export default function DashboardGrid({
 
     const widgetRoot = currentButton.closest("[data-widget-id]");
     const widgetId = widgetRoot?.getAttribute("data-widget-id") ?? "";
+    // Hver widgettype har egne fokusregler fra toppraden.
     const isSearchWidget = widgetId === "google_search" || widgetId.startsWith("google_search:");
     const focusSearchInput = () => {
       if (!(widgetRoot instanceof HTMLElement)) return false;
@@ -882,6 +889,7 @@ export default function DashboardGrid({
     }
   };
 
+  // Enter på widgetcontainer bruker denne fornuftige startposisjonen i innholdet.
   const focusFirstWidgetControl = (container: HTMLDivElement, widgetId: string) => {
         // Naviger til første nyhetsartikkel hvis dette er en nyhetswidget
         if (widgetId === "news" || widgetId.startsWith("news:")) {
@@ -1026,6 +1034,7 @@ export default function DashboardGrid({
     setKeyboardStatusMessage(t("widgets.widgetKeyboard.contentNavigationEnabled"));
   };
 
+  // Hovedsnarveier på selve widgetcontaineren: Enter innhold, Ctrl+pil flytt, Shift+pil resize, pil navigasjon.
   const handleWidgetKeyDown = (event: React.KeyboardEvent<HTMLDivElement>, widgetId: string) => {
     if (event.key === "Escape" && event.target !== event.currentTarget) {
       event.preventDefault();
@@ -1094,6 +1103,7 @@ export default function DashboardGrid({
         event.key === "ArrowUp" ||
         event.key === "ArrowDown")
     ) {
+      // Ctrl + pil flytter widgeten i gridet.
       event.preventDefault();
       event.stopPropagation();
 
@@ -1129,6 +1139,7 @@ export default function DashboardGrid({
         event.key === "ArrowUp" ||
         event.key === "ArrowDown")
     ) {
+      // Shift + pil endrer størrelse pa widgeten.
       event.preventDefault();
       event.stopPropagation();
       resizeWidgetByKeyboard(widgetId, event.key, 1);
@@ -1223,6 +1234,8 @@ export default function DashboardGrid({
         onResizeStop={(layout) => persistLayout(layout)}
       >
         {activeWidgets.map((widgetId, index) => {
+
+        // Renderer hver widget med sammensatt layout, stil og tastatur/fokuslogikk.
 
         const widgetType = getWidgetType(widgetId);
         const widget = WIDGETS[widgetType as keyof typeof WIDGETS];

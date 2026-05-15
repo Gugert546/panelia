@@ -23,23 +23,27 @@ const GEOLOCATION_RETRY_TIMEOUT_MS = 18_000;
 const GEOLOCATION_RETRY_DELAY_MS = 600;
 const GEOLOCATION_ERROR_TIMEOUT = 3;
 
-// Deler cache mellom widgets.
+// Deler cache mellom widgets og unngår dupliserte oppslag.
+// Disse lagres i minne for rask gjenbruk ved flere hook-instanser.
 let memoryLocation: UserLocation | undefined;
 let memoryCoordinates: UserCoordinates | undefined;
 let locationPromise: Promise<UserLocation> | undefined;
 let coordinatesPromise: Promise<UserCoordinates> | undefined;
 
+// Sjekker om et ISO-tidspunkt er nyere enn maksimum alder.
 function isFresh(iso: string, maxAgeMs: number) {
   const time = new Date(iso).getTime();
   return Number.isFinite(time) && Date.now() - time < maxAgeMs;
 }
 
+// Henter cached plassering fra localStorage hvis den fortsatt er frisk.
 function readCachedLocation() {
   try {
     const raw = localStorage.getItem(LOCATION_CACHE_KEY);
     if (!raw) return undefined;
 
     const value = JSON.parse(raw) as Partial<UserLocation>;
+    // Validerer at alle felter finnes og at cachen er frisk (ikke for gammel).
     if (
       typeof value.lat !== "number" ||
       typeof value.lon !== "number" ||
@@ -76,6 +80,7 @@ function sleep(ms: number) {
   });
 }
 
+// Detekterer timeout-feil fra Geolocation API (brukes for retry-logikk).
 function isGeolocationTimeout(error: unknown) {
   if (!error || typeof error !== "object") return false;
 

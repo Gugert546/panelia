@@ -11,14 +11,16 @@ type EventFormState = {
   endAt: string;
 };
 
+// Representer en event i en tidsslot, med sideflyts-kolonne (lane) og start/slutt-flagg.
 type SlotEventItem = {
   event: CalendarEvent;
-  lane: number;
-  isStart: boolean;
-  isEnd: boolean;
-  isContinuation: boolean;
+  lane: number; 
+  isStart: boolean; 
+  isEnd: boolean; 
+  isContinuation: boolean; 
 };
 
+// Henter start- og slutt-dato for en time-slot (f.eks. "14:00" blir 14:00-15:00).
 function getSlotRange(day: Date, time: string) {
   const [hour, minute] = time.split(":").map(Number);
   const slotStart = new Date(day);
@@ -30,10 +32,12 @@ function getSlotRange(day: Date, time: string) {
   return { slotStart, slotEnd };
 }
 
+// Parser og validerer event-tidspunkter (må være ordnede og gyldige datolikn.
 function parseEventRange(event: CalendarEvent) {
   const eventStart = new Date(event.startAt);
   const eventEnd = new Date(event.endAt);
 
+  // Ignorerer events med invalid eller uordnede tidspunkter.
   if (Number.isNaN(eventStart.getTime()) || Number.isNaN(eventEnd.getTime())) {
     return null;
   }
@@ -45,11 +49,13 @@ function parseEventRange(event: CalendarEvent) {
   return { eventStart, eventEnd };
 }
 
+// Sjekker om en event overlapper med tidssloten (kan strekke seg ut av den).
 function isEventInSlot(event: CalendarEvent, day: Date, time: string) {
   const parsedRange = parseEventRange(event);
   if (!parsedRange) return false;
 
   const { slotStart, slotEnd } = getSlotRange(day, time);
+  // Event overlapper hvis den starter før sloten avsluttes OG slutter etter den starter.
   return parsedRange.eventStart < slotEnd && parsedRange.eventEnd > slotStart;
 }
 
@@ -82,7 +88,9 @@ function isEventOnDay(event: CalendarEvent, day: Date) {
   return parsedRange.eventStart < dayEnd && parsedRange.eventEnd > dayStart;
 }
 
+// Sorterer events for layout: først etter starttid, så etter varighet (lengste først), og ID.
 function compareEventsForLayout(a: CalendarEvent, b: CalendarEvent) {
+  // Grupperer events som starter samtidig.
   if (a.startAt !== b.startAt) {
     return a.startAt.localeCompare(b.startAt);
   }
@@ -95,6 +103,7 @@ function compareEventsForLayout(a: CalendarEvent, b: CalendarEvent) {
   const aDuration = Number.isNaN(aStart) || Number.isNaN(aEnd) ? 0 : aEnd - aStart;
   const bDuration = Number.isNaN(bStart) || Number.isNaN(bEnd) ? 0 : bEnd - bStart;
 
+  // Lengere events først (lettere å lå fra siden).
   if (aDuration !== bDuration) {
     return bDuration - aDuration;
   }
@@ -102,20 +111,25 @@ function compareEventsForLayout(a: CalendarEvent, b: CalendarEvent) {
   return a.id.localeCompare(b.id);
 }
 
+// Tildeler vertikale kolonner (lanes) til events slik at overlappende events ikke tegnes over hverandre.
+// Bruker en greedy-algoritme: hver event får den første ledige kolonnen.
 function assignLanes(events: CalendarEvent[]) {
-  const laneEndTimes: Date[] = [];
+  const laneEndTimes: Date[] = []; // Sporer når hver kolonne blir ledig igjen.
   const laneByEventId = new Map<string, number>();
 
   for (const event of events) {
     const parsedRange = parseEventRange(event);
     if (!parsedRange) continue;
 
+    // Finner første kolonne som er ledig før denne eventen starter.
     let laneIndex = laneEndTimes.findIndex((laneEnd) => laneEnd <= parsedRange.eventStart);
 
     if (laneIndex < 0) {
+      // Ingen ledig kolonne; opprett ny.
       laneIndex = laneEndTimes.length;
       laneEndTimes.push(parsedRange.eventEnd);
     } else {
+      // Oppdater når kolonnen blir ledig igjen.
       laneEndTimes[laneIndex] = parsedRange.eventEnd;
     }
 

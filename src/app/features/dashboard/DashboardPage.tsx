@@ -26,15 +26,18 @@ import { WidgetsProvider, useWidgets } from "./hooks/WidgetsContext";
 import { useLanguage } from "../../providers/languageProvider";
 import { useAuth } from "../auth/useAuth";
 
-type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
+// Hvilken panel som er aktiv (rediger, kalender, chat, eller ingen).
 type ActivePanel = "edit" | "calendar" | "chat" | null;
+type CalendarConnectionStatus = "loading" | "connected" | "disconnected";
 
+// Initiell tilstand: begge kalendertjenester lastes.
 const DEFAULT_CALENDAR_CONNECTIONS: Record<CalendarProvider, CalendarConnectionStatus> = {
   google: "loading",
   outlook: "loading",
 };
 
 function DashboardPageContent() {
+  // Refraser som holder paneler/elements tilgjengelig for fokus-håndtering.
   const SIDEBAR_WIDTH = 86;
   const editPanelRef = useRef<EditPanelHandle | null>(null);
   const calendarPanelRef = useRef<CalendarWidgetHandle | null>(null);
@@ -46,12 +49,15 @@ function DashboardPageContent() {
       : Math.max(320, window.innerWidth - SIDEBAR_WIDTH)
   );
 
+  // Hvilken panel som vises på siden.
   const [activePanel, setActivePanel] = useState<ActivePanel>(null);
 
+  // Kalender-provider valg og forbindelsestatus.
   const [calendarProvider, setCalendarProvider] = useState<CalendarProvider>("google");
   const [calendarConnections, setCalendarConnections] =
     useState<Record<CalendarProvider, CalendarConnectionStatus>>(DEFAULT_CALENDAR_CONNECTIONS);
 
+  // Flags for å blokkere samtidig innlogging/oppdatering.
   const [calendarConnectionBusy, setCalendarConnectionBusy] = useState(false);
   const [calendarRefreshBusy, setCalendarRefreshBusy] = useState(false);
   const calendarRefreshBusyRef = useRef(false);

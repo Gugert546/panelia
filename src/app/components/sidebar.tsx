@@ -36,6 +36,7 @@ export default function Sidebar({
   const buttonRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useEffect(() => {
+    // Global piltastnavigasjon for sidefeltet når fokus ikke ligger i paneler/grid.
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (
         e.key !== "ArrowDown" &&
@@ -81,6 +82,7 @@ export default function Sidebar({
       }
 
       if (e.key === "ArrowRight") {
+        // ArrowRight sender fokus videre inn i aktivt panelinnhold.
         e.preventDefault();
         const focusedItem = items[focusedIndex];
         if (!focusedItem) return;

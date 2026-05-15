@@ -45,10 +45,12 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
   const isPanel = variant === "panel";
 
   useEffect(() => {
+    // Holder siste melding synlig mens chatten oppdateres.
     messagesEndRef.current?.scrollIntoView({ block: "end" });
   }, [messages, isSending]);
 
   useEffect(() => {
+    // Justerer hoyde automatisk slik at tekstfeltet vokser med innholdet.
     const inputElement = inputRef.current;
     if (!inputElement) return;
 
@@ -59,6 +61,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
   useEffect(() => {
     if (!autoFocus) return;
 
+    // Autofokus utsettes til neste frame for a unnga fokus-kamp ved rendering.
     requestAnimationFrame(() => {
       inputRef.current?.focus({ preventScroll: true });
     });
@@ -91,6 +94,7 @@ const Chat = forwardRef<ChatHandle, ChatProps>(function Chat(
   };
 
   const focusWidgetTopControl = (start: HTMLElement) => {
+    // Lar Escape/Arrow-opplegg sende fokus tilbake til widgetens kontrollrad.
     const widgetRoot = start.closest("[data-widget-id]");
     if (!(widgetRoot instanceof HTMLElement)) return;
 
