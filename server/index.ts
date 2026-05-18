@@ -20,7 +20,11 @@ const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
   .filter(Boolean);
 
 if (!allowedOrigins.length) {
-  allowedOrigins.push("http://127.0.0.1:5173", "http://localhost:5173", "https://panelia.web.app");
+  if (isProd) {
+    allowedOrigins.push("https://panelia.web.app");
+  } else {
+    allowedOrigins.push("http://127.0.0.1:5173", "http://localhost:5173", "https://panelia.web.app");
+  }
 }
 
 // Cloud Run/proxy-støtte for korrekt secure-cookie/HTTPS-deteksjon.
