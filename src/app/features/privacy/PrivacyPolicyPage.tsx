@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-const lastUpdated = "April 27, 2026";
+const lastUpdated = "May 18, 2026";
 const privacyContact = "paneliaNo1@gmail.com";
 
 type SectionProps = {
@@ -90,6 +90,21 @@ export default function PrivacyPolicyPage() {
           </p>
         </Section>
 
+        <Section title="Cookies">
+          <p>
+            Panelia uses cookies that are necessary to provide connected features. When you
+            connect your Spotify account, Panelia stores your Spotify refresh token in an
+            HTTP-only cookie named spotify_refresh. This cookie is used only to keep your
+            Spotify connection working and to request new Spotify access tokens when needed.
+            It is scoped to Spotify API requests, is not available to browser JavaScript, and
+            expires after 30 days unless refreshed or cleared earlier.
+          </p>
+          <p>
+            Panelia does not use this Spotify cookie for advertising, analytics tracking, or
+            profiling.
+          </p>
+        </Section>
+
         <Section title="How We Share Information">
           <p>
             We do not sell your personal information or Google user data. We share
@@ -107,10 +122,11 @@ export default function PrivacyPolicyPage() {
         <Section title="Storage and Security">
           <p>
             Panelia stores user data in Firebase Firestore and Firebase Storage under
-            user-specific paths. OAuth tokens are stored server-side and are used only to
-            operate the integrations you connect. Data is protected in transit with HTTPS,
-            and Firebase security rules restrict access to authenticated users and their
-            own user data where applicable.
+            user-specific paths. OAuth tokens are stored server-side or, for the Spotify
+            refresh token, in an HTTP-only cookie, and are used only to operate the
+            integrations you connect. Data is protected in transit with HTTPS, and Firebase
+            security rules restrict access to authenticated users and their own user data
+            where applicable.
           </p>
         </Section>
 
@@ -132,9 +148,10 @@ export default function PrivacyPolicyPage() {
 
         <Section title="Your Choices">
           <ul>
-            <li>You can use Panelia without connecting Google Calendar or Gmail.</li>
+            <li>You can use Panelia without connecting Google Calendar, Gmail, or Spotify.</li>
             <li>You can disconnect Google Calendar or Gmail from inside Panelia.</li>
             <li>You can revoke Panelia's Google access from your Google Account permissions page.</li>
+            <li>You can remove Panelia's Spotify access from your Spotify account permissions or clear the Spotify cookie in your browser.</li>
             <li>You can delete dashboard items such as notes, bookmarks, widgets, and events in the app.</li>
           </ul>
         </Section>
