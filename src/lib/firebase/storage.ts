@@ -91,14 +91,19 @@ export async function listAllBackgroundFiles(uid: string): Promise<StorageBackgr
     const folderRef = ref(storage, `users/${uid}/backgrounds/${mediaType}`);
     try {
       const listResult = await listAll(folderRef);
-      const items = await Promise.all(
+      const items = await Promise.allSettled(
         listResult.items.map(async (item) => {
           const url = await getDownloadURL(item);
           return { url, storagePath: item.fullPath, type: mediaType };
         })
       );
-      results.push(...items);
-    } catch {
+      results.push(
+        ...items
+          .filter((item): item is PromiseFulfilledResult<StorageBackgroundItem> => item.status === "fulfilled")
+          .map((item) => item.value)
+      );
+    } catch (err) {
+      console.warn(`Failed to list ${mediaType} backgrounds`, err);
       // folder may not exist yet
     }
   }

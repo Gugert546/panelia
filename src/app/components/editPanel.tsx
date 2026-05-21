@@ -90,6 +90,35 @@ const DEFAULT_FONT_SIZE = 14;
 const MIN_FONT_SIZE = 10;
 const MAX_FONT_SIZE = 22;
 
+function toStorageOnlyBackground(storagePath: string, url: string, type: CustomBackgroundMediaType): SavedBackground {
+  return {
+    id: `storage:${encodeURIComponent(storagePath)}`,
+    url,
+    storagePath,
+    type,
+    createdAt: 0,
+  };
+}
+
+function mergeSavedBackgrounds(
+  savedBackgrounds: SavedBackground[],
+  storageBackgrounds: Array<{ url: string; storagePath: string; type: CustomBackgroundMediaType }>
+) {
+  const mergedByPath = new Map<string, SavedBackground>();
+
+  for (const bg of savedBackgrounds) {
+    mergedByPath.set(bg.storagePath, bg);
+  }
+
+  for (const bg of storageBackgrounds) {
+    if (!mergedByPath.has(bg.storagePath)) {
+      mergedByPath.set(bg.storagePath, toStorageOnlyBackground(bg.storagePath, bg.url, bg.type));
+    }
+  }
+
+  return Array.from(mergedByPath.values()).sort((a, b) => b.createdAt - a.createdAt);
+}
+
 export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
   open,
   onClose,
@@ -822,28 +851,13 @@ export default forwardRef<EditPanelHandle, EditPanelProps>(function EditPanel({
     if (!user) return;
     setLoadingLibrary(true);
     try {
-      // Fetch from Storage (source of truth for all uploaded files)
-      const storageItems = await listAllBackgroundFiles(user.uid);
-      // Fetch Firestore metadata to get createdAt if available
-      const firestoreBgs = await listSavedBackgrounds(user.uid);
-      const metaByPath = new Map(firestoreBgs.map((b) => [b.storagePath, b]));
-
-      const merged: SavedBackground[] = storageItems.map((item) => {
-        const meta = metaByPath.get(item.storagePath);
-        return meta ?? {
-          id: item.storagePath,
-          url: item.url,
-          storagePath: item.storagePath,
-          type: item.type,
-          createdAt: 0,
-        };
-      });
-
-      // Sort by createdAt descending (unknown = last)
-      merged.sort((a, b) => b.createdAt - a.createdAt);
-      setSavedBackgrounds(merged);
-    } catch {
-      // silently fail
+      const [metadataBackgrounds, storageBackgrounds] = await Promise.all([
+        listSavedBackgrounds(user.uid),
+        listAllBackgroundFiles(user.uid),
+      ]);
+      setSavedBackgrounds(mergeSavedBackgrounds(metadataBackgrounds, storageBackgrounds));
+    } catch (err) {
+      console.warn("Failed to load media library", err);
     } finally {
       setLoadingLibrary(false);
     }

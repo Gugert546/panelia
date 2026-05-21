@@ -29,14 +29,14 @@ const EMAIL_PROVIDERS = [
   { id: "outlook", label: "Outlook", enabled: true },
   { id: "imap", label: "IMAP", enabled: false },
 ] as const;
-
+//henter ut avsenders navn fra mailen
 function extractSenderName(sender: string) {
   const trimmed = sender.trim();
   const angleIndex = trimmed.indexOf("<");
   if (angleIndex > 0) return trimmed.slice(0, angleIndex).replace(/^"|"$/g, "").trim();
   return trimmed;
 }
-
+//formater tidspunktet til et lettleselig format, klokkeslett for samme dag, dato ellers
 function formatMessageTime(value: string | null, locale: string) {
   if (!value) return "";
 
@@ -54,7 +54,7 @@ function formatMessageTime(value: string | null, locale: string) {
     : { day: "2-digit", month: "short" }
   ).format(date);
 }
-
+//finner epost provider fra url
 function parseEmailProvider(value: string | null): EmailProviderId | null {
   return value === "gmail" || value === "outlook" ? value : null;
 }
@@ -80,7 +80,7 @@ export default function EmailWidget() {
 
   const locale = language === "no" ? "nb-NO" : "en-US";
   const selectedProvider = EMAIL_PROVIDERS.find((item) => item.id === provider);
-
+  
   useEffect(() => {
     const url = new URL(window.location.href);
     const oauthResult = url.searchParams.get("email_oauth");
@@ -525,7 +525,7 @@ export default function EmailWidget() {
               </span>
             </button>
           </div>
-
+          {/*ui når epost lastes*/}
           {connectionStatus === "loading" && (
             <div style={{ opacity: 0.75 }}>{t("widgets.emailWidget.checking")}</div>
           )}
@@ -548,6 +548,7 @@ export default function EmailWidget() {
                     ? connectHelp
                     : t("widgets.emailWidget.providerUnavailable")}
               </div>
+
               {user && selectedProvider?.enabled && (
                 <button
                   ref={connectButtonRef}

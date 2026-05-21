@@ -19,8 +19,9 @@ const allowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+
 if (!allowedOrigins.length) {
-  allowedOrigins.push("http://127.0.0.1:5173", "http://localhost:5173", "https://panelia.web.app");
+  allowedOrigins.push("http://127.0.0.1:5173", "http://localhost:5173", "https://panelia.web.app", "https://panelia.firebaseapp.com");
 }
 
 // Cloud Run/proxy-støtte for korrekt secure-cookie/HTTPS-deteksjon.

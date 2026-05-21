@@ -8,6 +8,8 @@ const projectId = env("VITE_FIREBASE_PROJECT_ID");
 
 if (!projectId) throw new Error("Missing VITE_FIREBASE_PROJECT_ID");
 
+const defaultStorageBucket = `${projectId}.firebasestorage.app`;
+const storageBucket = env("VITE_FIREBASE_STORAGE_BUCKET") || defaultStorageBucket;
 const runtimeHost = typeof window !== "undefined" ? window.location.hostname : "";
 const projectWebDomain = `${projectId}.web.app`;
 const projectFirebaseAppDomain = `${projectId}.firebaseapp.com`;
@@ -22,7 +24,7 @@ const firebaseConfig = {
   apiKey: env("VITE_FIREBASE_API_KEY"),
   authDomain,
   projectId,
-  storageBucket: env("VITE_FIREBASE_STORAGE_BUCKET"),
+  storageBucket,
   messagingSenderId: env("VITE_FIREBASE_MESSAGING_SENDER_ID"),
   appId: env("VITE_FIREBASE_APP_ID"),
 };

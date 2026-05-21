@@ -1,0 +1,13 @@
+[
+  {
+    "origin": [
+      "https://panelia.web.app",
+      "https://panelia.firebaseapp.com",
+      "http://localhost:5173",
+      "http://127.0.0.1:5173"
+    ],
+    "method": ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
+    "responseHeader": ["Authorization", "Content-Type", "x-goog-resumable"],
+    "maxAgeSeconds": 3600
+  }
+]
