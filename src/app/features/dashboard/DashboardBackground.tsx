@@ -102,6 +102,12 @@ function getSkyBodyType(backgroundId: DashboardBackgroundId, date: Date) {
   return null;
 }
 
+function isNightWeatherSymbol(symbolCode?: string) {
+  const code = symbolCode?.toLowerCase() ?? "";
+
+  return code.includes("_night") || code.endsWith("night");
+}
+
 function getVideoBackgroundSource(
   backgroundId: DashboardBackgroundId,
   customBackgroundUrl: string,
@@ -357,6 +363,11 @@ export default function DashboardBackground({
   const weatherVisualMode = weatherSymbolCode
     ? getWeatherVisualMode(weatherSymbolCode)
     : null;
+  const renderedWeatherVisualMode =
+    weatherVisualMode === "clear" &&
+    (skyBodyType === "moon" || isNightWeatherSymbol(weatherSymbolCode))
+      ? null
+      : weatherVisualMode;
   const weatherCloudTone = weatherSymbolCode
     ? getWeatherCloudTone(weatherSymbolCode)
     : "normal";
@@ -426,9 +437,9 @@ export default function DashboardBackground({
         />
       )}
 
-      {weatherVisualMode && (
+      {renderedWeatherVisualMode && (
         <DashboardWeatherAtmosphere
-          mode={weatherVisualMode}
+          mode={renderedWeatherVisualMode}
           cloudTone={weatherCloudTone}
         />
       )}
